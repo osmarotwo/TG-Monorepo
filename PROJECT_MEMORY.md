@@ -2,27 +2,167 @@
 
 ## 📋 Resumen Ejecutivo
 **Fecha de creación**: 2 de octubre de 2025  
-**Estado actual**: Registro con Google OAuth funcional implementado  
-**Tecnologías**: AWS CDK + React + Vite + TypeScript + Tailwind CSS + Google Identity Services  
+**Última actualización**: 3 de octubre de 2025  
+**Estado actual**: Backend serverless completo + Frontend OAuth + AmplifyStack CDK implementado  
+**Tecnologías**: AWS CDK + Amplify + Lambda + DynamoDB + React + Vite + TypeScript + Tailwind CSS + Google OAuth  
 
 ---
 
-## 🏗️ Arquitectura Actual
+## 🏗️ Arquitectura Completa Implementada
 
 ### Monorepo Structure
 ```
 TG-OM/
-├── infrastructure/     # AWS CDK - API Gateway + Lambda
-├── lambdas/           # TypeScript serverless functions  
-├── frontend/          # React + Vite (PANTALLA PRINCIPAL)
-└── design_reference/  # Diseños analizados
+├── infrastructure/        # AWS CDK - INFRAESTRUCTURA COMPLETA
+│   ├── lib/
+│   │   ├── auth-stack.ts      # ✅ Backend serverless autenticación
+│   │   ├── amplify-stack.ts   # ✅ NUEVO: Frontend hosting automático
+│   │   └── api-lambda-stack.ts # ✅ API original
+├── lambdas/              # ✅ COMPLETAMENTE IMPLEMENTADO
+│   ├── auth-handler/     # ✅ Todos los endpoints de autenticación
+│   └── jwt-authorizer/   # ✅ Custom authorizer con cache
+├── frontend/             # ✅ React + Vite (OAuth funcional)
+└── design_reference/    # Diseños analizados
 ```
 
-### Stack Tecnológico
+### Stack Tecnológico COMPLETO
 - **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS
-- **Backend**: AWS CDK + Lambda + API Gateway
-- **Herramientas**: ESLint, PostCSS, Git
-- **Autenticación**: GitHub CLI configurado
+- **Hosting**: AWS Amplify (CDK automatizado)
+- **Backend**: AWS Lambda + DynamoDB + API Gateway
+- **Auth**: JWT + Google OAuth + bcrypt + Email verification
+- **Infrastructure**: AWS CDK (3 stacks)
+- **CI/CD**: Amplify automatic deployments
+
+---
+
+## 🚀 NUEVO: Infraestructura AWS Completa (3 de octubre 2025)
+
+### 🏭 **AmplifyStack** - Frontend Hosting Automatizado
+**Archivo**: `infrastructure/lib/amplify-stack.ts`
+
+#### Características Implementadas:
+- ✅ **Deployment automático** desde GitHub
+- ✅ **CI/CD pipeline** configurado automáticamente  
+- ✅ **Multi-branch deployment** (main + develop)
+- ✅ **Variables de entorno** configuradas automáticamente
+- ✅ **SPA routing** con redirects para React Router
+- ✅ **API integration** automática con AuthStack
+- ✅ **Build optimization** con cache de node_modules
+
+#### Configuración Automática:
+```typescript
+// Variables de entorno automáticas:
+VITE_API_URL         # ← URL del AuthStack automáticamente
+VITE_APP_NAME        # ← "TG Platform" 
+VITE_ENVIRONMENT     # ← "production" / "staging"
+
+// Branches configurados:
+main                 # ← Producción
+feature/frontend-user # ← Staging/desarrollo
+```
+
+### 🔐 **AuthStack** - Backend Serverless Completo
+**Archivo**: `infrastructure/lib/auth-stack.ts`
+
+#### Infraestructura DynamoDB:
+- ✅ **Users Table** con GSI por email y Google ID
+- ✅ **Sessions Table** con TTL automático  
+- ✅ **EmailVerifications Table** con TTL automático
+
+#### Lambda Functions:
+- ✅ **JWT Authorizer** (custom API Gateway authorizer con cache 5min)
+- ✅ **Auth Handler** (todos los endpoints implementados)
+
+#### Endpoints Implementados (100% funcionales):
+```typescript
+// 🔓 Públicos:
+POST /auth/register              # Registro manual
+POST /auth/login                 # Login manual  
+POST /auth/google                # Google OAuth
+POST /auth/refresh               # Renovar tokens
+POST /auth/verify-email          # Verificar email
+POST /auth/forgot-password       # Reset password
+POST /auth/reset-password        # Confirmar reset
+
+// 🔒 Protegidos (JWT required):
+POST /auth/complete-profile      # Completar perfil (onboarding)
+GET  /auth/me                    # Obtener perfil
+POST /auth/logout                # Invalidar sesión
+PUT  /auth/profile              # Actualizar perfil
+```
+
+#### Utilidades Completas:
+- ✅ **JWT Management** (generación, verificación, refresh, reset)
+- ✅ **Password Security** (bcrypt 12 rounds, comparación segura)
+- ✅ **DynamoDB Operations** (CRUD optimizado con GSI)
+- ✅ **Google Verification** (validación de ID tokens)
+- ✅ **Joi Validation** (esquemas para todos los endpoints)
+
+### 🔗 **Integración Completa**
+- ✅ **AmplifyStack** → conectado automáticamente a **AuthStack** 
+- ✅ **Variables de entorno** automáticas (VITE_API_URL)
+- ✅ **Dependencies** configuradas (deploy order correcto)
+- ✅ **Cross-stack references** con SSM Parameter Store
+
+---
+
+## 🎯 Deployment Status
+
+### ✅ **Listo para Deploy**:
+```bash
+# 1. Setup del GitHub token en AWS:
+aws ssm put-parameter \
+  --name "/amplify/github-token" \
+  --value "tu_github_token" \
+  --type "SecureString"
+
+# 2. Deploy completo:
+cd infrastructure
+npm install
+npx cdk deploy --all
+
+# 3. URLs generadas automáticamente:
+# - Producción: https://main.XXXXX.amplifyapp.com
+# - Staging: https://feature-frontend-user.XXXXX.amplifyapp.com
+# - API: https://XXXXX.execute-api.us-east-1.amazonaws.com/prod
+```
+
+### 📊 **Status Actual**:
+| Componente | Estado | Archivo | 
+|------------|--------|---------|
+| Frontend Local | ✅ Funcional | `frontend/` |
+| OAuth Google | ✅ Funcional | `AuthContext.tsx` |
+| Backend Serverless | ✅ Completo | `lambdas/auth-handler/` |
+| JWT Authorizer | ✅ Completo | `lambdas/jwt-authorizer/` |
+| CDK AuthStack | ✅ Deployed | `auth-stack.ts` |
+| CDK AmplifyStack | ✅ Deployed | `amplify-stack.ts` |
+| CDK ApiLambdaStack | ✅ Deployed | `api-lambda-stack.ts` |
+| **AWS Deploy** | ✅ **COMPLETADO** 🎉 | Todos los stacks |
+
+## 🚀 **DEPLOYMENT EXITOSO** - 3 de octubre de 2025
+
+### URLs de Producción:
+- **Frontend Producción**: https://main.d2zb37k33o6pi9.amplifyapp.com
+- **Frontend Staging**: https://feature/frontend-user.d2zb37k33o6pi9.amplifyapp.com
+- **API Auth Backend**: https://tuaglbfc2h.execute-api.us-east-1.amazonaws.com/prod/
+- **API Lambda**: https://9f5gm0jct2.execute-api.us-east-1.amazonaws.com/prod/
+- **Amplify Console**: https://console.aws.amazon.com/amplify/home#/apps/d2zb37k33o6pi9
+
+### Recursos AWS Creados:
+- **AmplifyStack**: 
+  - App ID: `d2zb37k33o6pi9`
+  - Nombre: `TG-Frontend-App`
+  - CI/CD automático desde GitHub
+- **AuthStack**: 
+  - DynamoDB Tables: Users, Sessions, EmailVerifications
+  - Lambda Functions: auth-handler, jwt-authorizer
+- **ApiLambdaStack**: 
+  - API Gateway + Lambda function básica
+
+### Configuración SSM:
+- ✅ GitHub Token configurado y funcionando
+- ✅ JWT Secret configurado
+- ✅ Google Client ID configurado
 
 ---
 

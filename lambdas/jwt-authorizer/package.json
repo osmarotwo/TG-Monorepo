@@ -1,0 +1,22 @@
+{
+  "name": "jwt-authorizer",
+  "version": "1.0.0",
+  "description": "JWT Authorizer Lambda for API Gateway",
+  "main": "src/authorizer.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.445.0",
+    "@aws-sdk/lib-dynamodb": "^3.445.0",
+    "@aws-sdk/client-ssm": "^3.445.0",
+    "jsonwebtoken": "^9.0.2",
+    "@types/jsonwebtoken": "^9.0.4"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.125",
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.2"
+  }
+}

@@ -3,8 +3,99 @@
 Este es un monorepo completo para una aplicación full-stack en AWS que incluye:
 
 - **Infrastructure (CDK)**: Infraestructura como código con AWS CDK
-- **Lambdas**: Funciones serverless en TypeScript  
-- **Frontend**: Aplicación Next.js desplegable en Amplify
+- **Lambdas**- **Vista Previa en Vivo**
+
+- **URL Local**: http://localhost:3000/
+- **Toggle tema**: Botón superior derecha
+- **Responsive**: Redimensiona la ventana para probar
+
+### 📸 Ejemplos de Configuración
+
+#### Ejemplo 1: Plataforma "CitasMédicas"
+```typescript
+// frontend/src/utils/brandConfig.ts
+export const brandConfig = {
+  platform: {
+    name: "CitasMédicas",
+    tagline: "Agenda tus citas médicas fácilmente",
+  },
+  branding: {
+    primaryColor: "#059669", // Verde médico
+    logoType: "icon",
+    logoConfig: {
+      icon: "calendar",
+    }
+  },
+  content: {
+    registration: {
+      title: "Únete a CitasMédicas",
+      subtitle: "Gestiona tus citas médicas de forma inteligente.",
+    }
+  }
+};
+```
+
+#### Ejemplo 2: Plataforma "BeautyApp"
+```typescript
+// frontend/src/utils/brandConfig.ts
+export const brandConfig = {
+  platform: {
+    name: "BeautyApp",
+    tagline: "Tu belleza, nuestra prioridad",
+  },
+  branding: {
+    primaryColor: "#ec4899", // Rosa beauty
+    logoType: "text",
+    logoConfig: {
+      text: "BA",
+    }
+  },
+  content: {
+    registration: {
+      title: "Únete a BeautyApp",
+      subtitle: "Reserva tus citas de belleza al instante.",
+    }
+  }
+};
+```
+
+#### Ejemplo 3: Con Logo Personalizado
+```typescript
+// 1. Coloca tu logo en: frontend/public/mi-logo.png
+// 2. Configura:
+export const brandConfig = {
+  platform: {
+    name: "MiEmpresa",
+  },
+  branding: {
+    primaryColor: "#1d4ed8", // Azul corporativo
+    logoType: "image",
+    logoConfig: {
+      image: "/mi-logo.png", // ← Tu imagen aquí
+    }
+  }
+};
+```
+
+### ❓ FAQ - Personalización
+
+**P: ¿Cómo cambio el logo?**
+R: Edita `logoType` y `logoConfig` en `frontend/src/utils/brandConfig.ts`
+
+**P: ¿Puedo usar mi propio icono SVG?**
+R: Sí, agrega tu icono al objeto `icons` en `frontend/src/components/ui/Icon.tsx`
+
+**P: ¿Los cambios se aplican automáticamente?**
+R: Sí, Vite tiene hot reload. Los cambios aparecen instantáneamente.
+
+**P: ¿Cómo hago que el logo sea más grande?**
+R: En el componente Logo, cambia la prop `size`: `<Logo size="xl" />`
+
+**P: ¿Puedo cambiar la tipografía?**
+R: Sí, modifica `fontFamily` en `frontend/tailwind.config.js`
+
+### 5. Desplegar Frontend en Amplifyones serverless en TypeScript  
+- **Frontend**: Aplicación React con Vite y pantalla de registro moderna
 
 ## 📁 Estructura del Proyecto
 
@@ -19,11 +110,19 @@ Este es un monorepo completo para una aplicación full-stack en AWS que incluye:
 │   └── api-handler/        # Handler principal del API
 │       ├── src/           # Código fuente de la Lambda
 │       └── package.json   # Dependencias de la Lambda
-├── frontend/               # Aplicación Next.js
+├── frontend/               # Aplicación React + Vite
 │   ├── src/               # Código fuente del frontend
-│   │   ├── app/          # App Router de Next.js
-│   │   └── components/   # Componentes React
-│   └── package.json      # Dependencias del frontend
+│   │   ├── components/    # Componentes React reutilizables
+│   │   │   ├── ui/       # Componentes UI base
+│   │   │   ├── RegistrationForm.tsx  # Pantalla de registro
+│   │   │   └── ThemeToggle.tsx       # Toggle dark/light
+│   │   ├── contexts/      # React Contexts (tema, etc.)
+│   │   ├── utils/         # Utilidades y configuración
+│   │   │   └── brandConfig.ts        # 🎨 CONFIGURACIÓN DINÁMICA
+│   │   └── styles/        # Estilos CSS
+│   ├── tailwind.config.js # Configuración Tailwind
+│   └── package.json       # Dependencias del frontend
+├── design_reference/       # Diseños de referencia
 ├── package.json           # Configuración del monorepo
 └── amplify.yml           # Configuración de Amplify
 ```
@@ -53,7 +152,7 @@ npm run deploy:infrastructure
 
 ```bash
 # Crear archivo de variables de entorno
-echo "NEXT_PUBLIC_API_URL=tu_api_gateway_url_aqui" > frontend/.env.local
+echo "VITE_API_URL=tu_api_gateway_url_aqui" > frontend/.env.local
 ```
 
 ### 4. Ejecutar Frontend Localmente
@@ -61,6 +160,131 @@ echo "NEXT_PUBLIC_API_URL=tu_api_gateway_url_aqui" > frontend/.env.local
 ```bash
 npm run dev:frontend
 ```
+
+## 🎨 Personalización de la Plataforma
+
+### 🔧 Configuración Dinámica
+
+Todo el branding de la aplicación se controla desde un solo archivo: `frontend/src/utils/brandConfig.ts`
+
+#### Cambiar Nombre de la Plataforma
+
+```typescript
+// En frontend/src/utils/brandConfig.ts
+export const brandConfig: BrandConfig = {
+  platform: {
+    name: "MiPlataforma", // 🔧 CAMBIAR AQUÍ
+    tagline: "Gestiona tus citas de manera eficiente",
+    description: "La mejor plataforma para administrar tus citas y servicios"
+  },
+  // ...
+};
+```
+
+#### Personalizar Logo
+
+**Opción 1: Usar Icono SVG (Recomendado)**
+```typescript
+branding: {
+  primaryColor: "#13a4ec",
+  logoType: "icon", // 🔧 Tipo de logo
+  logoConfig: {
+    icon: "user", // 🔧 Iconos disponibles:
+    // "user", "calendar", "star", "heart", "settings", 
+    // "google", "moon", "sun", "eye", "eyeOff"
+  }
+}
+```
+
+**Opción 2: Usar Imagen**
+```typescript
+branding: {
+  primaryColor: "#13a4ec",
+  logoType: "image", // 🔧 Cambiar a imagen
+  logoConfig: {
+    image: "/logo.png", // 🔧 Path a tu imagen (colócala en frontend/public/)
+  }
+}
+```
+
+**Opción 3: Usar Texto/Iniciales**
+```typescript
+branding: {
+  primaryColor: "#13a4ec",
+  logoType: "text", // 🔧 Cambiar a texto
+  logoConfig: {
+    text: "MP", // 🔧 Iniciales o texto corto
+  }
+}
+```
+
+#### Cambiar Colores
+
+```typescript
+branding: {
+  primaryColor: "#13a4ec", // 🔧 Tu color principal en HEX
+  // Este color se aplicará automáticamente a:
+  // - Botones primarios
+  // - Links
+  // - Focus states
+  // - Logo background
+}
+```
+
+#### Personalizar Textos
+
+```typescript
+content: {
+  registration: {
+    title: "Crea tu cuenta", // 🔧 Título principal
+    subtitle: "Únete para gestionar tus citas sin problemas.", // 🔧 Subtítulo
+    submitText: "Registrarse", // 🔧 Texto del botón
+    alternativeText: "O regístrate con", // 🔧 Texto separador
+    loginLinkText: "Iniciar sesión", // 🔧 Link inferior
+    passwordRequirements: "La contraseña debe tener al menos 8 caracteres..."
+  }
+}
+```
+
+#### Configurar Tema
+
+```typescript
+theme: {
+  defaultMode: "light", // 🔧 "light", "dark", "system"
+  glassmorphism: true   // 🔧 Efecto cristal en cards
+}
+```
+
+### 🎨 Colores Disponibles en Tailwind
+
+Tu configuración automáticamente genera estas clases CSS:
+
+```css
+/* Colores primarios */
+.bg-primary      /* Fondo color principal */
+.text-primary    /* Texto color principal */
+.border-primary  /* Borde color principal */
+.ring-primary    /* Ring focus color principal */
+
+/* Fondos por tema */
+.bg-background-light  /* Fondo claro */
+.bg-background-dark   /* Fondo oscuro */
+.bg-card-light        /* Card claro con glassmorphism */
+.bg-card-dark         /* Card oscuro con glassmorphism */
+```
+
+### 🚀 Aplicar Cambios
+
+1. **Edita** `frontend/src/utils/brandConfig.ts`
+2. **Guarda** el archivo
+3. **El hot reload** aplicará los cambios automáticamente
+4. **Reinicia** el servidor si es necesario: `npm run dev:frontend`
+
+### 📱 Vista Previa en Vivo
+
+- **URL Local**: http://localhost:3000/
+- **Toggle tema**: Botón superior derecha
+- **Responsive**: Redimensiona la ventana para probar
 
 ### 5. Desplegar Frontend en Amplify
 
@@ -101,12 +325,16 @@ El archivo `amplify.yml` ya está configurado. Solo necesitas:
 - **IAM Roles**: Permisos automáticos entre servicios
 - **CloudWatch**: Logs automáticos
 
-### Frontend (Next.js)
+### Frontend (React + Vite)
 
-- **App Router**: Estructura moderna de Next.js 14
-- **Tailwind CSS**: Estilos utilitarios
-- **TypeScript**: Tipado estático
-- **Componentes**: Interfaz para probar la API
+- **React 18**: Biblioteca moderna con Concurrent Features
+- **Vite**: Build tool ultrarrápido con HMR
+- **TypeScript**: Tipado estático para mejor desarrollo
+- **Tailwind CSS**: Framework CSS utility-first
+- **Responsive Design**: Mobile-first approach
+- **Dark/Light Mode**: Sistema de temas completo
+- **Glassmorphism**: Efectos visuales modernos
+- **Componentes Reutilizables**: Biblioteca UI escalable
 
 ### Lambda Functions
 
@@ -130,9 +358,11 @@ El archivo `amplify.yml` ya está configurado. Solo necesitas:
 
 ### Personalizar el Frontend
 
-- Componentes en `frontend/src/components/`
-- Páginas en `frontend/src/app/`
-- Estilos con Tailwind CSS
+- **Configuración dinámica**: `frontend/src/utils/brandConfig.ts`
+- **Componentes UI**: `frontend/src/components/ui/`
+- **Pantallas**: `frontend/src/components/`
+- **Estilos**: Tailwind CSS con configuración personalizada
+- **Temas**: Sistema dark/light integrado
 
 ## 🚀 Deployment
 
@@ -178,6 +408,30 @@ npm run test:frontend       # Tests del Frontend
 ```
 
 ## 🛠️ Troubleshooting
+
+### Frontend Issues
+
+#### No aparece el logo en el formulario
+1. Verifica que el servidor esté ejecutándose: `npm run dev:frontend`
+2. Abre las herramientas de desarrollador (F12) y revisa errores en Console
+3. Verifica la configuración en `frontend/src/utils/brandConfig.ts`:
+   ```typescript
+   logoType: "icon", // Debe ser "icon", "image" o "text"
+   logoConfig: {
+     icon: "user", // Verifica que el icono exista
+   }
+   ```
+4. Fuerza un refresh: Ctrl+F5 (Windows) o Cmd+Shift+R (Mac)
+
+#### Los colores no se aplican
+1. Verifica que Tailwind esté compilando correctamente
+2. Reinicia el servidor de desarrollo
+3. Verifica que `primaryColor` sea un HEX válido: `#13a4ec`
+
+#### El tema oscuro no funciona
+1. Verifica que el ThemeProvider esté correctamente configurado en App.tsx
+2. Comprueba que el toggle esté visible en la esquina superior derecha
+3. Verifica localStorage del navegador para `theme`
 
 ### Error de permisos AWS
 ```bash

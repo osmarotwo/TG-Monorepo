@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useBrandConfig } from '../utils/brandConfig';
+import { useAuth } from '../contexts/AuthContext';
 import { Button, Input, Card, Logo } from './ui';
+import GoogleSignInButton from './GoogleSignInButton';
 
 interface FormData {
   name: string;
@@ -16,6 +18,7 @@ interface FormErrors {
 
 export const RegistrationForm: React.FC = () => {
   const { content } = useBrandConfig();
+  const { signInWithEmail, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -23,6 +26,9 @@ export const RegistrationForm: React.FC = () => {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+  
+  // Loading combinado
+  const isLoading = loading || authLoading;
 
   // Validación de formulario
   const validateForm = (): boolean => {
@@ -73,27 +79,28 @@ export const RegistrationForm: React.FC = () => {
     setLoading(true);
     
     try {
-      // Simular llamada API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await signInWithEmail(formData.email, formData.password, formData.name);
       
-      // Aquí iría la lógica de registro real
-      console.log('Registration data:', formData);
-      alert('¡Registro exitoso!');
-      
-      // Limpiar formulario
+      // Limpiar formulario después del éxito
       setFormData({ name: '', email: '', password: '' });
+      setErrors({});
     } catch (error) {
       console.error('Registration error:', error);
-      alert('Error en el registro. Intenta de nuevo.');
+      setErrors({ email: 'Error en el registro. Intenta de nuevo.' });
     } finally {
       setLoading(false);
     }
   };
 
-  // Manejar registro con Google
-  const handleGoogleSignup = () => {
-    console.log('Google signup clicked');
-    alert('Funcionalidad de Google pendiente de implementar');
+  // Manejar éxito de Google Sign-In
+  const handleGoogleSuccess = () => {
+    console.log('Google registration successful');
+  };
+
+  // Manejar error de Google Sign-In
+  const handleGoogleError = (error: string) => {
+    console.error('Google registration error:', error);
+    setErrors({ email: error });
   };
 
   return (
@@ -155,8 +162,8 @@ export const RegistrationForm: React.FC = () => {
           <Button
             type="submit"
             fullWidth
-            loading={loading}
-            disabled={loading}
+            loading={isLoading}
+            disabled={isLoading}
           >
             {content.registration.submitText}
           </Button>
@@ -178,15 +185,13 @@ export const RegistrationForm: React.FC = () => {
 
         {/* Google Button */}
         <div className="mt-6">
-          <Button
-            variant="outline"
-            fullWidth
-            leftIcon="google"
-            onClick={handleGoogleSignup}
-            type="button"
-          >
-            Registrarse con Google
-          </Button>
+          <GoogleSignInButton
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            disabled={isLoading}
+            text="signup_with"
+            theme="outline"
+          />
         </div>
 
         {/* Link a login */}

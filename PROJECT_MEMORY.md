@@ -2,8 +2,8 @@
 
 ## 📋 Resumen Ejecutivo
 **Fecha de creación**: 2 de octubre de 2025  
-**Estado actual**: Pantalla de registro responsive implementada  
-**Tecnologías**: AWS CDK + React + Vite + TypeScript + Tailwind CSS  
+**Estado actual**: Registro con Google OAuth funcional implementado  
+**Tecnologías**: AWS CDK + React + Vite + TypeScript + Tailwind CSS + Google Identity Services  
 
 ---
 
@@ -33,6 +33,9 @@ TG-OM/
 
 #### Características Implementadas:
 - ✅ **Formulario completo** con validación en tiempo real
+- ✅ **Google OAuth funcional** con Google Identity Services
+- ✅ **Autenticación dual** (manual + Google)
+- ✅ **Dashboard post-registro** con datos del usuario
 - ✅ **Responsive design** (mobile-first)
 - ✅ **Dark/Light mode** con toggle
 - ✅ **Glassmorphism** effects
@@ -40,7 +43,7 @@ TG-OM/
 - ✅ **Tema personalizable** completo
 - ✅ **Validación de password** con requisitos
 - ✅ **Estados de loading** y errores
-- ✅ **Botón Google** (placeholder)
+- ✅ **Persistencia de sesión** en localStorage
 
 #### Componentes UI Creados:
 ```

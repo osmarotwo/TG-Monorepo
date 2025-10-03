@@ -218,26 +218,6 @@ export class AuthStack extends cdk.Stack {
     });
 
     // ====================
-    // SSM Parameters (for secrets)
-    // ====================
-
-    // JWT Secret parameter
-    new ssm.StringParameter(this, 'JwtSecretParameter', {
-      parameterName: '/auth/jwt-secret',
-      stringValue: 'CHANGE_THIS_IN_PRODUCTION_' + Math.random().toString(36),
-      description: 'JWT secret key for token signing',
-      tier: ssm.ParameterTier.STANDARD,
-    });
-
-    // Google Client ID parameter  
-    new ssm.StringParameter(this, 'GoogleClientIdParameter', {
-      parameterName: '/auth/google-client-id',
-      stringValue: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
-      description: 'Google OAuth Client ID',
-      tier: ssm.ParameterTier.STANDARD,
-    });
-
-    // ====================
     // Outputs
     // ====================
 

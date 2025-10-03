@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBrandConfig } from '../utils/brandConfig';
 import { Button, Card, Logo, Icon } from './ui';
 import { UserProfile } from './UserProfile';
+import { ProfileCompletion } from './ProfileCompletion';
 
 export const Dashboard: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -10,6 +11,11 @@ export const Dashboard: React.FC = () => {
   const [currentView, setCurrentView] = useState<'dashboard' | 'profile'>('dashboard');
 
   if (!user) return null;
+
+  // Si el perfil no está completo, mostrar ProfileCompletion
+  if (!user.profileCompleted) {
+    return <ProfileCompletion />;
+  }
 
   // Si está en vista de perfil, mostrar UserProfile
   if (currentView === 'profile') {

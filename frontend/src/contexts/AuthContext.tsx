@@ -6,6 +6,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => void;
   signInWithEmail: (email: string, password: string, name?: string) => Promise<void>;
+  completeProfile: (profileData: { fullName: string; email: string; phone: string; birthDate: string }) => Promise<void>;
   signOut: () => void;
   isAuthenticated: boolean;
 }
@@ -149,6 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             picture: userInfo.picture,
             provider: 'google',
             emailVerified: userInfo.email_verified,
+            profileCompleted: false, // Siempre false para nuevos usuarios de Google
           };
 
           setUser(authUser);
@@ -250,6 +252,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isGoogleSignInInProgress = false;
     }
   };  // Sign in con email/password (simulado)
+  // Función para completar el perfil
+  const completeProfile = async (profileData: { fullName: string; email: string; phone: string; birthDate: string }) => {
+    try {
+      setLoading(true);
+      
+      if (!user) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      // Actualizar usuario con los datos del perfil
+      const updatedUser: AuthUser = {
+        ...user,
+        name: profileData.fullName,
+        email: profileData.email,
+        phone: profileData.phone,
+        birthDate: profileData.birthDate,
+        profileCompleted: true,
+      };
+
+      // Simular llamada al backend
+      await simulateBackendCall(updatedUser);
+      
+      // Actualizar estado local
+      setUser(updatedUser);
+      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+      
+      console.log('Profile completed successfully:', updatedUser);
+    } catch (error) {
+      console.error('Error completing profile:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signInWithEmail = async (email: string, password: string, name?: string) => {
     try {
       setLoading(true);
@@ -298,6 +335,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     signInWithGoogle,
     signInWithEmail,
+    completeProfile,
     signOut,
     isAuthenticated: !!user,
   };

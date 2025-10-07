@@ -28,8 +28,8 @@ const amplifyStack = new AmplifyStack(app, 'AmplifyStack', {
   env,
   githubRepoUrl: 'https://github.com/osmarotwo/TG-Monorepo',
   githubTokenParameterName: '/auth/github-token',
-  mainBranch: 'main',
-  developBranch: 'feature/frontend-user', // Using current branch as develop
+  mainBranch: 'feature/frontend-user', // Using current branch as main for deployment
+  developBranch: 'develop', // Future develop branch
   apiGatewayUrl: authStack.authApi.url, // Connect to auth API
 });
 

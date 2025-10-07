@@ -1,1 +1,9 @@
+# Static assets - serve directly
+/assets/* /assets/:splat 200
+/*.css /:splat 200
+/*.js /:splat 200
+/index.css /assets/index-*.css 200
+/index.js /assets/index-*.js 200
+
+# SPA fallback
 /* /index.html 200

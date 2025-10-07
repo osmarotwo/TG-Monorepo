@@ -25,14 +25,23 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     assetsDir: 'assets',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: undefined,
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
+        entryFileNames: 'assets/index-[hash].js',
+        chunkFileNames: 'assets/chunk-[hash].js',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+            return 'assets/index-[hash].css';
+          }
+          return 'assets/[name]-[hash].[ext]';
+        }
       }
-    }
+    },
+    // Amplify-specific optimizations
+    cssCodeSplit: false,
+    chunkSizeWarningLimit: 1000
   },
   define: {
     // Para compatibilidad con variables de entorno

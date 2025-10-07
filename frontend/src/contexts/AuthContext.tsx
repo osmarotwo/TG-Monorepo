@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { AuthUser, GoogleCredentialResponse, GoogleUserInfo } from '../types/google-auth';
+import type { AuthUser, GoogleCredentialResponse, GoogleUserInfo } from '../vite-env';
 
 interface AuthContextType {
   user: AuthUser | null;

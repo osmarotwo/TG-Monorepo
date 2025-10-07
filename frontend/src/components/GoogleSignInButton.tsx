@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { GoogleButtonConfig } from '../types/google-auth';
 import { Button } from './ui';
+import type { GoogleButtonConfig } from '../vite-env';
 
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;

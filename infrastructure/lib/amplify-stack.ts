@@ -88,24 +88,23 @@ export class AmplifyStack extends cdk.Stack {
       // Build settings - Referencias al amplify.yml en la raíz
       buildSpec: `
 version: 1
-applications:
-  - frontend:
-      phases:
-        preBuild:
-          commands:
-            - nvm use 20
-            - cd frontend
-            - npm ci
-        build:
-          commands:
-            - npm run build
-      artifacts:
-        baseDirectory: dist
-        files:
-          - '**/*'
-      cache:
-        paths:
-          - frontend/node_modules/**/*
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm use 20
+        - cd frontend
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: frontend/dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - frontend/node_modules/**/*
       `,
       
       // Environment variables para el frontend

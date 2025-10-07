@@ -1,151 +1,125 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 
+// Interfaces
 interface GoogleUser {
-  id: string
-  name: string
   email: string
+  name: string
   picture: string
-  given_name: string
-  family_name: string
-}
-
-interface GoogleNotification {
-  isNotDisplayed?: () => boolean
-  getNotDisplayedReason?: () => string
-  isSkippedMoment?: () => boolean
-  getSkippedReason?: () => string
-  isDismissedMoment?: () => boolean
-  getDismissedReason?: () => string
-  // Propiedades adicionales para FedCM
-  getMomentType?: () => string
-  getStatus?: () => string
-}
-
-declare global {
-  interface Window {
-    google: {
-      accounts: {
-        id: {
-          initialize: (config: {
-            client_id: string
-            callback: (response: GoogleCredentialResponse) => void
-            auto_select?: boolean
-            cancel_on_tap_outside?: boolean
-            context?: 'signin' | 'signup' | 'use'
-            ux_mode?: 'popup' | 'redirect'
-            state_cookie_domain?: string
-            login_hint?: string
-            hd?: string
-            use_fedcm_for_prompt?: boolean
-            itp_support?: boolean
-          }) => void
-          prompt: (callback?: (notification: GoogleNotification) => void) => void
-          disableAutoSelect: () => void
-          renderButton: (container: HTMLElement, options: GoogleButtonOptions) => void
-        }
-      }
-    }
-  }
-}
-
-interface GoogleButtonOptions {
-  theme?: 'outline' | 'filled_blue' | 'filled_black'
-  size?: 'large' | 'medium' | 'small'
-  text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin'
-  shape?: 'rectangular' | 'pill' | 'circle' | 'square'
-  logo_alignment?: 'left' | 'center'
-  width?: string
-  locale?: string
+  sub: string
 }
 
 interface GoogleCredentialResponse {
   credential: string
 }
 
-export function useGoogleAuth() {
-  const [isLoaded, setIsLoaded] = useState(false)
+interface GoogleInitConfig {
+  client_id: string
+  callback: (response: GoogleCredentialResponse) => void
+  auto_select: boolean
+  cancel_on_tap_outside: boolean
+}
+
+interface GoogleWindow {
+  google: {
+    accounts: {
+      id: {
+        initialize: (config: GoogleInitConfig) => void
+        prompt: (callback?: (notification: GoogleNotification) => void) => void
+        renderButton: (element: HTMLElement, config: GoogleInitConfig) => void
+        disableAutoSelect: () => void
+      }
+    }
+  }
+}
+
+interface GoogleNotification {
+  isNotDisplayed?: () => boolean
+  isSkippedMoment?: () => boolean
+  getMomentType?: () => string
+  getNotDisplayedReason?: () => string
+  getSkippedReason?: () => string
+}
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: GoogleInitConfig) => void
+          prompt: (callback?: (notification: GoogleNotification) => void) => void
+          renderButton: (element: HTMLElement, config: GoogleInitConfig) => void
+          disableAutoSelect: () => void
+        }
+      }
+    }
+  }
+}
+
+export const useGoogleAuth = () => {
   const [user, setUser] = useState<GoogleUser | null>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleCredentialResponse = (response: GoogleCredentialResponse) => {
+    console.log('Respuesta recibida de Google!', response)
+    
+    try {
+      // Decodificar el JWT token de Google con soporte UTF-8
+      const credential = response.credential
+      const base64Url = credential.split('.')[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      }).join(''))
+
+      const userData = JSON.parse(jsonPayload)
+      console.log('Usuario autenticado:', userData)
+
+      const googleUser: GoogleUser = {
+        email: userData.email,
+        name: userData.name,
+        picture: userData.picture,
+        sub: userData.sub
+      }
+
+      setUser(googleUser)
+      setError(null)
+      
+      localStorage.setItem('googleUser', JSON.stringify(googleUser))
+      
+    } catch (error) {
+      console.error('Error al procesar la respuesta de Google:', error)
+      setError('Error al procesar la respuesta de Google')
+    }
+  }
 
   useEffect(() => {
-    const handleCredentialResponse = (response: GoogleCredentialResponse) => {
-      console.log('🎉 ¡Respuesta recibida de Google!', response)
-      
+    // Verificar si hay usuario guardado
+    const savedUser = localStorage.getItem('googleUser')
+    if (savedUser) {
       try {
-        // Decodificar el JWT token de Google con soporte UTF-8
-        const credential = response.credential
-        const base64Url = credential.split('.')[1]
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-        }).join(''))
-        
-        const payload = JSON.parse(jsonPayload)
-        
-        console.log('📋 Datos del usuario (con codificación corregida):', payload)
-        
-        const googleUser: GoogleUser = {
-          id: payload.sub,
-          name: payload.name || '',
-          email: payload.email || '',
-          picture: payload.picture || '',
-          given_name: payload.given_name || '',
-          family_name: payload.family_name || '',
-        }
-
-        setUser(googleUser)
-        
-        // Aquí conectarías con tu backend para registrar/autenticar el usuario
-        console.log('Usuario autenticado con Google (codificación UTF-8):', googleUser)
-        
-        // Simular registro en el backend
-        registerUserWithGoogle(googleUser)
+        setUser(JSON.parse(savedUser))
       } catch (error) {
-        console.error('❌ Error procesando respuesta de Google:', error)
+        console.error('Error al cargar usuario guardado:', error)
+        localStorage.removeItem('googleUser')
       }
     }
 
     const initializeGoogleAuth = () => {
+      console.log('Inicializando Google Auth...')
       if (window.google && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-        console.log('🔍 Inicializando Google Auth...')
-        console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
-        console.log('Origin:', window.location.origin)
-        console.log('URL completa:', window.location.href)
-        
-        try {
-          window.google.accounts.id.initialize({
-            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-            callback: handleCredentialResponse,
-            auto_select: false, // No seleccionar automáticamente
-            cancel_on_tap_outside: false, // No cancelar al hacer clic fuera
-            context: 'signin', // Contexto específico
-            ux_mode: 'popup', // Forzar modo popup
-            state_cookie_domain: window.location.hostname, // Dominio específico
-            // Preparación para FedCM
-            use_fedcm_for_prompt: true, // Habilitar FedCM cuando esté disponible
-          })
-          setIsLoaded(true)
-          console.log('✅ Google Auth inicializado correctamente')
-        } catch (error) {
-          console.error('❌ Error inicializando Google Auth:', error)
-        }
-      } else {
-        console.log('⚠️ Google SDK o Client ID no disponible')
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        })
+        setIsLoaded(true)
+        console.log('Google Auth inicializado correctamente')
       }
     }
-
-    // Listener para mensajes del popup
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return
-      
-      if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
-        console.log('🎉 Autenticación exitosa desde popup!')
-        handleCredentialResponse({ credential: event.data.credential })
-      }
-    }
-
-    window.addEventListener('message', handleMessage)
 
     // Verificar si Google SDK ya está cargado
     if (window.google) {
@@ -159,190 +133,79 @@ export function useGoogleAuth() {
         }
       }, 100)
 
-      return () => {
+      // Cleanup después de 10 segundos
+      setTimeout(() => {
         clearInterval(checkGoogle)
-        window.removeEventListener('message', handleMessage)
-      }
-    }
-
-    return () => {
-      window.removeEventListener('message', handleMessage)
+        if (!window.google) {
+          setError('Google SDK no se pudo cargar')
+        }
+      }, 10000)
     }
   }, [])
 
-  const openGoogleAuthPopup = () => {
-    console.log('🔄 Abriendo popup de Google Auth...')
-    
-    // Crear un popup manual
-    const popup = window.open('', 'google-signin', 'width=500,height=600,scrollbars=yes,resizable=yes')
-    
-    if (popup) {
-      popup.document.write(`
-        <html>
-          <head>
-            <title>Iniciar sesión - MiPlataforma</title>
-            <script src="https://accounts.google.com/gsi/client" async defer></script>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 40px; text-align: center; background: #f8fafc; }
-              .container { max-width: 300px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-              h2 { color: #1f2937; margin-bottom: 20px; font-size: 24px; }
-              .subtitle { color: #6b7280; margin-bottom: 30px; font-size: 14px; }
-              .close-btn { margin-top: 20px; padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; }
-              .close-btn:hover { background: #4b5563; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h2>Únete a MiPlataforma</h2>
-              <p class="subtitle">Gestiona tus citas sin problemas</p>
-              <div id="google-btn"></div>
-              <button class="close-btn" onclick="window.close()">Cerrar</button>
-            </div>
-            <script>
-              window.onload = function() {
-                google.accounts.id.initialize({
-                  client_id: '${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}',
-                  callback: function(response) {
-                    // Enviar datos al parent window
-                    window.opener.postMessage({
-                      type: 'GOOGLE_AUTH_SUCCESS',
-                      credential: response.credential
-                    }, '${window.location.origin}');
-                    window.close();
-                  }
-                });
-                
-                google.accounts.id.renderButton(
-                  document.getElementById("google-btn"),
-                  { 
-                    theme: "outline", 
-                    size: "large", 
-                    text: "signup_with",
-                    shape: "rectangular",
-                    logo_alignment: "center"
-                  }
-                );
-              }
-            </script>
-          </body>
-        </html>
-      `)
-      popup.document.close()
-    } else {
-      console.error('❌ No se pudo abrir el popup. Verifica que los popups estén habilitados.')
-      alert('No se pudo abrir el popup. Por favor, habilita los popups en tu navegador.')
-    }
-  }
-
   const signInWithGoogle = () => {
-    console.log('🚀 Intentando sign in con Google...')
-    console.log('SDK cargado:', !!window.google)
-    console.log('isLoaded:', isLoaded)
+    console.log('Iniciando Google Auth - Redirección directa')
     console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
     console.log('Origin:', window.location.origin)
     
-    if (window.google && isLoaded) {
-      try {
-        // Estrategia mejorada: Intentar prompt con timeout
-        const promptTimeout = setTimeout(() => {
-          console.log('⏰ Timeout del prompt, usando popup como fallback')
-          openGoogleAuthPopup()
-        }, 3000) // 3 segundos de timeout
-        
-        // Primero deshabilitar auto-select para forzar interacción del usuario
-        window.google.accounts.id.disableAutoSelect()
-        
-        // Usar prompt con callback modernizado para FedCM
-        window.google.accounts.id.prompt((notification: GoogleNotification) => {
-          clearTimeout(promptTimeout) // Cancelar timeout si el prompt responde
-          console.log('📱 Notificación de prompt:', notification)
-          
-          // Manejo modernizado compatible con FedCM
-          const notDisplayed = notification.isNotDisplayed && notification.isNotDisplayed()
-          const skippedMoment = notification.isSkippedMoment && notification.isSkippedMoment()
-          
-          if (notDisplayed) {
-            console.log('⚠️ Popup no mostrado, abriendo fallback...')
-            openGoogleAuthPopup()
-          } else if (skippedMoment) {
-            console.log('⏭️ Momento saltado, abriendo fallback...')
-            openGoogleAuthPopup()
-          } else {
-            console.log('✅ Prompt mostrado correctamente')
-          }
-        })
-        
-      } catch (error) {
-        console.error('❌ Error al hacer prompt:', error)
-        openGoogleAuthPopup()
+    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      alert('Google Client ID no configurado. Verifica las variables de entorno.')
+      return
+    }
+
+    try {
+      // Método simple y confiable: redirección directa
+      console.log('Usando redirección directa a Google')
+      
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent('openid email profile')}&` +
+        `redirect_uri=${encodeURIComponent(window.location.origin + '/auth/google')}&` +
+        `state=google_auth&` +
+        `access_type=offline&` +
+        `prompt=select_account`
+      
+      console.log('Redirigiendo a Google OAuth:', authUrl)
+      
+      // Confirmar con el usuario antes de redirigir
+      const proceed = confirm(`Te vamos a redirigir a Google para completar tu registro.
+
+¿Continuar con Google Auth?
+
+Nota: Después de autenticarte, volverás a esta página automáticamente.`)
+      
+      if (proceed) {
+        console.log('Usuario confirmó redirección')
+        window.location.href = authUrl
+      } else {
+        console.log('Usuario canceló la autenticación')
       }
-    } else {
-      console.log('⚠️ Google SDK no disponible, abriendo popup directamente')
-      openGoogleAuthPopup()
+    } catch (error) {
+      console.error('Error con la redirección:', error)
+      alert('Error al inicializar Google Auth. Verifica la configuración.')
     }
   }
 
   const signOut = () => {
+    console.log('Cerrando sesión de usuario...')
     setUser(null)
+    setError(null)
+    localStorage.removeItem('googleUser')
+    
+    // Desactivar auto-selección de Google
     if (window.google) {
       window.google.accounts.id.disableAutoSelect()
     }
+    
+    console.log('Sesión cerrada exitosamente')
   }
 
   return {
     user,
     isLoaded,
+    error,
     signInWithGoogle,
     signOut,
   }
-}
-
-// Función para simular el registro en el backend
-async function registerUserWithGoogle(googleUser: GoogleUser) {
-  // Por ahora solo simular el éxito (sin intentar llamar al backend)
-  console.log('Simulando registro exitoso para:', googleUser)
-  
-  // Mensaje de bienvenida con codificación correcta
-  const welcomeMessage = `¡Bienvenido a MiPlataforma! 🎉
-
-Hola ${googleUser.given_name}!
-
-Tu cuenta ha sido configurada exitosamente:
-• Nombre: ${googleUser.name}
-• Email: ${googleUser.email}
-• ID de usuario: ${googleUser.id}
-
-Ya puedes comenzar a gestionar tus citas sin problemas.`
-  
-  alert(welcomeMessage)
-
-  // TODO: Cuando tengas el backend listo, descomenta esto:
-  /*
-  try {
-    const response = await fetch('/api/auth/google-register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-      },
-      body: JSON.stringify({
-        googleId: googleUser.id,
-        name: googleUser.name,
-        email: googleUser.email,
-        picture: googleUser.picture,
-        firstName: googleUser.given_name,
-        lastName: googleUser.family_name,
-      }),
-    })
-
-    if (response.ok) {
-      const result = await response.json()
-      alert(`¡Registro exitoso! Bienvenido ${googleUser.given_name}! 🎉`)
-      console.log('Usuario registrado exitosamente:', result)
-    } else {
-      throw new Error('Error en el registro')
-    }
-  } catch (error) {
-    console.error('Error registrando usuario:', error)
-  }
-  */
 }

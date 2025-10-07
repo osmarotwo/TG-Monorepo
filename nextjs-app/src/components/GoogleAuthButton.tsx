@@ -6,6 +6,9 @@ import { GoogleIcon } from './GoogleIcon'
 export function GoogleAuthButton() {
   const { user, isLoaded, signInWithGoogle, signOut } = useGoogleAuth()
 
+  // NO usar renderButton() de Google para evitar warnings de FedCM
+  // Usar solo nuestro botón personalizado que abre popup directamente
+
   // Función de diagnóstico mejorada
   const testGoogleConfig = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
@@ -25,7 +28,7 @@ export function GoogleAuthButton() {
 💡 Sugerencias:
 1. Asegúrate de estar logueado en Google (ve a google.com)
 2. Prueba en modo incógnito
-3. El nuevo botón usa renderButton() en lugar de prompt()
+3. Ahora usamos solo botón personalizado (sin FedCM warnings)
 
 🧹 Estado de Google limpiado`)
   }
@@ -55,20 +58,23 @@ export function GoogleAuthButton() {
 
   return (
     <div className="space-y-3">
-      <button
-        onClick={signInWithGoogle}
-        disabled={!isLoaded}
-        className={`w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-          isLoaded 
-            ? 'hover:bg-gray-50 cursor-pointer' 
-            : 'opacity-50 cursor-not-allowed'
-        }`}
-      >
-        <GoogleIcon />
-        <span className="ml-2">
-          {isLoaded ? 'Sign up with Google' : 'Loading Google...'}
-        </span>
-      </button>
+      {/* Usar solo nuestro botón personalizado - Sin warnings de FedCM */}
+      {!user && (
+        <button
+          onClick={signInWithGoogle}
+          disabled={!isLoaded}
+          className={`w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+            isLoaded 
+              ? 'hover:bg-gray-50 cursor-pointer' 
+              : 'opacity-50 cursor-not-allowed'
+          }`}
+        >
+          <GoogleIcon />
+          <span className="ml-2">
+            {isLoaded ? 'Sign up with Google' : 'Loading Google...'}
+          </span>
+        </button>
+      )}
       
       {/* Botón de diagnóstico */}
       <button

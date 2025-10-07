@@ -98,9 +98,6 @@ frontend:
     build:
       commands:
         - npm run build
-        - cp public/deploy-manifest.json dist/deploy-manifest.json
-        - echo "Build completed. Contents of dist:"
-        - ls -la dist/
   artifacts:
     baseDirectory: frontend/dist
     files:
@@ -124,18 +121,10 @@ frontend:
           name: 'VITE_ENVIRONMENT',
           value: 'production',
         },
-        {
-          name: 'AMPLIFY_DISABLE_AUTO_DETECTION',
-          value: 'true',
-        },
-        {
-          name: '_LIVE_UPDATES',
-          value: 'false',
-        },
       ],
       
-      // Platform configuration
-      platform: 'WEB_COMPUTE',
+      // Platform configuration - WEB para hosting estático clásico
+      platform: 'WEB',
     });
 
     // ====================

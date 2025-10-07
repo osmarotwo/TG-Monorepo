@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui';
-import type { GoogleButtonConfig } from '../vite-env';
 
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;
@@ -48,7 +47,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
             setIsInitializing(true);
             
             try {
-              const config: GoogleButtonConfig = {
+              const config: any = {
                 theme,
                 size,
                 text,

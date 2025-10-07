@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import type { AuthUser, GoogleCredentialResponse, GoogleUserInfo } from '../vite-env';
 
 interface AuthContextType {
-  user: AuthUser | null;
+  user: any | null;
   loading: boolean;
   signInWithGoogle: () => void;
   signInWithEmail: (email: string, password: string, name?: string) => Promise<void>;
@@ -32,12 +31,12 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-c
 let isGoogleSignInInProgress = false;
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Función para decodificar JWT de Google
-  const decodeJWT = (token: string): GoogleUserInfo => {
+  const decodeJWT = (token: string): any => {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -55,12 +54,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Callback para manejar respuesta de Google
-  const handleGoogleSignIn = async (response: GoogleCredentialResponse) => {
+  const handleGoogleSignIn = async (response: any) => {
     try {
       setLoading(true);
       const userInfo = decodeJWT(response.credential);
       
-      const authUser: AuthUser = {
+      const authUser: any = {
         id: userInfo.sub,
         email: userInfo.email,
         name: userInfo.name,
@@ -85,7 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Simular llamada al backend
-  const simulateBackendCall = async (user: AuthUser): Promise<void> => {
+  const simulateBackendCall = async (user: any): Promise<void> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         console.log('User registered/logged in:', user);
@@ -143,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Procesar el token
         try {
           const userInfo = decodeJWT(idToken);
-          const authUser: AuthUser = {
+          const authUser: any = {
             id: userInfo.sub,
             email: userInfo.email,
             name: userInfo.name,
@@ -262,7 +261,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // Actualizar usuario con los datos del perfil
-      const updatedUser: AuthUser = {
+      const updatedUser: any = {
         ...user,
         name: profileData.fullName,
         email: profileData.email,
@@ -294,7 +293,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Simular validación y registro
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const authUser: AuthUser = {
+      const authUser: any = {
         id: `manual_${Date.now()}`,
         email,
         name: name || email.split('@')[0],

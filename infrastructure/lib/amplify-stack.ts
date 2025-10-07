@@ -98,6 +98,9 @@ frontend:
     build:
       commands:
         - npm run build
+        - echo '{"version":1,"framework":"vite","commands":[],"buildCommand":"npm run build","publishDir":"dist"}' > dist/deploy-manifest.json
+        - echo "Build completed. Contents of dist:"
+        - ls -la dist/
   artifacts:
     baseDirectory: frontend/dist
     files:

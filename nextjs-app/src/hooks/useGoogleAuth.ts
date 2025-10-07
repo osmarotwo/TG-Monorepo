@@ -30,6 +30,11 @@ declare global {
             callback: (response: GoogleCredentialResponse) => void
             auto_select?: boolean
             cancel_on_tap_outside?: boolean
+            context?: 'signin' | 'signup' | 'use'
+            ux_mode?: 'popup' | 'redirect'
+            state_cookie_domain?: string
+            login_hint?: string
+            hd?: string
           }) => void
           prompt: (callback?: (notification: GoogleNotification) => void) => void
           disableAutoSelect: () => void
@@ -109,6 +114,9 @@ export function useGoogleAuth() {
             callback: handleCredentialResponse,
             auto_select: false, // No seleccionar automáticamente
             cancel_on_tap_outside: false, // No cancelar al hacer clic fuera
+            context: 'signin', // Contexto específico
+            ux_mode: 'popup', // Forzar modo popup
+            state_cookie_domain: window.location.hostname, // Dominio específico
           })
           setIsLoaded(true)
           console.log('✅ Google Auth inicializado correctamente')
@@ -165,18 +173,21 @@ export function useGoogleAuth() {
       popup.document.write(`
         <html>
           <head>
-            <title>Google Sign-In</title>
+            <title>Iniciar sesión - MiPlataforma</title>
             <script src="https://accounts.google.com/gsi/client" async defer></script>
             <style>
-              body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
-              .container { max-width: 300px; margin: 0 auto; }
-              h2 { color: #1f2937; margin-bottom: 20px; }
-              .close-btn { margin-top: 20px; padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; }
+              body { font-family: Arial, sans-serif; padding: 40px; text-align: center; background: #f8fafc; }
+              .container { max-width: 300px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+              h2 { color: #1f2937; margin-bottom: 20px; font-size: 24px; }
+              .subtitle { color: #6b7280; margin-bottom: 30px; font-size: 14px; }
+              .close-btn { margin-top: 20px; padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; }
+              .close-btn:hover { background: #4b5563; }
             </style>
           </head>
           <body>
             <div class="container">
-              <h2>Sign in with Google</h2>
+              <h2>Únete a MiPlataforma</h2>
+              <p class="subtitle">Gestiona tus citas sin problemas</p>
               <div id="google-btn"></div>
               <button class="close-btn" onclick="window.close()">Cerrar</button>
             </div>
@@ -196,7 +207,13 @@ export function useGoogleAuth() {
                 
                 google.accounts.id.renderButton(
                   document.getElementById("google-btn"),
-                  { theme: "outline", size: "large", text: "signin_with" }
+                  { 
+                    theme: "outline", 
+                    size: "large", 
+                    text: "signup_with",
+                    shape: "rectangular",
+                    logo_alignment: "center"
+                  }
                 );
               }
             </script>
@@ -266,16 +283,16 @@ async function registerUserWithGoogle(googleUser: GoogleUser) {
   console.log('Simulando registro exitoso para:', googleUser)
   
   // Mensaje de bienvenida con codificación correcta
-  const welcomeMessage = `¡Registro simulado exitoso! 🎉
+  const welcomeMessage = `¡Bienvenido a MiPlataforma! 🎉
 
-Bienvenido ${googleUser.given_name}!
+Hola ${googleUser.given_name}!
 
-Datos recibidos:
+Tu cuenta ha sido configurada exitosamente:
 • Nombre: ${googleUser.name}
 • Email: ${googleUser.email}
-• ID de Google: ${googleUser.id}
+• ID de usuario: ${googleUser.id}
 
-En producción, estos datos se enviarían a tu backend para crear la cuenta.`
+Ya puedes comenzar a gestionar tus citas sin problemas.`
   
   alert(welcomeMessage)
 

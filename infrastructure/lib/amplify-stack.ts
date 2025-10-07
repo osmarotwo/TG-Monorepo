@@ -93,7 +93,7 @@ applications:
       phases:
         preBuild:
           commands:
-            - nvm use 18
+            - nvm use 20
             - cd frontend
             - npm ci
         build:

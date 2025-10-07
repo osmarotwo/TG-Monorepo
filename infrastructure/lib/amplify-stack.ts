@@ -98,7 +98,6 @@ frontend:
     build:
       commands:
         - npm run build
-        - echo '{"version":1,"framework":"vite","commands":[],"buildCommand":"npm run build","publishDir":"dist"}' > dist/deploy-manifest.json
         - echo "Build completed. Contents of dist:"
         - ls -la dist/
   artifacts:
@@ -123,6 +122,14 @@ frontend:
         {
           name: 'VITE_ENVIRONMENT',
           value: 'production',
+        },
+        {
+          name: 'AMPLIFY_DISABLE_AUTO_DETECTION',
+          value: 'true',
+        },
+        {
+          name: '_LIVE_UPDATES',
+          value: 'false',
         },
       ],
       

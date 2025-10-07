@@ -1,15 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { GoogleIcon } from '@/components/GoogleIcon'
+import { GoogleAuthButton } from '@/components/GoogleAuthButton'
 
 export default function HomePage() {
   const [formData, setFormData] = useState({
-    nombre: '',
+    name: '',
     email: '',
     password: ''
   })
-  const [showPassword, setShowPassword] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -21,126 +20,112 @@ export default function HomePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Formulario enviado:', formData)
     alert('¡Formulario funcionando! Datos: ' + JSON.stringify(formData, null, 2))
   }
 
-  const handleGoogleSignIn = () => {
-    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    console.log('Google Sign-In clicked')
-    console.log('Google Client ID:', googleClientId)
-    
-    if (!googleClientId) {
-      alert('Error: Google Client ID no configurado')
-      return
-    }
-    
-    // Aquí se integraría con Google OAuth usando el Client ID
-    alert(`¡Google OAuth listo! Client ID: ${googleClientId.substring(0, 20)}...`)
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        {/* Avatar */}
-        <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-white text-3xl font-bold">👤</span>
+    <div className="font-sans bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-xl bg-white/90 backdrop-blur-sm shadow-2xl p-8">
+        
+        {/* Header */}
+        <div className="flex flex-col items-center mb-6">
+          <div className="bg-blue-500 p-3 rounded-full mb-4">
+            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
+              <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Create Your Account</h1>
+          <p className="mt-2 text-sm text-gray-600">Join us to manage your appointments seamlessly.</p>
         </div>
 
-        {/* Título */}
-        <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
-          Crea tu cuenta
-        </h1>
-        <p className="text-center text-gray-600 mb-8">
-          Únete para gestionar tus citas sin problemas.
-        </p>
-
-        {/* Formulario */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Nombre completo */}
           <div>
+            <label className="sr-only" htmlFor="name">Full Name</label>
             <input
+              className="w-full rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 p-3"
+              id="name"
+              name="name"
+              placeholder="Full Name"
               type="text"
-              name="nombre"
-              placeholder="Nombre completo"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-              value={formData.nombre}
+              value={formData.name}
               onChange={handleInputChange}
               required
             />
           </div>
 
+          {/* Email */}
           <div>
+            <label className="sr-only" htmlFor="email">Email</label>
             <input
-              type="email"
+              className="w-full rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 p-3"
+              id="email"
               name="email"
               placeholder="Email"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+              type="email"
               value={formData.email}
               onChange={handleInputChange}
               required
             />
           </div>
 
-          <div className="relative">
+          {/* Contraseña */}
+          <div>
+            <label className="sr-only" htmlFor="password">Password</label>
             <input
-              type={showPassword ? 'text' : 'password'}
+              className="w-full rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 p-3"
+              id="password"
               name="password"
-              placeholder="Contraseña"
-              className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+              placeholder="Password"
+              type="password"
               value={formData.password}
               onChange={handleInputChange}
               required
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-            >
-              {showPassword ? '🙈' : '👁️'}
-            </button>
           </div>
 
-          <div className="text-sm text-gray-600">
-            La contraseña debe tener al menos 8 caracteres e incluir un número, una letra mayúscula y un carácter especial.
+          {/* Password requirements */}
+          <div className="px-1">
+            <p className="text-xs text-gray-500">
+              Password must be at least 8 characters long and include one number, one uppercase letter, and one special character.
+            </p>
           </div>
 
+          {/* Submit button */}
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Registrarse
+            Sign up
           </button>
         </form>
 
-        {/* Divisor */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500">O regístrate con</span>
+        {/* Divider */}
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or sign up with</span>
+            </div>
           </div>
         </div>
 
-        {/* Botón Google */}
-        <button
-          onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <GoogleIcon />
-          <span className="font-medium text-gray-700">Continuar con Google</span>
-        </button>
-
-        {/* Link de login */}
-        <div className="text-center mt-6 text-gray-600">
-          ¿Ya tienes una cuenta?{' '}
-          <button 
-            onClick={() => alert('Ir a login')}
-            className="text-blue-500 hover:text-blue-600 font-medium"
-          >
-            Iniciar sesión
-          </button>
+        {/* Google Sign-in */}
+        <div className="mt-6">
+          <GoogleAuthButton />
         </div>
+
+        {/* Sign in link */}
+        <p className="mt-8 text-center text-sm text-gray-600">
+          Already have an account?{' '}
+          <a href="#" className="font-medium text-blue-500 hover:text-blue-400">
+            Sign in
+          </a>
+        </p>
       </div>
     </div>
   )

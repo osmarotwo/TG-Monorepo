@@ -1,7 +1,1 @@
-# Serve static files first
-/index.*.css /index.*.css 200
-/index.*.js /index.*.js 200
-/vite.svg /vite.svg 200
-
-# SPA fallback
 /* /index.html 200

@@ -28,9 +28,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: undefined,
-        assetFileNames: '[name].[hash][extname]',
-        chunkFileNames: '[name].[hash].js',
-        entryFileNames: '[name].[hash].js'
+        entryFileNames: 'index.js',
+        chunkFileNames: 'index.js',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+            return 'index.css';
+          }
+          return '[name].[ext]';
+        }
       }
     }
   },

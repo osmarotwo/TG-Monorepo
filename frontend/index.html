@@ -44,6 +44,21 @@
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
+    <!-- JavaScript Loading Debug -->
+    <script>
+      console.log('HTML loaded, checking for React app...');
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (!document.querySelector('#root').children.length) {
+            console.error('React app failed to load. Checking for errors...');
+            console.log('Script tags:', document.querySelectorAll('script'));
+          } else {
+            console.log('React app loaded successfully!');
+          }
+        }, 2000);
+      });
+    </script>
+    
     <!-- Meta tags para mejorar compatibilidad con Google OAuth -->
     <meta name="google-signin-client_id" content="">
     <meta name="referrer" content="strict-origin-when-cross-origin">

@@ -29,7 +29,7 @@ export default defineConfig({
       output: {
         manualChunks: undefined,
         entryFileNames: 'index.js',
-        chunkFileNames: 'index.js',
+        chunkFileNames: 'chunk-[name].js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
             return 'index.css';

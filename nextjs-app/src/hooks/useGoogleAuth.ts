@@ -12,12 +12,15 @@ interface GoogleUser {
 }
 
 interface GoogleNotification {
-  isNotDisplayed: () => boolean
-  getNotDisplayedReason: () => string
-  isSkippedMoment: () => boolean
-  getSkippedReason: () => string
-  isDismissedMoment: () => boolean
-  getDismissedReason: () => string
+  isNotDisplayed?: () => boolean
+  getNotDisplayedReason?: () => string
+  isSkippedMoment?: () => boolean
+  getSkippedReason?: () => string
+  isDismissedMoment?: () => boolean
+  getDismissedReason?: () => string
+  // Propiedades adicionales para FedCM
+  getMomentType?: () => string
+  getStatus?: () => string
 }
 
 declare global {
@@ -35,6 +38,8 @@ declare global {
             state_cookie_domain?: string
             login_hint?: string
             hd?: string
+            use_fedcm_for_prompt?: boolean
+            itp_support?: boolean
           }) => void
           prompt: (callback?: (notification: GoogleNotification) => void) => void
           disableAutoSelect: () => void
@@ -117,6 +122,8 @@ export function useGoogleAuth() {
             context: 'signin', // Contexto específico
             ux_mode: 'popup', // Forzar modo popup
             state_cookie_domain: window.location.hostname, // Dominio específico
+            // Preparación para FedCM
+            use_fedcm_for_prompt: true, // Habilitar FedCM cuando esté disponible
           })
           setIsLoaded(true)
           console.log('✅ Google Auth inicializado correctamente')
@@ -236,29 +243,42 @@ export function useGoogleAuth() {
     
     if (window.google && isLoaded) {
       try {
-        // Primero deshabilitar auto-select para forzar el popup
+        // Estrategia mejorada: Intentar prompt con timeout
+        const promptTimeout = setTimeout(() => {
+          console.log('⏰ Timeout del prompt, usando popup como fallback')
+          openGoogleAuthPopup()
+        }, 3000) // 3 segundos de timeout
+        
+        // Primero deshabilitar auto-select para forzar interacción del usuario
         window.google.accounts.id.disableAutoSelect()
         
-        // Usar prompt con callback para manejar la respuesta
+        // Usar prompt con callback modernizado para FedCM
         window.google.accounts.id.prompt((notification: GoogleNotification) => {
+          clearTimeout(promptTimeout) // Cancelar timeout si el prompt responde
           console.log('📱 Notificación de prompt:', notification)
           
-          if (notification.isNotDisplayed()) {
-            console.log('⚠️ Popup no mostrado:', notification.getNotDisplayedReason())
+          // Manejo modernizado compatible con FedCM
+          const notDisplayed = notification.isNotDisplayed && notification.isNotDisplayed()
+          const skippedMoment = notification.isSkippedMoment && notification.isSkippedMoment()
+          
+          if (notDisplayed) {
+            console.log('⚠️ Popup no mostrado, abriendo fallback...')
             openGoogleAuthPopup()
-          } else if (notification.isSkippedMoment()) {
-            console.log('⏭️ Momento saltado:', notification.getSkippedReason())
-            // ¡IMPORTANTE! También abrir popup cuando se salta el momento
+          } else if (skippedMoment) {
+            console.log('⏭️ Momento saltado, abriendo fallback...')
             openGoogleAuthPopup()
+          } else {
+            console.log('✅ Prompt mostrado correctamente')
           }
         })
         
       } catch (error) {
         console.error('❌ Error al hacer prompt:', error)
-        alert(`Error al iniciar Google Sign-In: ${error}`)
+        openGoogleAuthPopup()
       }
     } else {
-      alert('Google SDK aún no está cargado. Intenta de nuevo en un momento.')
+      console.log('⚠️ Google SDK no disponible, abriendo popup directamente')
+      openGoogleAuthPopup()
     }
   }
 

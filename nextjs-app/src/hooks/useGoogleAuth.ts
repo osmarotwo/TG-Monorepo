@@ -21,19 +21,6 @@ interface GoogleInitConfig {
   cancel_on_tap_outside: boolean
 }
 
-interface GoogleWindow {
-  google: {
-    accounts: {
-      id: {
-        initialize: (config: GoogleInitConfig) => void
-        prompt: (callback?: (notification: GoogleNotification) => void) => void
-        renderButton: (element: HTMLElement, config: GoogleInitConfig) => void
-        disableAutoSelect: () => void
-      }
-    }
-  }
-}
-
 interface GoogleNotification {
   isNotDisplayed?: () => boolean
   isSkippedMoment?: () => boolean

@@ -1,10 +1,12 @@
 'use client'
 
 import { useGoogleAuth } from '@/hooks/useGoogleAuth'
+import { useLocale } from '@/contexts/LocaleContext'
 import { GoogleIcon } from './GoogleIcon'
 
 export function GoogleAuthButton() {
   const { user, isLoaded, signInWithGoogle, signOut } = useGoogleAuth()
+  const { t } = useLocale()
 
   // NO usar renderButton() de Google para evitar warnings de FedCM
   // Usar solo nuestro botón personalizado que abre popup directamente
@@ -50,7 +52,7 @@ export function GoogleAuthButton() {
           onClick={signOut}
           className="w-full py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
         >
-          Cerrar sesión
+          {t('logoutButton', 'auth')}
         </button>
       </div>
     )
@@ -71,7 +73,7 @@ export function GoogleAuthButton() {
         >
           <GoogleIcon />
           <span className="ml-2">
-            {isLoaded ? 'Sign up with Google' : 'Loading Google...'}
+            {isLoaded ? t('googleButton', 'auth') : t('loadingGoogle', 'auth')}
           </span>
         </button>
       )}
@@ -81,7 +83,7 @@ export function GoogleAuthButton() {
         onClick={testGoogleConfig}
         className="w-full py-2 px-4 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-xs"
       >
-        🔍 Diagnosticar configuración
+        {t('diagnoseConfig', 'auth')}
       </button>
     </div>
   )

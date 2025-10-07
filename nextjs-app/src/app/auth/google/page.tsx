@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useLocale } from '@/contexts/LocaleContext'
 
 export default function GoogleCallback() {
+  const { t } = useLocale()
   useEffect(() => {
     console.log('🔄 Google callback cargado')
     console.log('📍 URL completa:', window.location.href)
@@ -18,7 +20,7 @@ export default function GoogleCallback() {
     
     if (error) {
       console.error('❌ Error en OAuth callback:', error)
-      alert(`Error de autenticación: ${error}`)
+      alert(`${t('authorizationError', 'callback')} ${error}`)
       return
     }
     
@@ -27,7 +29,7 @@ export default function GoogleCallback() {
       
       // Por ahora, simplemente redirigir de vuelta con éxito
       // En un futuro aquí intercambiarías el código por tokens
-      alert(`¡Éxito! Código de autorización recibido: ${code.substring(0, 20)}...
+      alert(`${t('success', 'callback')} ${t('authorizationCode', 'callback')} ${code.substring(0, 20)}...
 
 En una implementación completa, este código se intercambiaría por tokens en el backend.
 
@@ -37,22 +39,22 @@ Por ahora, te redirigiremos de vuelta a la página principal.`)
       window.location.href = '/'
     } else {
       console.error('❌ No se recibió código o estado incorrecto')
-      alert('No se pudo completar la autenticación')
+      alert(t('error', 'callback'))
     }
-  }, [])
+  }, [t])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
         <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          Procesando autenticación con Google...
+          {t('processing', 'callback')}
         </h2>
         <p className="text-gray-600">
-          Por favor espera mientras completamos tu autenticación.
+          {t('redirecting', 'callback')}
         </p>
         <p className="text-sm text-gray-500 mt-4">
-          Si esta página no se cierra automáticamente, verifica la consola del navegador.
+          {t('closeWindow', 'callback')}
         </p>
       </div>
     </div>

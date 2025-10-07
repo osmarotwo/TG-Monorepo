@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from '@/contexts/LocaleContext'
 import { GoogleAuthButton } from '@/components/GoogleAuthButton'
+import LanguageSelector from '@/components/LanguageSelector'
 
 export default function HomePage() {
+  const { t } = useLocale()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,6 +28,11 @@ export default function HomePage() {
 
   return (
     <div className="font-sans bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+      {/* Language Selector */}
+      <div className="absolute top-4 right-4">
+        <LanguageSelector />
+      </div>
+      
       <div className="w-full max-w-md rounded-xl bg-white/90 backdrop-blur-sm shadow-2xl p-8">
         
         {/* Header */}
@@ -35,8 +43,8 @@ export default function HomePage() {
               <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Create Your Account</h1>
-          <p className="mt-2 text-sm text-gray-600">Join us to manage your appointments seamlessly.</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title', 'auth')}</h1>
+          <p className="mt-2 text-sm text-gray-600">{t('description', 'auth')}</p>
         </div>
 
         {/* Form */}
@@ -48,7 +56,7 @@ export default function HomePage() {
               className="w-full rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 p-3"
               id="name"
               name="name"
-              placeholder="Full Name"
+              placeholder={t('fullNamePlaceholder', 'auth')}
               type="text"
               value={formData.name}
               onChange={handleInputChange}
@@ -63,7 +71,7 @@ export default function HomePage() {
               className="w-full rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 p-3"
               id="email"
               name="email"
-              placeholder="Email"
+              placeholder={t('emailPlaceholder', 'auth')}
               type="email"
               value={formData.email}
               onChange={handleInputChange}
@@ -78,7 +86,7 @@ export default function HomePage() {
               className="w-full rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500 p-3"
               id="password"
               name="password"
-              placeholder="Password"
+              placeholder={t('passwordPlaceholder', 'auth')}
               type="password"
               value={formData.password}
               onChange={handleInputChange}
@@ -89,7 +97,7 @@ export default function HomePage() {
           {/* Password requirements */}
           <div className="px-1">
             <p className="text-xs text-gray-500">
-              Password must be at least 8 characters long and include one number, one uppercase letter, and one special character.
+              {t('passwordRequirements', 'auth')}
             </p>
           </div>
 
@@ -98,7 +106,7 @@ export default function HomePage() {
             type="submit"
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Sign up
+            {t('signUp', 'auth')}
           </button>
         </form>
 
@@ -109,7 +117,7 @@ export default function HomePage() {
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or sign up with</span>
+              <span className="px-2 bg-white text-gray-500">{t('orSignUpWith', 'auth')}</span>
             </div>
           </div>
         </div>
@@ -121,9 +129,9 @@ export default function HomePage() {
 
         {/* Sign in link */}
         <p className="mt-8 text-center text-sm text-gray-600">
-          Already have an account?{' '}
+          {t('alreadyHaveAccount', 'auth')}{' '}
           <a href="#" className="font-medium text-blue-500 hover:text-blue-400">
-            Sign in
+            {t('signIn', 'auth')}
           </a>
         </p>
       </div>

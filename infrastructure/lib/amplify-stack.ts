@@ -98,6 +98,7 @@ frontend:
     build:
       commands:
         - npm run build
+        - cp public/deploy-manifest.json dist/deploy-manifest.json
         - echo "Build completed. Contents of dist:"
         - ls -la dist/
   artifacts:

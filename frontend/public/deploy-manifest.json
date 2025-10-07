@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "framework": {
+    "name": "static",
+    "version": "1.0.0"
+  },
+  "imageOptimization": {
+    "path": "/_next/image",
+    "loader": "default"
+  },
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

@@ -96,9 +96,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Inicializar Google Identity Services y manejar redirect de OAuth
   useEffect(() => {
     const initializeGoogle = () => {
-      if (window.google && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== 'your-google-client-id') {
+      if ((window as any).google && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== 'your-google-client-id') {
         try {
-          window.google.accounts.id.initialize({
+          (window as any).google.accounts.id.initialize({
             client_id: GOOGLE_CLIENT_ID,
             callback: handleGoogleSignIn,
             auto_select: false,
@@ -172,12 +172,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Solo inicializar Google si no se procesó un redirect
     if (!redirectProcessed) {
-      if (window.google) {
+      if ((window as any).google) {
         initializeGoogle();
       } else {
         // Esperar a que se cargue el script
         const checkGoogle = setInterval(() => {
-          if (window.google) {
+          if ((window as any).google) {
             clearInterval(checkGoogle);
             initializeGoogle();
           }
@@ -186,7 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Timeout después de 10 segundos
         setTimeout(() => {
           clearInterval(checkGoogle);
-          if (!window.google) {
+          if (!(window as any).google) {
             console.error('Google Identity Services failed to load');
             setLoading(false);
           }
@@ -322,8 +322,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('auth_user');
     
     // Revoke Google session if it was a Google user
-    if (user?.provider === 'google' && window.google) {
-      window.google.accounts.id.disableAutoSelect();
+    if (user?.provider === 'google' && (window as any).google) {
+      (window as any).google.accounts.id.disableAutoSelect();
     }
     
     console.log('User signed out');

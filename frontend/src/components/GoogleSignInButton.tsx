@@ -39,11 +39,11 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
   useEffect(() => {
     // Verificar si Google está cargado
-    if (window.google && !useCustomButton) {
+    if ((window as any).google && !useCustomButton) {
       // Pequeño delay para asegurar que Google esté completamente inicializado
       const timer = setTimeout(() => {
         const initializeGoogleButton = () => {
-          if (window.google && googleButtonRef.current && !disabled && !isGoogleButtonRendered && !isInitializing) {
+          if ((window as any).google && googleButtonRef.current && !disabled && !isGoogleButtonRendered && !isInitializing) {
             setIsInitializing(true);
             
             try {
@@ -58,7 +58,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
               // Limpiar el contenedor antes de renderizar
               googleButtonRef.current.innerHTML = '';
-              window.google.accounts.id.renderButton(googleButtonRef.current, config);
+              (window as any).google.accounts.id.renderButton(googleButtonRef.current, config);
               
               isGoogleButtonRendered = true;
               setIsGoogleLoaded(true);
@@ -79,10 +79,10 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       }, 300);
 
       return () => clearTimeout(timer);
-    } else if (!window.google) {
+    } else if (!(window as any).google) {
       // Esperar a que se cargue
       const checkGoogle = setInterval(() => {
-        if (window.google) {
+        if ((window as any).google) {
           clearInterval(checkGoogle);
           // Reintentar inicialización
           window.location.reload();
@@ -92,7 +92,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       // Fallback después de 5 segundos
       const fallbackTimer = setTimeout(() => {
         clearInterval(checkGoogle);
-        if (!window.google) {
+        if (!(window as any).google) {
           console.warn('Google Identity Services not loaded, using custom button');
           setUseCustomButton(true);
         }

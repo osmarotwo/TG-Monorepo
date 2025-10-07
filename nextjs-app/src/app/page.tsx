@@ -26,8 +26,17 @@ export default function HomePage() {
   }
 
   const handleGoogleSignIn = () => {
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
     console.log('Google Sign-In clicked')
-    alert('¡Botón de Google funcionando! (Aquí se integraría con Google OAuth)')
+    console.log('Google Client ID:', googleClientId)
+    
+    if (!googleClientId) {
+      alert('Error: Google Client ID no configurado')
+      return
+    }
+    
+    // Aquí se integraría con Google OAuth usando el Client ID
+    alert(`¡Google OAuth listo! Client ID: ${googleClientId.substring(0, 20)}...`)
   }
 
   return (

@@ -80,7 +80,7 @@ export class AmplifyStack extends cdk.Stack {
     
     this.amplifyApp = new amplify.CfnApp(this, 'FrontendApp', {
       name: 'TG-Frontend-App',
-      description: 'Frontend React application with Vite build system',
+      description: 'Frontend Next.js application optimized for AWS Amplify',
       repository: githubRepoUrl,
       accessToken: githubToken.stringValue,
       iamServiceRole: amplifyRole.roleArn,
@@ -88,17 +88,21 @@ export class AmplifyStack extends cdk.Stack {
       // Environment variables para el frontend
       environmentVariables: [
         ...(apiGatewayUrl ? [{
-          name: 'VITE_API_URL',
+          name: 'NEXT_PUBLIC_API_URL',
           value: apiGatewayUrl,
         }] : []),
         {
-          name: 'VITE_APP_NAME',
+          name: 'NEXT_PUBLIC_APP_NAME',
           value: 'TG Platform',
         },
         {
-          name: 'VITE_ENVIRONMENT',
+          name: 'NEXT_PUBLIC_ENVIRONMENT',
           value: 'production',
         },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
+        }
       ],
       
       // Platform configuration - WEB para hosting estático clásico
@@ -117,20 +121,24 @@ export class AmplifyStack extends cdk.Stack {
       // Production environment variables
       environmentVariables: [
         ...(apiGatewayUrl ? [{
-          name: 'VITE_API_URL',
+          name: 'NEXT_PUBLIC_API_URL',
           value: apiGatewayUrl,
         }] : []),
         {
-          name: 'VITE_APP_NAME',
+          name: 'NEXT_PUBLIC_APP_NAME',
           value: 'TG Platform',
         },
         {
-          name: 'VITE_ENVIRONMENT',
+          name: 'NEXT_PUBLIC_ENVIRONMENT',
           value: 'production',
         },
         {
-          name: 'VITE_APP_VERSION',
+          name: 'NEXT_PUBLIC_APP_VERSION',
           value: '1.0.0',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
         }
       ],
       
@@ -156,20 +164,24 @@ export class AmplifyStack extends cdk.Stack {
       // Staging environment variables
       environmentVariables: [
         ...(apiGatewayUrl ? [{
-          name: 'VITE_API_URL',
+          name: 'NEXT_PUBLIC_API_URL',
           value: apiGatewayUrl.replace('/prod', '/dev'), // Use dev stage if available
         }] : []),
         {
-          name: 'VITE_APP_NAME',
+          name: 'NEXT_PUBLIC_APP_NAME',
           value: 'TG Platform (Staging)',
         },
         {
-          name: 'VITE_ENVIRONMENT',
+          name: 'NEXT_PUBLIC_ENVIRONMENT',
           value: 'staging',
         },
         {
-          name: 'VITE_DEBUG',
+          name: 'NEXT_PUBLIC_DEBUG',
           value: 'true',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
         }
       ],
       

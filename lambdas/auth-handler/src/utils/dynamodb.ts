@@ -23,10 +23,12 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  name?: string;
+  fullName?: string;            // Nombre completo
+  name?: string;                // Para compatibilidad con Google
   pictureUrl?: string;
   phone?: string;
-  birthDate?: string;
+  birthDate?: string;           // Fecha de nacimiento (YYYY-MM-DD)
+  gender?: 'male' | 'female' | 'prefer-not-to-say'; // Sexo
   password?: string;
   passwordHash?: string;
   emailVerified: boolean;
@@ -46,6 +48,7 @@ export interface Session {
   userId: string;
   refreshToken: string;
   expiresAt: number;
+  ttl?: number; // TTL para DynamoDB (expiresAt en segundos)
 }
 
 export interface EmailVerification {
@@ -210,14 +213,24 @@ export async function createSession(sessionData: Omit<Session, 'PK' | 'SK'>): Pr
     PK: `SESSION#${sessionData.sessionId}`,
     SK: 'SESSION',
     ...sessionData,
+    // Agregar TTL en segundos (expiresAt está en milisegundos)
+    ttl: Math.floor(sessionData.expiresAt / 1000),
   };
+
+  console.log('Creating session:', {
+    sessionId: sessionData.sessionId,
+    userId: sessionData.userId,
+    expiresAt: new Date(sessionData.expiresAt).toISOString(),
+    ttl: session.ttl
+  });
 
   try {
     await docClient.send(new PutCommand({
-      TableName: 'Users', // Usando la misma tabla que definimos en el CDK
+      TableName: SESSIONS_TABLE, // Corregido: usar la tabla correcta
       Item: session,
     }));
 
+    console.log('Session created successfully');
     return session;
   } catch (error) {
     console.error('Error creating session:', error);
@@ -234,7 +247,7 @@ export async function getSession(sessionId: string): Promise<Session | null> {
       TableName: SESSIONS_TABLE,
       Key: {
         PK: `SESSION#${sessionId}`,
-        SK: 'TOKEN',
+        SK: 'SESSION', // Corregido: usar el SK correcto
       },
     }));
 
@@ -275,7 +288,17 @@ export async function createEmailVerification(verificationData: Omit<EmailVerifi
     PK: `EMAIL_VERIFY#${verificationData.token}`,
     SK: 'TOKEN',
     ...verificationData,
+    // Agregar TTL en segundos (expiresAt está en milisegundos)
+    ttl: Math.floor(verificationData.expiresAt / 1000),
   };
+
+  console.log('Creating email verification:', {
+    token: verificationData.token,
+    email: verificationData.email,
+    userId: verificationData.userId,
+    expiresAt: new Date(verificationData.expiresAt).toISOString(),
+    ttl: verification.ttl
+  });
 
   try {
     await docClient.send(new PutCommand({
@@ -283,6 +306,7 @@ export async function createEmailVerification(verificationData: Omit<EmailVerifi
       Item: verification,
     }));
 
+    console.log('Email verification created successfully');
     return verification;
   } catch (error) {
     console.error('Error creating email verification:', error);

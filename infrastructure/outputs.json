@@ -1,0 +1,23 @@
+{
+  "ApiLambdaStack": {
+    "ApiUrl": "https://9f5gm0jct2.execute-api.us-east-1.amazonaws.com/prod/",
+    "HelloApiEndpoint91438085": "https://9f5gm0jct2.execute-api.us-east-1.amazonaws.com/prod/",
+    "LambdaArn": "arn:aws:lambda:us-east-1:702944629921:function:ApiLambdaStack-HelloLambdaFunction3DCA9067-Jw0YmEO6Vkna"
+  },
+  "AuthStack": {
+    "ExportsOutputRefAuthApi4BD72F208F209E8B": "tuaglbfc2h",
+    "AuthApiEndpointF49088BF": "https://tuaglbfc2h.execute-api.us-east-1.amazonaws.com/prod/",
+    "EmailVerificationsTableName": "EmailVerifications",
+    "ExportsOutputRefAuthApiDeploymentStageprodB0E4172A9A1456A2": "prod",
+    "UsersTableName": "Users",
+    "SessionsTableName": "Sessions",
+    "AuthApiUrl": "https://tuaglbfc2h.execute-api.us-east-1.amazonaws.com/prod/"
+  },
+  "AmplifyStack": {
+    "StagingUrl": "https://develop.d3npwupb455k1n.amplifyapp.com",
+    "AmplifyConsoleUrl": "https://console.aws.amazon.com/amplify/home#/apps/d3npwupb455k1n",
+    "ProductionUrl": "https://feature/frontend-user.d3npwupb455k1n.amplifyapp.com",
+    "AmplifyAppName": "TG-Frontend-App",
+    "AmplifyAppId": "d3npwupb455k1n"
+  }
+}

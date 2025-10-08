@@ -1,0 +1,31 @@
+{
+  "name": "auth-handler",
+  "version": "1.0.0",
+  "description": "Authentication Handler Lambda",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.445.0",
+    "@aws-sdk/client-ses": "^3.445.0",
+    "@aws-sdk/client-ssm": "^3.445.0",
+    "@aws-sdk/lib-dynamodb": "^3.445.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/joi": "^17.2.2",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/uuid": "^9.0.8",
+    "aws-sdk": "^2.1692.0",
+    "bcryptjs": "^2.4.3",
+    "google-auth-library": "^9.15.1",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.153",
+    "@types/node": "^20.19.19",
+    "typescript": "^5.9.3"
+  }
+}

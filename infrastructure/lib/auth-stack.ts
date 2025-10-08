@@ -4,6 +4,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as ses from 'aws-cdk-lib/aws-ses';
 import { Construct } from 'constructs';
 
 export class AuthStack extends cdk.Stack {
@@ -74,10 +75,15 @@ export class AuthStack extends cdk.Stack {
     });
 
     // ====================
-    // Lambda Functions
+    // SES Email Service
     // ====================
 
-    // Common environment variables
+    // Email identity already configured manually in AWS SES Console
+    // osmarotwo@gmail.com is verified and ready to use
+
+    // ====================
+    // Lambda Functions
+    // ====================    // Common environment variables
     const commonEnvironment = {
       USERS_TABLE: this.usersTable.tableName,
       SESSIONS_TABLE: this.sessionsTable.tableName,
@@ -88,23 +94,28 @@ export class AuthStack extends cdk.Stack {
       TOKEN_EXPIRY: '1h',
       REFRESH_TOKEN_EXPIRY: '30d',
       NODE_ENV: 'production',
+      SES_FROM_EMAIL: 'osmarotwo@gmail.com', // Email sender verificado
+      SES_REGION: this.region,
+      APP_URL: 'http://localhost:3000', // Cambiar en producción
     };
 
-    // JWT Authorizer Lambda
+    // JWT Authorizer Lambda - versión simple
     const jwtAuthorizer = new lambda.Function(this, 'JwtAuthorizerFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'src/authorizer.handler',
-      code: lambda.Code.fromAsset('../lambdas/jwt-authorizer'),
+      code: lambda.Code.fromAsset('../lambdas/jwt-authorizer', {
+        exclude: ['tsconfig.json', '*.ts', 'node_modules/@types'],
+      }),
       environment: commonEnvironment,
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
     });
 
-    // Auth Handler Lambda  
+    // Auth Handler Lambda - usando directorio de deployment completo
     const authHandler = new lambda.Function(this, 'AuthHandlerFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'src/index.handler',
-      code: lambda.Code.fromAsset('../lambdas/auth-handler'),
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('../lambdas/auth-handler/deployment'),
       environment: commonEnvironment,
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
@@ -118,6 +129,21 @@ export class AuthStack extends cdk.Stack {
     this.usersTable.grantReadWriteData(authHandler);
     this.sessionsTable.grantReadWriteData(authHandler);
     this.emailVerificationsTable.grantReadWriteData(authHandler);
+
+    // Grant SES permissions to Auth Handler
+    const sesPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'ses:SendEmail',
+        'ses:SendRawEmail',
+        'ses:SendTemplatedEmail'
+      ],
+      resources: [
+        `arn:aws:ses:${this.region}:${this.account}:identity/*`,
+        `arn:aws:ses:${this.region}:${this.account}:template/*`
+      ],
+    });
+    authHandler.addToRolePolicy(sesPolicy);
 
     // Grant DynamoDB read permissions to JWT Authorizer
     this.sessionsTable.grantReadData(jwtAuthorizer);

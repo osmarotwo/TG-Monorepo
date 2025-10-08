@@ -17,10 +17,12 @@ import {
   createEmailVerification, 
   getEmailVerification, 
   deleteEmailVerification,
+  SESSIONS_TABLE,
   docClient 
 } from './utils/dynamodb';
 import { DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { verifyGoogleToken } from './utils/google-verify';
+import { sendVerificationEmail, sendPasswordResetEmail } from './utils/email';
 import {
   validateData,
   registerSchema,
@@ -91,65 +93,123 @@ const handleError = (error: any): APIGatewayProxyResult => {
   return createResponse(500, { error: 'Internal server error' });
 };
 
-// Envío de email de verificación (mock por ahora)
-const sendVerificationEmail = async (email: string, token: string): Promise<void> => {
-  console.log(`Sending verification email to ${email} with token: ${token}`);
-  // TODO: Implementar con SES o SNS
-};
-
-// Envío de email de reset de password (mock por ahora)
-const sendPasswordResetEmail = async (email: string, token: string): Promise<void> => {
-  console.log(`Sending password reset email to ${email} with token: ${token}`);
-  // TODO: Implementar con SES o SNS
-};
+// Email functions are now imported from ./utils/email
 
 // 🔓 ENDPOINT: Registro manual
-const handleRegister = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handleRegister = async (event: any): Promise<any> => {
   try {
-    const data = validateData(registerSchema, JSON.parse(event.body || '{}')) as RegisterRequest;
+    console.log('Register event received:', JSON.stringify(event));
     
-    // Verificar si el usuario ya existe
-    const existingUser = await getUserByEmail(data.email);
-    if (existingUser) {
-      throw new Error('User already exists with this email');
+    if (!event.body) {
+      return createResponse(400, { error: 'Request body is required' });
     }
-    
-    // Hash de la password
-    const hashedPassword = await hashPassword(data.password);
-    
-    // Crear usuario
+
+    const { email, password, firstName, lastName, fullName, birthDate, gender, clientId } = JSON.parse(event.body);
+
+    // Support both fullName and firstName/lastName
+    const finalFullName = fullName || (firstName && lastName ? `${firstName} ${lastName}` : '');
+    const finalFirstName = firstName || (fullName ? fullName.split(' ')[0] : '');
+    const finalLastName = lastName || (fullName ? fullName.split(' ').slice(1).join(' ') : '');
+
+    if (!email || !password || (!fullName && (!firstName || !lastName))) {
+      return createResponse(400, { 
+        error: 'Email, password, and name (fullName or firstName/lastName) are required' 
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return createResponse(400, { error: 'Invalid email format' });
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return createResponse(400, { 
+        error: 'Password must be at least 8 characters long' 
+      });
+    }
+
+    // Validate birth date if provided
+    if (birthDate) {
+      const birthDateObj = new Date(birthDate);
+      const today = new Date();
+      const age = today.getFullYear() - birthDateObj.getFullYear();
+      
+      if (isNaN(birthDateObj.getTime())) {
+        return createResponse(400, { error: 'Invalid birth date format. Use YYYY-MM-DD' });
+      }
+      
+      if (age < 13) {
+        return createResponse(400, { error: 'You must be at least 13 years old to register' });
+      }
+      
+      if (age > 120) {
+        return createResponse(400, { error: 'Invalid birth date' });
+      }
+    }
+
+    // Validate gender if provided
+    if (gender && !['male', 'female', 'prefer-not-to-say'].includes(gender)) {
+      return createResponse(400, { error: 'Invalid gender value' });
+    }
+
+    // Check if user already exists
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
+      return createResponse(400, { error: 'User already exists' });
+    }
+
+    // Create new user
     const userId = uuidv4();
-    const user = await createUser({
+    const hashedPassword = await hashPassword(password);
+    
+    const newUser = {
       userId,
-      email: data.email,
+      email,
       password: hashedPassword,
-      firstName: data.firstName,
-      lastName: data.lastName,
+      firstName: finalFirstName,
+      lastName: finalLastName,
+      fullName: finalFullName,
+      birthDate: birthDate || undefined,
+      gender: gender || undefined,
+      clientId: clientId || null,
       emailVerified: false,
-      profileCompleted: false,
-      provider: 'email',
+      profileCompleted: !!birthDate && !!gender, // Profile completed if optional fields are provided
+      provider: 'email' as const,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-    
-    // Crear token de verificación de email
+      updatedAt: new Date().toISOString()
+    };
+
+    await createUser(newUser);
+
+    // Generate email verification token
     const verificationToken = uuidv4();
+    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     await createEmailVerification({
-      token: verificationToken,
       userId,
-      email: data.email,
-      expiresAt: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 horas
+      email,
+      token: verificationToken,
+      expiresAt: verificationExpiry.getTime(),
+      createdAt: new Date().toISOString()
     });
-    
-    // Enviar email de verificación
-    await sendVerificationEmail(data.email, verificationToken);
-    
+
+    console.log(`Email verification created for user ${userId} with token ${verificationToken}`);
+
+    // Send verification email
+    await sendVerificationEmail(email, verificationToken, finalFirstName);
+    console.log(`Verification email sent to: ${email}`);
+
     return createResponse(201, {
-      message: 'User registered successfully. Please check your email to verify your account.',
-      userId: user.userId,
+      message: 'User registered successfully. Please check your email for verification.',
+      userId
+      // verificationToken removed for security in production
     });
+
   } catch (error) {
-    return handleError(error);
+    console.error('Registration error:', error);
+    return createResponse(500, { error: 'Internal server error' });
   }
 };
 
@@ -341,9 +401,9 @@ const handleLogout = async (event: AuthorizedEvent): Promise<APIGatewayProxyResu
   try {
     const sessionId = event.requestContext.authorizer.sessionId;
     
-    // Eliminar sesión manualmente
+    // Eliminar sesión correctamente usando SESSIONS_TABLE
     await docClient.send(new DeleteCommand({
-      TableName: 'Users',
+      TableName: SESSIONS_TABLE,
       Key: {
         PK: `SESSION#${sessionId}`,
         SK: 'SESSION'
@@ -395,34 +455,51 @@ const handleRefreshToken = async (event: APIGatewayProxyEvent): Promise<APIGatew
 // 🔓 ENDPOINT: Verificar email
 const handleVerifyEmail = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
-    const data = validateData(verifyEmailSchema, JSON.parse(event.body || '{}')) as VerifyEmailRequest;
+    console.log('Verify email event received:', JSON.stringify(event));
     
+    if (!event.body) {
+      return createResponse(400, { error: 'Request body is required' });
+    }
+
+    const { token } = JSON.parse(event.body);
+    console.log('Token received:', token);
+
+    if (!token) {
+      return createResponse(400, { error: 'Token is required' });
+    }
+
     // Obtener verificación de email
-    const verification = await getEmailVerification(data.token);
+    console.log('Getting email verification for token:', token);
+    const verification = await getEmailVerification(token);
+    console.log('Verification found:', verification);
+    
     if (!verification) {
-      throw new Error('Invalid or expired verification token');
+      return createResponse(400, { error: 'Invalid or expired verification token' });
     }
     
     // Verificar si no ha expirado
-    if (verification.expiresAt < Math.floor(Date.now() / 1000)) {
-      await deleteEmailVerification(data.token);
-      throw new Error('Verification token has expired');
+    console.log('Current time:', Date.now(), 'Expires at:', verification.expiresAt);
+    if (verification.expiresAt < Date.now()) {
+      await deleteEmailVerification(token);
+      return createResponse(400, { error: 'Verification token has expired' });
     }
     
     // Marcar email como verificado
+    console.log('Updating user:', verification.userId);
     await updateUser(verification.userId, {
       emailVerified: true,
-      updatedAt: new Date().toISOString(),
     });
     
     // Eliminar token de verificación
-    await deleteEmailVerification(data.token);
+    console.log('Deleting verification token');
+    await deleteEmailVerification(token);
     
     return createResponse(200, {
       message: 'Email verified successfully',
     });
   } catch (error) {
-    return handleError(error);
+    console.error('Verification error:', error);
+    return createResponse(500, { error: 'Internal server error' });
   }
 };
 
@@ -444,7 +521,7 @@ const handleForgotPassword = async (event: APIGatewayProxyEvent): Promise<APIGat
     const resetToken = await generatePasswordResetToken(user.userId, user.email);
     
     // Enviar email con token
-    await sendPasswordResetEmail(user.email, resetToken);
+    await sendPasswordResetEmail(user.email, resetToken, user.firstName || 'Usuario');
     
     return createResponse(200, {
       message: 'If an account with this email exists, you will receive a password reset link.',
@@ -523,10 +600,15 @@ const handleUpdateProfile = async (event: AuthorizedEvent): Promise<APIGatewayPr
 
 // Handler principal de Lambda
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
-  console.log('Event:', JSON.stringify(event, null, 2));
+  console.log('=== LAMBDA HANDLER STARTED ===');
+  console.log('Lambda function name:', context.functionName);
+  console.log('Lambda function version:', context.functionVersion);
+  console.log('Event received:', JSON.stringify(event, null, 2));
+  console.log('Environment variables:', JSON.stringify(process.env, null, 2));
   
   // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
     return createResponse(200, {}, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Content-Type,Authorization',

@@ -58,7 +58,7 @@ export default function DebugCleanPage() {
                   <span className="font-mono text-sm text-gray-600">{section}.{key}</span>
                   <span className="font-medium">{t(key, section)}</span>
                   <span className="text-sm text-gray-500">
-                    Función: t('{key}', '{section}')
+                    Función: t(&apos;{key}&apos;, &apos;{section}&apos;)
                   </span>
                 </div>
               </div>

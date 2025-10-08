@@ -67,7 +67,7 @@ export default function RegisterPage() {
       } else {
         setError(result.error || t('errors.generic'));
       }
-    } catch (err) {
+    } catch {
       setError(t('connectionError', 'auth'));
     } finally {
       setLoading(false);

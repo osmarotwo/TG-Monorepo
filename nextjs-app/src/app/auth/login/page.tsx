@@ -29,7 +29,7 @@ export default function LoginPage() {
     } else if (verified === 'true') {
       setSuccessMessage(t('emailVerifiedNotice', 'auth'));
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -61,7 +61,7 @@ export default function LoginPage() {
       } else {
         setError(result.error || t('loginError', 'auth'));
       }
-    } catch (err) {
+    } catch {
       setError(t('connectionError', 'auth'));
     } finally {
       setLoading(false);

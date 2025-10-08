@@ -8,11 +8,6 @@ import { useLocale } from '@/contexts/LocaleContext';
 
 // Usando símbolos simples en lugar de heroicons para evitar dependencias adicionales
 
-interface VerificationResult {
-  success: boolean;
-  message: string;
-}
-
 export default function VerifyEmailPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
@@ -53,7 +48,7 @@ export default function VerifyEmailPage() {
     };
 
     verifyEmail();
-  }, [token, router]);
+  }, [token, router, t]);
 
   const getIcon = () => {
     switch (status) {

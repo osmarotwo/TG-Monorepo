@@ -48,7 +48,7 @@ export default function DebugPage() {
                   <span className="font-mono text-sm text-gray-600">{section}.{key}</span>
                   <span className="font-medium">{t(key, section)}</span>
                   <span className="text-sm text-gray-500">
-                    Función: t('{key}', '{section}')
+                    Función: t(&apos;{key}&apos;, &apos;{section}&apos;)
                   </span>
                 </div>
               </div>
@@ -64,7 +64,7 @@ export default function DebugPage() {
                 <span className="font-mono text-sm text-gray-600">auth.fullName</span>
                 <span className="font-medium">{t('auth.fullName')}</span>
                 <span className="text-sm text-gray-500">
-                  Función: t('auth.fullName')
+                  Función: t(&apos;auth.fullName&apos;)
                 </span>
               </div>
             </div>
@@ -73,7 +73,7 @@ export default function DebugPage() {
                 <span className="font-mono text-sm text-gray-600">auth.email</span>
                 <span className="font-medium">{t('auth.email')}</span>
                 <span className="text-sm text-gray-500">
-                  Función: t('auth.email')
+                  Función: t(&apos;auth.email&apos;)
                 </span>
               </div>
             </div>

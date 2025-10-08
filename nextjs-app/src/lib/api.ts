@@ -1,11 +1,21 @@
 // API configuration and service functions
 const API_BASE_URL = 'https://tuaglbfc2h.execute-api.us-east-1.amazonaws.com/prod';
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
+}
+
+interface UserProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  birthDate?: string;
+  gender?: 'hombre' | 'mujer' | 'prefiero-no-decirlo';
+  isVerified: boolean;
+  createdAt: string;
 }
 
 class ApiService {
@@ -69,7 +79,7 @@ class ApiService {
   async login(credentials: {
     email: string;
     password: string;
-  }): Promise<ApiResponse<{ token: string; user: any }>> {
+  }): Promise<ApiResponse<{ token: string; user: UserProfile }>> {
     return this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
@@ -117,7 +127,7 @@ class ApiService {
   }
 
   // Protected endpoints
-  async getProfile(token: string): Promise<ApiResponse<any>> {
+  async getProfile(token: string): Promise<ApiResponse<UserProfile>> {
     return this.request('/auth/profile', {
       method: 'GET',
       headers: {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiService } from '@/lib/api';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -8,7 +8,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 
 // Usando símbolos simples en lugar de heroicons para evitar dependencias adicionales
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const searchParams = useSearchParams();
@@ -189,5 +189,13 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

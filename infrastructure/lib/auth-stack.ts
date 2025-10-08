@@ -83,7 +83,13 @@ export class AuthStack extends cdk.Stack {
 
     // ====================
     // Lambda Functions
-    // ====================    // Common environment variables
+    // ====================
+    
+    // Get the frontend URL from context with fallback to production URL
+    const frontendUrl = this.node.tryGetContext('frontendUrl') || 
+                       'https://feature-frontend-user.d3npwupb455k1n.amplifyapp.com'; // Production URL from Amplify
+    
+    // Common environment variables
     const commonEnvironment = {
       USERS_TABLE: this.usersTable.tableName,
       SESSIONS_TABLE: this.sessionsTable.tableName,
@@ -96,7 +102,7 @@ export class AuthStack extends cdk.Stack {
       NODE_ENV: 'production',
       SES_FROM_EMAIL: 'osmarotwo@gmail.com', // Email sender verificado
       SES_REGION: this.region,
-      APP_URL: 'http://localhost:3000', // Cambiar en producción
+      APP_URL: frontendUrl, // URL del frontend configurada dinámicamente
     };
 
     // JWT Authorizer Lambda - versión simple

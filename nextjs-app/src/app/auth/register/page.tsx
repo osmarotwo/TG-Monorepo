@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiService } from '@/lib/api';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useLocale } from '@/contexts/LocaleContext';
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const GOOGLE_REDIRECT_URI = 'http://localhost:3000/auth/google';
+const GOOGLE_SCOPE = 'openid email profile';
+const GOOGLE_STATE = 'google_auth';
+
+const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(GOOGLE_SCOPE)}&state=${GOOGLE_STATE}`;
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -314,7 +321,7 @@ export default function RegisterPage() {
             <button
               type="button"
               className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-              onClick={() => window.location.href = '/auth/google'}
+              onClick={() => window.location.href = googleAuthUrl}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

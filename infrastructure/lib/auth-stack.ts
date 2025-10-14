@@ -95,7 +95,7 @@ export class AuthStack extends cdk.Stack {
       SESSIONS_TABLE: this.sessionsTable.tableName,
       EMAIL_VERIFICATIONS_TABLE: this.emailVerificationsTable.tableName,
       JWT_SECRET: '{{resolve:ssm:/auth/jwt-secret:1}}', // From SSM Parameter Store
-      GOOGLE_CLIENT_ID: '{{resolve:ssm:/auth/google-client-id:1}}',
+      GOOGLE_CLIENT_ID: '{{resolve:ssm:/auth/google-client-id:3}}', // Version 3 with correct Client ID
       BCRYPT_ROUNDS: '12',
       TOKEN_EXPIRY: '1h',
       REFRESH_TOKEN_EXPIRY: '30d',
@@ -209,6 +209,10 @@ export class AuthStack extends cdk.Stack {
     // Public routes (no authentication required)
     const googleResource = authResource.addResource('google');
     googleResource.addMethod('POST', authIntegration);
+
+    // Alternative route for Google OAuth (for backward compatibility)
+    const googleAuthResource = authResource.addResource('google-auth');
+    googleAuthResource.addMethod('POST', authIntegration);
 
     const registerResource = authResource.addResource('register'); 
     registerResource.addMethod('POST', authIntegration);

@@ -170,7 +170,7 @@ class AuthService {
    * Autenticación con Google
    */
   async authenticateWithGoogle(data: GoogleAuthData): Promise<AuthResponse> {
-    const response = await this.makeRequest<AuthResponse>('/auth/google', {
+    const response = await this.makeRequest<AuthResponse>('/auth/google-auth', {
       method: 'POST',
       body: JSON.stringify(data),
     })

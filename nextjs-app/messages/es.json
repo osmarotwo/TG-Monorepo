@@ -67,6 +67,11 @@
     "loginError": "Error en el inicio de sesión",
     "accessYourAccount": "Accede a tu cuenta"
   },
+  "onboarding": {
+    "completeProfile": "Completa tu Perfil",
+    "allFieldsRequired": "Todos los campos son obligatorios",
+    "profileUpdated": "Perfil actualizado exitosamente"
+  },
   "callback": {
     "processing": "Procesando autenticación...",
     "success": "¡Autenticación exitosa!",

@@ -49,6 +49,11 @@
     "connectionError": "Connection error. Please try again.",
     "loginError": "Login error"
   },
+  "onboarding": {
+    "completeProfile": "Complete Your Profile",
+    "allFieldsRequired": "All fields are required",
+    "profileUpdated": "Profile updated successfully"
+  },
   "verification": {
     "verifyYourEmail": "Verify your email",
     "verificationEmailSent": "We've sent a verification link to your email address.",

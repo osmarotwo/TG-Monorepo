@@ -1,47 +1,82 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function GoogleCallback() {
-  const { t } = useLocale()
+  const { t } = useLocale();
+  const { authenticateWithGoogle, user } = useAuth();
+  const router = useRouter();
+  const [isProcessing, setIsProcessing] = useState(true);
+  const hasProcessed = useRef(false); // Prevenir ejecución múltiple
+
   useEffect(() => {
-    console.log('🔄 Google callback cargado')
-    console.log('📍 URL completa:', window.location.href)
-    console.log('📍 Search params:', window.location.search)
-    
-    // Extraer el código de autorización
-    const urlParams = new URLSearchParams(window.location.search)
-    const code = urlParams.get('code')
-    const error = urlParams.get('error')
-    const state = urlParams.get('state')
-    
-    console.log('📋 Parámetros del callback:', { code: !!code, error, state })
-    
-    if (error) {
-      console.error('❌ Error en OAuth callback:', error)
-      alert(`${t('authorizationError', 'callback')} ${error}`)
-      return
-    }
-    
-    if (code && state === 'google_auth') {
-      console.log('✅ Código de autorización recibido')
-      
-      // Por ahora, simplemente redirigir de vuelta con éxito
-      // En un futuro aquí intercambiarías el código por tokens
-      alert(`${t('success', 'callback')} ${t('authorizationCode', 'callback')} ${code.substring(0, 20)}...
+    const handleGoogleAuth = async () => {
+      // Prevenir ejecución múltiple (React Strict Mode ejecuta efectos dos veces)
+      if (hasProcessed.current) {
+        console.log('⏭️ Ya procesado, saltando...');
+        return;
+      }
+      hasProcessed.current = true;
 
-En una implementación completa, este código se intercambiaría por tokens en el backend.
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const error = urlParams.get('error');
+      const state = urlParams.get('state');
 
-Por ahora, te redirigiremos de vuelta a la página principal.`)
+      if (error) {
+        alert(`${t('authorizationError', 'callback')} ${error}`);
+        router.replace('/');
+        return;
+      }
+
+      if (code && state === 'google_auth') {
+        try {
+          // Llama a tu backend para intercambiar el código por el idToken de Google
+          const response = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code }),
+          });
+          const data = await response.json();
+          if (!response.ok || !data.idToken) {
+            throw new Error(data.error || 'No se pudo obtener el idToken de Google');
+          }
+          // Autentica globalmente usando el contexto
+          await authenticateWithGoogle({ idToken: data.idToken });
+          
+          // La redirección se hará en el siguiente useEffect cuando el user se actualice
+          
+        } catch (err) {
+          alert(t('authorizationError', 'callback'));
+          router.replace('/');
+        }
+      } else {
+        alert(t('error', 'callback'));
+        router.replace('/');
+      }
+    };
+    handleGoogleAuth();
+  }, [t, authenticateWithGoogle, router]);
+
+  // Segundo useEffect para redirigir cuando el user se actualice después de la autenticación
+  useEffect(() => {
+    if (user && isProcessing) {
+      console.log('🔄 Usuario autenticado, redirigiendo...', user);
+      setIsProcessing(false);
       
-      // Redirigir de vuelta a la página principal
-      window.location.href = '/'
-    } else {
-      console.error('❌ No se recibió código o estado incorrecto')
-      alert(t('error', 'callback'))
+      // Si el perfil no está completo, redirigir a onboarding
+      if (!user.profileCompleted) {
+        console.log('➡️ Redirigiendo a onboarding');
+        router.replace('/onboarding');
+      } else {
+        console.log('➡️ Redirigiendo a dashboard');
+        router.replace('/dashboard');
+      }
     }
-  }, [t])
+  }, [user, isProcessing, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

@@ -629,7 +629,8 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
       return await handleLogin(event);
     }
     
-    if (method === 'POST' && path === '/auth/google') {
+    // Support both /auth/google and /auth/google-auth for backward compatibility
+    if (method === 'POST' && (path === '/auth/google' || path === '/auth/google-auth')) {
       return await handleGoogleAuth(event);
     }
     

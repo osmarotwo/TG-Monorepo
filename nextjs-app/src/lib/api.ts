@@ -1,5 +1,5 @@
 // API configuration and service functions
-const API_BASE_URL = 'https://tuaglbfc2h.execute-api.us-east-1.amazonaws.com/prod';
+const API_BASE_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://ectre1y1fg.execute-api.us-east-1.amazonaws.com/prod';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -135,6 +135,18 @@ class ApiService {
       },
     });
   }
+
+  async completeProfile(profileData: {
+    fullName: string;
+    email: string;
+    birthDate: string;
+    gender: string;
+  }): Promise<ApiResponse<{ message: string }>> {
+    return this.request('/auth/complete-profile', {
+      method: 'POST',
+      body: JSON.stringify(profileData),
+    });
+  }
 }
 
 // Export singleton instance
@@ -142,3 +154,4 @@ export const apiService = new ApiService();
 
 // Export types
 export type { ApiResponse };
+export type { UserProfile };

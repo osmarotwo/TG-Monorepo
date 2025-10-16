@@ -6,6 +6,7 @@ import Link from 'next/link';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useLocale } from '@/contexts/LocaleContext';
 import { authService } from '@/services/authService';
+import { Logo } from '@/components/Logo';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -32,13 +33,13 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center px-4">
         <div className="fixed top-4 right-4 z-50">
           <LanguageSelector />
         </div>
         
         <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl p-8">
             {/* Success Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -71,7 +72,7 @@ export default function ForgotPasswordPage() {
             <div className="space-y-3">
               <button
                 onClick={() => router.push('/auth/login')}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                className="w-full bg-[#13a4ec] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0f8fcd] transition-colors"
               >
                 {t('backToLogin', 'forgotPassword')}
               </button>
@@ -90,15 +91,18 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center px-4">
       <div className="fixed top-4 right-4 z-50">
         <LanguageSelector />
       </div>
       
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <Logo size="lg" />
+            </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {t('forgotPassword', 'forgotPassword')}
             </h1>
@@ -132,7 +136,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-[#f6f7f8] text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent transition-colors"
                 placeholder={t('emailPlaceholder', 'auth')}
               />
             </div>
@@ -141,7 +145,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-[#13a4ec] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0f8fcd] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {isLoading ? (
                 <>
@@ -161,7 +165,7 @@ export default function ForgotPasswordPage() {
           <div className="mt-6 text-center">
             <Link 
               href="/auth/login"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-[#13a4ec] hover:text-[#0f8fcd] font-medium"
             >
               {t('backToLogin', 'forgotPassword')}
             </Link>

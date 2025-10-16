@@ -4,6 +4,7 @@ import React from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLocale } from '@/contexts/LocaleContext'
 import LanguageSelector from '@/components/LanguageSelector'
+import { Logo } from '@/components/Logo'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -30,19 +31,20 @@ export default function DashboardPage() {
   // Mostrar loading mientras se verifica
   if (status === 'loading' || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#13a4ec]"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f6f7f8]">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <Logo size="md" />
               <h1 className="text-2xl font-bold text-gray-900">
                 {t('welcome', 'dashboard')} {user?.firstName}!
               </h1>
@@ -51,7 +53,7 @@ export default function DashboardPage() {
               <LanguageSelector />
               <button
                 onClick={logout}
-                className="text-gray-500 hover:text-gray-700 text-sm"
+                className="text-gray-500 hover:text-[#13a4ec] text-sm font-medium transition-colors"
               >
                 {t('logout', 'navigation')}
               </button>
@@ -63,7 +65,7 @@ export default function DashboardPage() {
       {/* Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="bg-white/50 backdrop-blur-sm overflow-hidden shadow-lg rounded-2xl">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
                 {t('overview', 'dashboard')}
@@ -71,7 +73,7 @@ export default function DashboardPage() {
               
               {/* User Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-[#f6f7f8] rounded-lg p-4">
                   <h3 className="text-sm font-medium text-gray-900 mb-2">
                     {t('profile', 'navigation')}
                   </h3>
@@ -105,7 +107,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-[#f6f7f8] rounded-lg p-4">
                   <h3 className="text-sm font-medium text-gray-900 mb-2">
                     {t('accountStatus', 'dashboard')}
                   </h3>
@@ -151,7 +153,7 @@ export default function DashboardPage() {
 
               {/* Session Info */}
               {(user?.createdAt || user?.updatedAt) && (
-                <div className="mt-6 bg-gray-50 rounded-lg p-4">
+                <div className="mt-6 bg-[#f6f7f8] rounded-lg p-4">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">
                     {t('sessionInfo', 'dashboard')}
                   </h3>

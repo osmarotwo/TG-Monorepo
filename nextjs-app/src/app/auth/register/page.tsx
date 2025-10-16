@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { apiService } from '@/lib/api';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useLocale } from '@/contexts/LocaleContext';
+import { Logo } from '@/components/Logo';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const GOOGLE_REDIRECT_URI = 'http://localhost:3000/auth/google';
@@ -83,14 +84,14 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center px-4">
         {/* Language Selector - Fixed position */}
         <div className="fixed top-4 right-4 z-50">
           <LanguageSelector />
         </div>
         
         <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl p-8 text-center">
             <div className="flex justify-center mb-6">
               <svg className="w-16 h-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -103,7 +104,7 @@ export default function RegisterPage() {
             
             <p className="text-gray-600 mb-6">
               {t('registrationSuccessMessage', 'auth')}{' '}
-              <span className="font-medium text-blue-600">{formData.email}</span>
+              <span className="font-medium text-[#13a4ec]">{formData.email}</span>
             </p>
             
             <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
@@ -114,7 +115,7 @@ export default function RegisterPage() {
             
             <button
               onClick={() => router.push('/auth/login')}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              className="w-full bg-[#13a4ec] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0f8fcd] transition-colors"
             >
               {t('goToLogin', 'auth')}
             </button>
@@ -125,16 +126,19 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center px-4">
       {/* Language Selector - Fixed position */}
       <div className="fixed top-4 right-4 z-50">
         <LanguageSelector />
       </div>
       
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <Logo size="lg" />
+            </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {t('createAccount', 'auth')}
             </h1>
@@ -157,7 +161,7 @@ export default function RegisterPage() {
                 value={formData.fullName}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-[#f6f7f8] text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent transition-colors"
                 placeholder={t('fullNamePlaceholder', 'auth')}
               />
             </div>
@@ -174,7 +178,7 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-[#f6f7f8] text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent transition-colors"
                 placeholder={t('emailPlaceholder', 'auth')}
               />
             </div>
@@ -191,7 +195,7 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-[#f6f7f8] text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent transition-colors"
                 placeholder={t('passwordPlaceholder', 'auth')}
                 minLength={8}
               />
@@ -212,7 +216,7 @@ export default function RegisterPage() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-[#f6f7f8] text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent transition-colors"
                 placeholder={t('confirmPasswordPlaceholder', 'auth')}
               />
             </div>
@@ -228,7 +232,7 @@ export default function RegisterPage() {
                 name="birthDate"
                 value={formData.birthDate}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-[#f6f7f8] text-gray-900 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent transition-colors"
                 max={new Date(Date.now() - 13 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -249,7 +253,7 @@ export default function RegisterPage() {
                     value="male"
                     checked={formData.gender === 'male'}
                     onChange={handleChange}
-                    className="mr-3 text-blue-600 focus:ring-blue-500"
+                    className="mr-3 text-[#13a4ec] focus:ring-[#13a4ec]"
                   />
                   <span className="text-gray-700">{t('male', 'auth')}</span>
                 </label>
@@ -260,7 +264,7 @@ export default function RegisterPage() {
                     value="female"
                     checked={formData.gender === 'female'}
                     onChange={handleChange}
-                    className="mr-3 text-blue-600 focus:ring-blue-500"
+                    className="mr-3 text-[#13a4ec] focus:ring-[#13a4ec]"
                   />
                   <span className="text-gray-700">{t('female', 'auth')}</span>
                 </label>
@@ -271,7 +275,7 @@ export default function RegisterPage() {
                     value="prefer-not-to-say"
                     checked={formData.gender === 'prefer-not-to-say'}
                     onChange={handleChange}
-                    className="mr-3 text-blue-600 focus:ring-blue-500"
+                    className="mr-3 text-[#13a4ec] focus:ring-[#13a4ec]"
                   />
                   <span className="text-gray-700">{t('preferNotToSay', 'auth')}</span>
                 </label>
@@ -289,7 +293,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#13a4ec] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0f8fcd] focus:ring-2 focus:ring-[#13a4ec] focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -311,7 +315,7 @@ export default function RegisterPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">{t('orSignUpWith', 'auth')}</span>
+                <span className="px-2 bg-white/50 text-gray-500">{t('orSignUpWith', 'auth')}</span>
               </div>
             </div>
           </div>
@@ -337,7 +341,7 @@ export default function RegisterPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               {t('alreadyHaveAccount', 'auth')}{' '}
-              <Link href="/auth/login" className="text-blue-600 hover:text-blue-800 font-medium">
+              <Link href="/auth/login" className="text-[#13a4ec] hover:text-[#0f8fcd] font-medium">
                 {t('signIn', 'auth')}
               </Link>
             </p>

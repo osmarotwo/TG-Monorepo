@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LanguageSelector from "@/components/LanguageSelector";
+import { Logo } from "@/components/Logo";
 import type { ChangeEvent, FormEvent } from "react";
 
 // Componente de completar perfil que obtiene el usuario del contexto
@@ -71,15 +72,20 @@ export default function ProfileCompletion() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#f6f7f8] px-4">
       <div className="fixed top-4 right-4 z-50">
         <LanguageSelector />
       </div>
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            {t("completeProfile", "onboarding")}
-          </h1>
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl p-8">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <Logo size="lg" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {t("completeProfile", "onboarding")}
+            </h1>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -92,7 +98,7 @@ export default function ProfileCompletion() {
                 value={form.fullName}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-[#f6f7f8] text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent transition-colors"
                 placeholder={t("fullNamePlaceholder", "auth")}
               />
             </div>
@@ -107,7 +113,7 @@ export default function ProfileCompletion() {
                 value={form.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-[#f6f7f8] text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent transition-colors"
                 placeholder={t("emailPlaceholder", "auth")}
               />
             </div>
@@ -122,7 +128,7 @@ export default function ProfileCompletion() {
                 value={form.birthDate}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-[#f6f7f8] text-gray-900 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent transition-colors"
               />
             </div>
             <div>
@@ -137,7 +143,7 @@ export default function ProfileCompletion() {
                     value="male"
                     checked={form.gender === "male"}
                     onChange={handleChange}
-                    className="mr-3 text-blue-600 focus:ring-blue-500"
+                    className="mr-3 text-[#13a4ec] focus:ring-[#13a4ec]"
                   />
                   <span className="text-gray-700">{t("male", "auth")}</span>
                 </label>
@@ -148,7 +154,7 @@ export default function ProfileCompletion() {
                     value="female"
                     checked={form.gender === "female"}
                     onChange={handleChange}
-                    className="mr-3 text-blue-600 focus:ring-blue-500"
+                    className="mr-3 text-[#13a4ec] focus:ring-[#13a4ec]"
                   />
                   <span className="text-gray-700">{t("female", "auth")}</span>
                 </label>
@@ -159,7 +165,7 @@ export default function ProfileCompletion() {
                     value="prefer-not-to-say"
                     checked={form.gender === "prefer-not-to-say"}
                     onChange={handleChange}
-                    className="mr-3 text-blue-600 focus:ring-blue-500"
+                    className="mr-3 text-[#13a4ec] focus:ring-[#13a4ec]"
                   />
                   <span className="text-gray-700">{t("preferNotToSay", "auth")}</span>
                 </label>
@@ -173,7 +179,7 @@ export default function ProfileCompletion() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#13a4ec] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0f8fcd] focus:ring-2 focus:ring-[#13a4ec] focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? t("saving", "onboarding") : t("completeProfile", "onboarding")}
             </button>

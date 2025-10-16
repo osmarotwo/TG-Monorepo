@@ -32,13 +32,13 @@ export function GoogleAuthButton() {
   }
 
   return (
-    <div className="space-y-3">
+    <div>
       {/* Usar solo nuestro botón personalizado - Sin warnings de FedCM */}
       {!user && (
         <button
           onClick={signInWithGoogle}
           disabled={!isLoaded}
-          className={`w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+          className={`w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#13a4ec] ${
             isLoaded 
               ? 'hover:bg-gray-50 cursor-pointer' 
               : 'opacity-50 cursor-not-allowed'

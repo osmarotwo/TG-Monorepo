@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LanguageSelector from '@/components/LanguageSelector';
 import { GoogleAuthButton } from '@/components/GoogleAuthButton';
 import { useLocale } from '@/contexts/LocaleContext';
+import { Logo } from '@/components/Logo';
 
 function LoginForm() {
   const [formData, setFormData] = useState({
@@ -73,20 +74,21 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center px-4 py-8">
       {/* Language Selector - Fixed position */}
       <div className="fixed top-4 right-4 z-50">
         <LanguageSelector />
       </div>
       
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+      <div className="w-full max-w-md">
+        <div className="rounded-xl bg-white/50 backdrop-blur-sm shadow-2xl p-8">
+          {/* Logo and Header */}
+          <div className="flex flex-col items-center mb-6">
+            <Logo size="lg" className="mb-4" />
+            <h1 className="text-3xl font-bold text-gray-900">
               {t('signIn', 'auth')}
             </h1>
-            <p className="text-gray-600">
+            <p className="mt-2 text-sm text-gray-600">
               {t('accessYourAccount', 'auth')}
             </p>
           </div>
@@ -103,11 +105,23 @@ function LoginForm() {
             </div>
           )}
 
+          {/* Error Message */}
+          {authError && (
+            <div className="bg-red-50 border border-red-200 p-4 rounded-lg mb-6">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p className="text-sm text-red-800">{authError}</p>
+              </div>
+            </div>
+          )}
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="sr-only">
                 {t('email', 'auth')}
               </label>
               <input
@@ -117,14 +131,14 @@ function LoginForm() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
-                placeholder={t('emailPlaceholder', 'auth')}
+                className="form-input w-full rounded-lg bg-[#f6f7f8] border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-[#13a4ec] focus:border-[#13a4ec] p-3"
+                placeholder={t('email', 'auth')}
               />
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="sr-only">
                 {t('password', 'auth')}
               </label>
               <input
@@ -134,8 +148,8 @@ function LoginForm() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-gray-900"
-                placeholder={t('passwordPlaceholder', 'auth')}
+                className="form-input w-full rounded-lg bg-[#f6f7f8] border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-[#13a4ec] focus:border-[#13a4ec] p-3"
+                placeholder={t('password', 'auth')}
               />
             </div>
 
@@ -143,32 +157,20 @@ function LoginForm() {
             <div className="text-right">
               <Link 
                 href="/auth/forgot-password" 
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-[#13a4ec] hover:text-[#13a4ec]/90 font-medium"
               >
                 {t('forgotPassword', 'auth')}
               </Link>
             </div>
 
-            {/* Error Message */}
-            {authError && (
-              <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  <p className="text-sm text-red-800">{authError}</p>
-                </div>
-              </div>
-            )}
-
             {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#13a4ec] hover:bg-[#13a4ec]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#13a4ec] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
-                <div className="flex items-center justify-center">
+                <div className="flex items-center">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -184,7 +186,7 @@ function LoginForm() {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">{t('or', 'auth')}</span>
@@ -198,14 +200,12 @@ function LoginForm() {
           </div>
 
           {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              {t('dontHaveAccount', 'auth')}{' '}
-              <Link href="/auth/register" className="text-blue-600 hover:text-blue-800 font-medium">
-                {t('signUp', 'auth')}
-              </Link>
-            </p>
-          </div>
+          <p className="mt-8 text-center text-sm text-gray-600">
+            {t('dontHaveAccount', 'auth')}{' '}
+            <Link href="/auth/register" className="font-medium text-[#13a4ec] hover:text-[#13a4ec]/90">
+              {t('signUp', 'auth')}
+            </Link>
+          </p>
         </div>
       </div>
     </div>

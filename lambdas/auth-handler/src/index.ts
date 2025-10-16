@@ -230,21 +230,18 @@ const handleLogin = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxy
       throw new Error('Invalid credentials');
     }
     
-    // Verificar que el email esté verificado
-    if (!user.emailVerified) {
-      throw new Error('Please verify your email before logging in');
-    }
-    
-    // Generar tokens
-    const tokens = await generateTokens(user.userId, user.email);
-    
-    // Crear sesión
+    // Crear sesión (permitir login incluso si email no está verificado)
     const sessionId = uuidv4();
+    
+    // Generar tokens con el sessionId
+    const tokens = await generateTokens(user.userId, user.email, sessionId);
+    
+    // Crear sesión en DynamoDB
     await createSession({
       sessionId,
       userId: user.userId,
       refreshToken: tokens.refreshToken,
-      expiresAt: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 días
+      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 días en milisegundos
     });
     
     return createResponse(200, {
@@ -255,7 +252,7 @@ const handleLogin = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxy
         firstName: user.firstName,
         lastName: user.lastName,
         profileCompleted: user.profileCompleted,
-        emailVerified: user.emailVerified,
+        emailVerified: user.emailVerified, // El frontend usará esto para determinar el flujo
       },
       tokens,
     });
@@ -301,16 +298,18 @@ const handleGoogleAuth = async (event: APIGatewayProxyEvent): Promise<APIGateway
       });
     }
     
-    // Generar tokens
-    const tokens = await generateTokens(user.userId, user.email);
-    
-    // Crear sesión
+    // Crear sesión primero
     const sessionId = uuidv4();
+    
+    // Generar tokens con el sessionId
+    const tokens = await generateTokens(user.userId, user.email, sessionId);
+    
+    // Crear sesión en DynamoDB
     await createSession({
       sessionId,
       userId: user.userId,
       refreshToken: tokens.refreshToken,
-      expiresAt: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 días
+      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 días en milisegundos
     });
     
     return createResponse(200, {
@@ -336,13 +335,31 @@ const handleCompleteProfile = async (event: AuthorizedEvent): Promise<APIGateway
     const data = validateData(completeProfileSchema, JSON.parse(event.body || '{}')) as CompleteProfileRequest;
     const userId = event.requestContext.authorizer.userId;
     
-    // Actualizar perfil del usuario
-    await updateUser(userId, {
-      phone: data.phone,
-      birthDate: data.birthDate,
+    // Preparar actualizaciones del perfil
+    const updates: any = {
+      birthDate: data.birthDate.split('T')[0], // Solo YYYY-MM-DD, sin hora
       profileCompleted: true,
-      updatedAt: new Date().toISOString(),
-    });
+      // updatedAt se agrega automáticamente en updateUser()
+    };
+    
+    // Agregar phone si se proporciona y no está vacío
+    if (data.phone && data.phone.trim()) {
+      updates.phone = data.phone;
+    }
+    
+    // Agregar gender si se proporciona
+    if (data.gender) {
+      // Normalizar valores en español a inglés
+      const genderMap: Record<string, string> = {
+        'hombre': 'male',
+        'mujer': 'female',
+        'prefiero-no-decirlo': 'prefer-not-to-say'
+      };
+      updates.gender = genderMap[data.gender] || data.gender;
+    }
+    
+    // Actualizar perfil del usuario
+    await updateUser(userId, updates);
     
     // Obtener usuario actualizado
     const user = await getUserById(userId);
@@ -359,6 +376,7 @@ const handleCompleteProfile = async (event: AuthorizedEvent): Promise<APIGateway
         lastName: user.lastName,
         phone: user.phone,
         birthDate: user.birthDate,
+        gender: user.gender,
         profileCompleted: user.profileCompleted,
         emailVerified: user.emailVerified,
       },
@@ -432,15 +450,15 @@ const handleRefreshToken = async (event: APIGatewayProxyEvent): Promise<APIGatew
       throw new Error('Invalid refresh token');
     }
     
-    // Generar nuevos tokens
-    const tokens = await generateTokens(session.userId, payload.email);
+    // Generar nuevos tokens con el mismo sessionId
+    const tokens = await generateTokens(session.userId, payload.email, session.sessionId);
     
     // Actualizar sesión con nuevo refresh token
     await createSession({
       sessionId: session.sessionId,
       userId: session.userId,
       refreshToken: tokens.refreshToken,
-      expiresAt: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 días
+      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 días en milisegundos
     });
     
     return createResponse(200, {

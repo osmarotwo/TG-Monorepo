@@ -48,6 +48,7 @@ export interface Session {
   userId: string;
   refreshToken: string;
   expiresAt: number;
+  isActive?: boolean; // Estado de la sesión
   ttl?: number; // TTL para DynamoDB (expiresAt en segundos)
 }
 
@@ -213,6 +214,7 @@ export async function createSession(sessionData: Omit<Session, 'PK' | 'SK'>): Pr
     PK: `SESSION#${sessionData.sessionId}`,
     SK: 'SESSION',
     ...sessionData,
+    isActive: true, // Sesión activa por defecto
     // Agregar TTL en segundos (expiresAt está en milisegundos)
     ttl: Math.floor(sessionData.expiresAt / 1000),
   };

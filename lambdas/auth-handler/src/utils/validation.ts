@@ -19,8 +19,11 @@ export const googleAuthSchema = Joi.object({
 });
 
 export const completeProfileSchema = Joi.object({
-  phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).required(),
-  birthDate: Joi.date().iso().max('now').required(),
+  phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).optional().allow(''),
+  birthDate: Joi.string().isoDate().required(), // Keep as string for DynamoDB
+  gender: Joi.string().valid('male', 'female', 'prefer-not-to-say', 'hombre', 'mujer', 'prefiero-no-decirlo').optional(),
+  fullName: Joi.string().optional(),
+  email: Joi.string().email().optional(),
   profileCompleted: Joi.boolean().default(true),
 });
 
@@ -78,8 +81,11 @@ export interface GoogleAuthRequest {
 }
 
 export interface CompleteProfileRequest {
-  phone: string;
+  phone?: string;
   birthDate: string;
+  gender?: string;
+  fullName?: string;
+  email?: string;
   profileCompleted?: boolean;
 }
 

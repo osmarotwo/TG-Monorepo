@@ -55,15 +55,15 @@ async function getJWTSecret(): Promise<string> {
 /**
  * Generate access token and refresh token
  */
-export async function generateTokens(userId: string, email?: string): Promise<TokenPair> {
+export async function generateTokens(userId: string, email?: string, sessionId?: string): Promise<TokenPair> {
   const secret = await getJWTSecret();
-  const sessionId = Date.now().toString();
+  const finalSessionId = sessionId || Date.now().toString();
   
   const payload: JWTPayload = {
     userId,
     email: email || '',
     role: 'user',
-    sessionId
+    sessionId: finalSessionId
   };
   
   const accessTokenExpiry = process.env.TOKEN_EXPIRY || '1h';

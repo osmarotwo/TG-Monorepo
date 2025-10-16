@@ -65,9 +65,53 @@ class AuthService {
     // TODO: Obtener la URL del API Gateway desde variables de entorno
     this.baseUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://your-api-gateway-url/auth'
     
-    // Cargar token del localStorage si existe
+    // Cargar token del localStorage si existe y validarlo
     if (typeof window !== 'undefined') {
       this.accessToken = localStorage.getItem('accessToken')
+      
+      // Validar que el token tenga el formato correcto (sessionId como UUID)
+      if (this.accessToken) {
+        try {
+          const parts = this.accessToken.split('.')
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]))
+            // Verificar que sessionId sea un UUID (contiene guiones)
+            // Tokens viejos usaban timestamp (solo números)
+            if (payload.sessionId && !payload.sessionId.includes('-')) {
+              console.warn('⚠️ Token con sessionId obsoleto detectado, limpiando...')
+              this.clearTokens()
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error validando token:', error)
+          this.clearTokens()
+        }
+      }
+    }
+  }
+
+  /**
+   * Valida que el token actual tenga el formato correcto
+   */
+  private isTokenValid(): boolean {
+    if (!this.accessToken) return false
+    
+    try {
+      const parts = this.accessToken.split('.')
+      if (parts.length !== 3) return false
+      
+      const payload = JSON.parse(atob(parts[1]))
+      
+      // Verificar que sessionId sea un UUID (contiene guiones)
+      // Tokens viejos usaban timestamp (solo números)
+      if (payload.sessionId && !payload.sessionId.includes('-')) {
+        console.warn('⚠️ Token con sessionId obsoleto detectado en request')
+        return false
+      }
+      
+      return true
+    } catch (error) {
+      return false
     }
   }
 
@@ -84,8 +128,13 @@ class AuthService {
       'Content-Type': 'application/json',
     }
 
-    // Agregar Authorization header si hay token
+    // Validar token antes de agregarlo al header
     if (this.accessToken) {
+      if (!this.isTokenValid()) {
+        console.warn('⚠️ Token inválido detectado, limpiando tokens...')
+        this.clearTokens()
+        throw new Error('Token inválido. Por favor, inicia sesión nuevamente.')
+      }
       defaultHeaders['Authorization'] = `Bearer ${this.accessToken}`
     }
 
@@ -105,6 +154,18 @@ class AuthService {
 
       if (!response.ok) {
         console.error('❌ API Error:', data)
+        
+        // Si es 403 y es un endpoint protegido, probablemente el token es inválido
+        if (response.status === 403 && this.accessToken) {
+          console.warn('⚠️ Error 403 detectado, token probablemente inválido. Limpiando...')
+          this.clearTokens()
+          
+          // Redirigir al login solo si estamos en el navegador
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login'
+          }
+        }
+        
         throw new Error(data.error || `HTTP ${response.status}`)
       }
 
@@ -216,14 +277,23 @@ class AuthService {
    */
   async logout(): Promise<{ message: string }> {
     try {
+      // Intentar hacer logout en el servidor
       const response = await this.makeRequest<{ message: string }>('/auth/logout', {
         method: 'POST',
       })
       this.clearTokens()
       return response
     } catch (error) {
-      // Incluso si falla la petición, limpiamos tokens localmente
+      // Limpiar tokens localmente siempre
       this.clearTokens()
+      
+      // Si el error es por token inválido, no es un error real - solo limpiamos
+      if (error instanceof Error && error.message.includes('Token inválido')) {
+        console.log('✅ Logout local exitoso (token ya era inválido)')
+        return { message: 'Logout successful' }
+      }
+      
+      // Para otros errores, lanzar pero los tokens ya están limpios
       throw error
     }
   }

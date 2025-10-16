@@ -51,16 +51,22 @@
   },
   "onboarding": {
     "completeProfile": "Complete Your Profile",
+    "saving": "Saving...",
     "allFieldsRequired": "All fields are required",
     "profileUpdated": "Profile updated successfully"
   },
   "verification": {
     "verifyYourEmail": "Verify your email",
-    "verificationEmailSent": "We've sent a verification link to your email address.",
+    "verificationEmailSent": "We've sent a verification email to",
+    "checkInbox": "Please check your inbox and click the verification link to continue.",
     "checkSpamFolder": "Please check your inbox and spam folder.",
-    "resendEmail": "Resend email",
+    "resendEmail": "Resend verification email",
     "resendIn": "Resend in",
     "sending": "Sending...",
+    "resending": "Resending...",
+    "emailResent": "Email resent",
+    "emailResentSuccess": "Verification email resent successfully",
+    "resendEmailError": "Error resending verification email",
     "backToHome": "Back to home",
     "verifyingEmail": "Verifying email...",
     "pleaseWait": "Please wait while we verify your email address.",
@@ -77,6 +83,44 @@
     "contactSupport": "Contact support",
     "verificationProblems": "Having verification problems?",
     "takingSeconds": "This may take a few seconds...",
-    "goToLogin": "Go to Login"
+    "goToLogin": "Go to Login",
+    "didntReceiveEmail": "Didn't receive the email?",
+    "checkSpam": "Check your spam folder",
+    "checkEmailCorrect": "Verify that the email is correct",
+    "waitFewMinutes": "Wait a few minutes and try resending",
+    "needHelp": "Need help?"
+  },
+  "user": {
+    "profile": "User Profile",
+    "welcome": "Welcome",
+    "email": "Email",
+    "name": "Name",
+    "picture": "Profile Picture",
+    "lastLogin": "Last Login",
+    "memberSince": "Member since",
+    "editProfile": "Edit Profile",
+    "changePassword": "Change Password",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "security": "Security",
+    "birthDate": "Birth date"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "overview": "Account Overview",
+    "accountStatus": "Account Status",
+    "emailVerified": "Email verified",
+    "emailNotVerified": "Email not verified",
+    "profileComplete": "Profile complete",
+    "profileIncomplete": "Profile incomplete",
+    "provider": "Provider",
+    "sessionInfo": "Session Information",
+    "createdAt": "Account created",
+    "lastLogin": "Last login"
+  },
+  "navigation": {
+    "profile": "Profile",
+    "logout": "Logout",
+    "dashboard": "Dashboard"
   }
 }

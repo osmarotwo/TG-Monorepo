@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { apiService } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useLocale } from '@/contexts/LocaleContext';
 
 // Usando símbolos simples en lugar de heroicons para evitar dependencias adicionales
+
+// Variable global para trackear tokens ya procesados (persiste entre renders en StrictMode)
+const processedTokens = new Set<string>();
 
 function VerifyEmailContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -14,6 +17,7 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { t } = useLocale();
+  const { verifyEmail: verifyEmailAuth, clearError } = useAuth();
   
   const token = searchParams.get('token');
 
@@ -24,31 +28,61 @@ function VerifyEmailContent() {
       return;
     }
 
+    // Si este token ya fue procesado, no hacer nada
+    if (processedTokens.has(token)) {
+      console.log('⚠️ Token ya procesado anteriormente, saltando verificación duplicada...');
+      return;
+    }
+
+    // Marcar token como procesado ANTES de la llamada async
+    processedTokens.add(token);
+    console.log('📝 Token marcado como procesado:', token);
+
+    let isMounted = true; // Flag para prevenir actualizaciones después de desmontar
+
     const verifyEmail = async () => {
       try {
-        const result = await apiService.verifyEmail(token);
+        console.log('🔍 Iniciando verificación de email con token:', token);
+        await verifyEmailAuth(token);
+        console.log('✅ Verificación completada exitosamente');
         
-        if (result.success) {
+        // Si llegamos aquí, la verificación fue exitosa
+        console.log('✅ Procesando éxito...');
+        if (isMounted) {
           setStatus('success');
           setMessage(t('emailVerificationSuccess', 'verification'));
-          
-          // Redirigir al login después de 3 segundos
-          setTimeout(() => {
-            router.push('/auth/login?verified=true');
-          }, 3000);
-        } else {
-          setStatus('error');
-          setMessage(t('emailVerificationError', 'verification'));
         }
+        
+        console.log('✅ Verificación exitosa, redirigiendo en 3 segundos...');
+        // Redirigir al login después de 3 segundos solo si fue exitoso
+        setTimeout(() => {
+          if (isMounted) {
+            console.log('⏰ Timeout completado, limpiando errores y redirigiendo...');
+            // Limpiar cualquier error del AuthContext antes de redirigir
+            clearError();
+            router.push('/auth/login?verified=true');
+          }
+        }, 3000);
       } catch (error) {
-        setStatus('error');
-        setMessage(t('connectionError', 'auth'));
-        console.error('Error verifying email:', error);
+        console.error('🚨 Excepción capturada en catch:', error);
+        console.error('🚨 Tipo de error:', error instanceof Error ? error.constructor.name : typeof error);
+        console.error('🚨 Mensaje de error:', error instanceof Error ? error.message : String(error));
+        if (isMounted) {
+          setStatus('error');
+          setMessage(t('connectionError', 'auth'));
+        }
+        // NO redirigir cuando hay error
       }
     };
 
     verifyEmail();
-  }, [token, router, t]);
+
+    // Cleanup: marcar como desmontado
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]); // Solo depende del token, evita re-ejecuciones por cambios en router o t
 
   const getIcon = () => {
     switch (status) {
@@ -153,14 +187,20 @@ function VerifyEmailContent() {
             {status === 'error' && (
               <div className="space-y-2">
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={() => router.push('/auth/login')}
                   className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  {t('goToLogin', 'verification')}
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                 >
                   {t('tryAgain', 'verification')}
                 </button>
                 <button
                   onClick={() => router.push('/auth/register')}
-                  className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  className="w-full bg-gray-100 text-gray-600 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                 >
                   {t('backToRegister', 'verification')}
                 </button>

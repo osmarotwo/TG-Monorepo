@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { apiService } from "@/lib/api";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LanguageSelector from "@/components/LanguageSelector";
@@ -10,7 +9,7 @@ import type { ChangeEvent, FormEvent } from "react";
 
 // Componente de completar perfil que obtiene el usuario del contexto
 export default function ProfileCompletion() {
-  const { user } = useAuth(); // Obtener usuario del contexto
+  const { user, logout, completeProfile } = useAuth(); // Obtener completeProfile del contexto
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -54,14 +53,18 @@ export default function ProfileCompletion() {
       return;
     }
     try {
-      const result = await apiService.completeProfile(form);
-      if (result.success) {
-        router.push("/dashboard");
-      } else {
-        setError(result.error || t("errors.generic"));
-      }
-    } catch {
-      setError(t("connectionError", "auth"));
+      // Usar completeProfile del AuthContext que maneja el token automáticamente
+      await completeProfile({
+        phone: '', // Opcional
+        birthDate: form.birthDate,
+        profileCompleted: true,
+      });
+      
+      // Redirigir al dashboard - el perfil está completo
+      // AuthenticatedApp manejará la redirección automáticamente
+      router.push("/dashboard");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : t("connectionError", "auth"));
     } finally {
       setLoading(false);
     }

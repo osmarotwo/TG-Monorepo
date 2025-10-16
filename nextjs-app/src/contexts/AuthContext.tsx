@@ -194,6 +194,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (authService.isAuthenticated()) {
         const { user } = await authService.getCurrentUser()
         updateUserAndStatus(user)
+      } else {
+        // Si no está autenticado, simplemente marcar como completado
+        updateState({ isLoading: false, error: null })
       }
       
     } catch (error) {
@@ -245,7 +248,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Limpiar error
   const clearError = useCallback(() => {
-    updateState({ error: null })
+    updateState({ error: null, isLoading: false })
   }, [updateState])
 
   // Refrescar datos del usuario

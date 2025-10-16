@@ -74,7 +74,7 @@ async function validateSession(sessionId: string, userId: string): Promise<boole
       TableName: process.env.SESSIONS_TABLE!,
       Key: {
         PK: `SESSION#${sessionId}`,
-        SK: 'TOKEN',
+        SK: 'SESSION',
       },
     });
 

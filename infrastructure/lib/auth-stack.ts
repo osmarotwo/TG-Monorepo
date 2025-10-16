@@ -105,13 +105,11 @@ export class AuthStack extends cdk.Stack {
       APP_URL: frontendUrl, // URL del frontend configurada dinámicamente
     };
 
-    // JWT Authorizer Lambda - versión simple
+    // JWT Authorizer Lambda - usando versión compilada
     const jwtAuthorizer = new lambda.Function(this, 'JwtAuthorizerFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'src/authorizer.handler',
-      code: lambda.Code.fromAsset('../lambdas/jwt-authorizer', {
-        exclude: ['tsconfig.json', '*.ts', 'node_modules/@types'],
-      }),
+      handler: 'authorizer.handler',
+      code: lambda.Code.fromAsset('../lambdas/jwt-authorizer/dist'),
       environment: commonEnvironment,
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
@@ -185,6 +183,43 @@ export class AuthStack extends cdk.Stack {
           'X-Api-Key',
           'X-Amz-Security-Token'
         ],
+      },
+    });
+
+    // Add CORS headers to Gateway Responses for error cases
+    this.authApi.addGatewayResponse('Unauthorized', {
+      type: apigateway.ResponseType.UNAUTHORIZED,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        'Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+      },
+    });
+
+    this.authApi.addGatewayResponse('AccessDenied', {
+      type: apigateway.ResponseType.ACCESS_DENIED,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        'Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+      },
+    });
+
+    this.authApi.addGatewayResponse('Default4XX', {
+      type: apigateway.ResponseType.DEFAULT_4XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        'Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+      },
+    });
+
+    this.authApi.addGatewayResponse('Default5XX', {
+      type: apigateway.ResponseType.DEFAULT_5XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        'Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
       },
     });
 

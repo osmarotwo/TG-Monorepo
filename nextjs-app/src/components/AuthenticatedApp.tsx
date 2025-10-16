@@ -4,8 +4,6 @@ import React, { useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocale } from '../contexts/LocaleContext'
 import { useRouter } from 'next/navigation'
-import LanguageSelector from '../components/LanguageSelector'
-import RegistrationForm from '../components/RegistrationForm'
 
 // Componente de Loading
 function LoadingScreen() {
@@ -34,13 +32,13 @@ function LoadingScreen() {
   )
 }
 
-// Componente principal - ahora solo muestra login/registro o redirige a las páginas apropiadas
+// Componente principal - redirige usuarios no autenticados al login
 export default function AuthenticatedApp() {
   const { status, user, isLoading } = useAuth()
   const { t } = useLocale()
   const router = useRouter()
 
-  // Redirigir usuarios autenticados a la página apropiada
+  // Manejar redirecciones basadas en el estado de autenticación
   useEffect(() => {
     if (status === 'loading' || isLoading) return
 
@@ -52,53 +50,18 @@ export default function AuthenticatedApp() {
         // Si está todo completo, ir al dashboard
         router.replace('/dashboard')
       }
+    } else if (status === 'email-pending') {
+      // Email no verificado - redirigir a página de verificación pendiente
+      router.replace('/email-verification-pending')
+    } else if (status === 'profile-pending') {
+      // Perfil no completado - redirigir a onboarding
+      router.replace('/onboarding')
+    } else if (status === 'unauthenticated') {
+      // Usuario no autenticado - redirigir a login
+      router.replace('/auth/login')
     }
   }, [status, user, isLoading, router])
 
-  // Mostrar loading mientras se verifica la autenticación
-  if (status === 'loading' || isLoading) {
-    return <LoadingScreen />
-  }
-
-  // Si está autenticado, mostrar loading mientras redirige
-  if (status === 'authenticated') {
-    return <LoadingScreen />
-  }
-
-  // Usuario no autenticado - mostrar formulario de registro/login
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      {/* Language Selector en la esquina superior derecha */}
-      <div className="absolute top-4 right-4">
-        <LanguageSelector />
-      </div>
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {t('title', 'auth')}
-          </h1>
-          <p className="text-lg text-gray-600">
-            {t('description', 'auth')}
-          </p>
-        </div>
-
-        {/* Divider */}
-        <div className="mb-8">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">{t('orSignUpWith', 'auth')}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Registration Form */}
-        <RegistrationForm />
-      </div>
-    </div>
-  )
+  // Mostrar loading mientras se verifica la autenticación o redirige
+  return <LoadingScreen />
 }

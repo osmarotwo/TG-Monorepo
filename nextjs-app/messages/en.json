@@ -46,6 +46,7 @@
     "signingIn": "Signing in...",
     "registrationSuccessNotice": "Registration successful. Please check your email to verify your account.",
     "emailVerifiedNotice": "Email verified successfully! You can now sign in.",
+    "passwordResetSuccess": "Password reset successfully! You can now sign in with your new password.",
     "connectionError": "Connection error. Please try again.",
     "loginError": "Login error"
   },
@@ -122,5 +123,37 @@
     "profile": "Profile",
     "logout": "Logout",
     "dashboard": "Dashboard"
+  },
+  "forgotPassword": {
+    "forgotPassword": "Forgot Password?",
+    "enterEmailToReset": "Enter your email to receive a recovery link",
+    "sendResetLink": "Send recovery link",
+    "sending": "Sending...",
+    "backToLogin": "Back to login",
+    "checkYourEmail": "Check your email",
+    "resetEmailSent": "We've sent a recovery link to:",
+    "checkInboxForReset": "Please check your inbox and click the link to reset your password.",
+    "tryDifferentEmail": "Try a different email"
+  },
+  "resetPassword": {
+    "resetPassword": "Reset Password",
+    "enterNewPassword": "Enter your new password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "Confirm your new password",
+    "passwordMinLength": "Minimum 6 characters",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordsDoNotMatch": "Passwords don't match",
+    "tokenMissing": "Recovery token not found",
+    "resetFailed": "Failed to reset password",
+    "resetting": "Resetting...",
+    "resetPasswordButton": "Reset password",
+    "backToLogin": "Back to login",
+    "invalidLink": "Invalid link",
+    "invalidLinkDescription": "This recovery link is invalid or has expired. Please request a new one.",
+    "requestNewLink": "Request new link",
+    "passwordResetSuccess": "Password reset!",
+    "passwordResetSuccessDescription": "Your password has been reset successfully. You can now login with your new password.",
+    "goToLogin": "Go to login"
   }
 }

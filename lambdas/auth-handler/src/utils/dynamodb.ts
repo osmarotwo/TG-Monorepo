@@ -174,7 +174,7 @@ export async function updateUser(userId: string, updates: Partial<User>): Promis
 
   // Build update expression dynamically
   Object.entries(updates).forEach(([key, value]) => {
-    if (key !== 'PK' && key !== 'SK' && key !== 'userId' && value !== undefined) {
+    if (key !== 'PK' && key !== 'SK' && key !== 'userId' && key !== 'updatedAt' && value !== undefined) {
       updateExpressions.push(`#${key} = :${key}`);
       expressionAttributeNames[`#${key}`] = key;
       expressionAttributeValues[`:${key}`] = value;

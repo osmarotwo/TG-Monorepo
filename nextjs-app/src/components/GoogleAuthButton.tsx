@@ -8,33 +8,6 @@ export function GoogleAuthButton() {
   const { user, isLoaded, signInWithGoogle, signOut } = useGoogleAuth()
   const { t } = useLocale()
 
-  // NO usar renderButton() de Google para evitar warnings de FedCM
-  // Usar solo nuestro botón personalizado que abre popup directamente
-
-  // Función de diagnóstico mejorada
-  const testGoogleConfig = () => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    const currentOrigin = window.location.origin
-    
-    // Limpiar estado de Google
-    if (window.google) {
-      window.google.accounts.id.disableAutoSelect()
-    }
-    
-    alert(`🔍 Diagnóstico Google OAuth:
-
-✅ Client ID: ${clientId ? clientId.substring(0, 20) + '...' : 'NO CONFIGURADO'}
-✅ Origen actual: ${currentOrigin}
-✅ SDK cargado: ${window.google ? 'SÍ' : 'NO'}
-
-💡 Sugerencias:
-1. Asegúrate de estar logueado en Google (ve a google.com)
-2. Prueba en modo incógnito
-3. Ahora usamos solo botón personalizado (sin FedCM warnings)
-
-🧹 Estado de Google limpiado`)
-  }
-
   if (user) {
     return (
       <div className="w-full p-4 border border-green-300 rounded-lg bg-green-50">
@@ -77,14 +50,6 @@ export function GoogleAuthButton() {
           </span>
         </button>
       )}
-      
-      {/* Botón de diagnóstico */}
-      <button
-        onClick={testGoogleConfig}
-        className="w-full py-2 px-4 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-xs"
-      >
-        {t('diagnoseConfig', 'auth')}
-      </button>
     </div>
   )
 }

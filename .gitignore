@@ -10,6 +10,13 @@ dist/
 *.js
 *.js.map
 
+# Lambda deployment artifacts
+lambdas/**/deployment/
+lambdas/**/deployment-backup/
+lambdas/**/*.zip
+lambda.zip
+deployment.zip
+
 # Environment
 .env
 .env.local

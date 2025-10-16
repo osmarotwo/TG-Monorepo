@@ -26,6 +26,8 @@ function LoginForm() {
 
     if (message === 'registration-success') {
       setSuccessMessage(t('registrationSuccessNotice', 'auth'));
+    } else if (message === 'password-reset-success') {
+      setSuccessMessage(t('passwordResetSuccess', 'auth'));
     } else if (verified === 'true') {
       setSuccessMessage(t('emailVerifiedNotice', 'auth'));
     }

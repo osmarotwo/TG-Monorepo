@@ -332,36 +332,6 @@ export default function RegistrationForm({ onSuccess, onSwitchToLogin }: Registr
                 {isLoaded ? t('googleButton', 'auth') : t('loadingGoogle', 'auth')}
               </span>
             </button>
-            
-            {/* Botón "Diagnosticar configuración" - Funcionalidad original */}
-            <button
-              type="button"
-              onClick={() => {
-                const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-                const currentOrigin = window.location.origin
-                
-                // Limpiar estado de Google
-                if (window.google) {
-                  window.google.accounts.id.disableAutoSelect()
-                }
-                
-                alert(`🔍 Diagnóstico Google OAuth:
-
-✅ Client ID: ${clientId ? clientId.substring(0, 20) + '...' : 'NO CONFIGURADO'}
-✅ Origen actual: ${currentOrigin}
-✅ SDK cargado: ${window.google ? 'SÍ' : 'NO'}
-
-💡 Sugerencias:
-1. Asegúrate de estar logueado en Google (ve a google.com)
-2. Prueba en modo incógnito
-3. Ahora usamos solo botón personalizado (sin FedCM warnings)
-
-🧹 Estado de Google limpiado`)
-              }}
-              className="w-full py-2 px-4 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-xs"
-            >
-              {t('diagnoseConfig', 'auth')}
-            </button>
           </div>
 
           {/* Botón de envío */}

@@ -226,7 +226,7 @@ export async function sendPasswordResetEmail(
   firstName: string
 ): Promise<void> {
   const appUrl = process.env.APP_URL || 'http://localhost:3000';
-  const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
+  const resetUrl = `${appUrl}/auth/reset-password?token=${resetToken}`;
   
   const htmlTemplate = `
     <!DOCTYPE html>

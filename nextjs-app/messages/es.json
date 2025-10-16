@@ -63,6 +63,7 @@
     "signingIn": "Iniciando sesión...",
     "registrationSuccessNotice": "Registro exitoso. Revisa tu email para verificar tu cuenta.",
     "emailVerifiedNotice": "¡Email verificado exitosamente! Ya puedes iniciar sesión.",
+    "passwordResetSuccess": "¡Contraseña restablecida exitosamente! Ya puedes iniciar sesión con tu nueva contraseña.",
     "connectionError": "Error de conexión. Por favor, intenta nuevamente.",
     "loginError": "Error en el inicio de sesión",
     "accessYourAccount": "Accede a tu cuenta"
@@ -187,6 +188,38 @@
     "spanish": "Español",
     "english": "English",
     "changeLanguage": "Cambiar Idioma"
+  },
+  "forgotPassword": {
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "enterEmailToReset": "Ingresa tu email para recibir un enlace de recuperación",
+    "sendResetLink": "Enviar enlace de recuperación",
+    "sending": "Enviando...",
+    "backToLogin": "Volver al login",
+    "checkYourEmail": "Revisa tu email",
+    "resetEmailSent": "Te hemos enviado un enlace de recuperación a:",
+    "checkInboxForReset": "Por favor, revisa tu bandeja de entrada y haz clic en el enlace para restablecer tu contraseña.",
+    "tryDifferentEmail": "Probar con otro email"
+  },
+  "resetPassword": {
+    "resetPassword": "Restablecer Contraseña",
+    "enterNewPassword": "Ingresa tu nueva contraseña",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "confirmPasswordPlaceholder": "Confirma tu nueva contraseña",
+    "passwordMinLength": "Mínimo 6 caracteres",
+    "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
+    "passwordsDoNotMatch": "Las contraseñas no coinciden",
+    "tokenMissing": "Token de recuperación no encontrado",
+    "resetFailed": "Error al restablecer la contraseña",
+    "resetting": "Restableciendo...",
+    "resetPasswordButton": "Restablecer contraseña",
+    "backToLogin": "Volver al login",
+    "invalidLink": "Enlace inválido",
+    "invalidLinkDescription": "Este enlace de recuperación es inválido o ha expirado. Por favor, solicita uno nuevo.",
+    "requestNewLink": "Solicitar nuevo enlace",
+    "passwordResetSuccess": "¡Contraseña restablecida!",
+    "passwordResetSuccessDescription": "Tu contraseña ha sido restablecida exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.",
+    "goToLogin": "Ir al login"
   },
   "errors": {
     "generic": "Ha ocurrido un error inesperado",

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-// Interfaces
+// Interfaces locales (para este hook)
 interface GoogleUser {
   email: string
   name: string
@@ -14,35 +14,7 @@ interface GoogleCredentialResponse {
   credential: string
 }
 
-interface GoogleInitConfig {
-  client_id: string
-  callback: (response: GoogleCredentialResponse) => void
-  auto_select: boolean
-  cancel_on_tap_outside: boolean
-}
-
-interface GoogleNotification {
-  isNotDisplayed?: () => boolean
-  isSkippedMoment?: () => boolean
-  getMomentType?: () => string
-  getNotDisplayedReason?: () => string
-  getSkippedReason?: () => string
-}
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: GoogleInitConfig) => void
-          prompt: (callback?: (notification: GoogleNotification) => void) => void
-          renderButton: (element: HTMLElement, config: GoogleInitConfig) => void
-          disableAutoSelect: () => void
-        }
-      }
-    }
-  }
-}
+// Los tipos globales de Window.google están en /types/google.d.ts
 
 export const useGoogleAuth = () => {
   const [user, setUser] = useState<GoogleUser | null>(null)
@@ -96,7 +68,7 @@ export const useGoogleAuth = () => {
 
     const initializeGoogleAuth = () => {
       console.log('Inicializando Google Auth...')
-      if (window.google && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      if (window.google?.accounts && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
         window.google.accounts.id.initialize({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
@@ -181,7 +153,7 @@ Nota: Después de autenticarte, volverás a esta página automáticamente.`)
     localStorage.removeItem('googleUser')
     
     // Desactivar auto-selección de Google
-    if (window.google) {
+    if (window.google?.accounts) {
       window.google.accounts.id.disableAutoSelect()
     }
     

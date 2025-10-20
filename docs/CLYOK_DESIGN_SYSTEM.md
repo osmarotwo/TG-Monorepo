@@ -13,6 +13,7 @@ Este documento define el sistema de diseño oficial de Clyok que debe ser respet
 3. **Modernidad**: Uso de glassmorphism (backdrop-blur) para efectos visuales modernos
 4. **Accesibilidad**: Contraste adecuado y componentes accesibles
 5. **Tema único**: Solo modo claro (light mode), **sin dark mode**
+6. **Internacionalización**: Todas las páginas deben incluir el LanguageSelector
 
 ---
 
@@ -127,6 +128,71 @@ import { Logo } from '@/components/Logo';
   <Logo size="lg" />
 </div>
 ```
+
+### ⚠️ LanguageSelector (COMPONENTE OBLIGATORIO)
+
+**REGLA CRÍTICA**: TODAS las páginas deben incluir el LanguageSelector.
+
+**Ubicación**: `/nextjs-app/src/components/LanguageSelector.tsx`
+
+#### Para páginas CON Navigation (Dashboard, etc.):
+
+El selector ya está integrado en el componente `<Navigation>`. **NO agregar duplicado**.
+
+```tsx
+import Navigation from '@/components/Navigation';
+
+export default function DashboardPage() {
+  return (
+    <>
+      <Navigation /> {/* ✅ Ya incluye LanguageSelector */}
+      <div className="min-h-screen bg-[#f6f7f8]">
+        {/* contenido */}
+      </div>
+    </>
+  )
+}
+```
+
+#### Para páginas SIN Navigation (Auth, Onboarding, etc.):
+
+Agregar en posición fija superior derecha:
+
+```tsx
+import LanguageSelector from '@/components/LanguageSelector';
+
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen bg-[#f6f7f8]">
+      {/* ✅ SIEMPRE incluir en páginas sin navbar */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+      {/* contenido */}
+    </div>
+  )
+}
+```
+
+**Características**:
+- En Navigation: Integrado entre notificaciones y avatar de usuario
+- En páginas standalone: Posición fija `fixed top-4 right-4 z-50`
+- Presente en: login, register, forgot-password, reset-password, onboarding (standalone) y dashboard, services, appointments, locations (vía Navigation)
+
+**Nota importante**: 
+- Si la página usa `<Navigation>`, NO agregar LanguageSelector adicional (ya está incluido)
+- Solo páginas sin navbar necesitan el selector en posición fija
+
+**Páginas que lo implementan correctamente**:
+- ✅ `/auth/login` - Posición fija
+- ✅ `/auth/register` - Posición fija  
+- ✅ `/auth/forgot-password` - Posición fija
+- ✅ `/auth/reset-password` - Posición fija
+- ✅ `/onboarding` - Posición fija
+- ✅ `/dashboard` - Vía Navigation
+- ✅ `/services` - Vía Navigation
+- ✅ `/appointments` - Vía Navigation
+- ✅ `/locations` - Vía Navigation
 
 ### Estructura de Página de Autenticación
 
@@ -443,6 +509,7 @@ className="bg-blue-600" // Usar bg-[#13a4ec]
 
 Antes de crear o modificar un componente de UI, verifica:
 
+- [ ] ⚠️ **CRÍTICO**: Incluye `<LanguageSelector />` en posición `fixed top-4 right-4 z-50`
 - [ ] Usa el color primario `#13a4ec` para botones principales
 - [ ] Usa fondo `bg-[#f6f7f8]` para páginas completas
 - [ ] Usa `bg-white/50 backdrop-blur-sm` para tarjetas principales

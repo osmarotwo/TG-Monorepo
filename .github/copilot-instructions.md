@@ -7,26 +7,34 @@
 
 ### Reglas Críticas de UI:
 
-1. **Colores**:
+1. **⚠️ LanguageSelector (OBLIGATORIO)**:
+   - TODAS las páginas deben incluir LanguageSelector
+   - **Con `<Navigation>`**: Ya está integrado, NO agregar duplicado
+   - **Sin `<Navigation>`**: Agregar en posición fija `top-4 right-4 z-50`
+   - Importar de: `/nextjs-app/src/components/LanguageSelector.tsx`
+   - Páginas con navbar (dashboard, services, appointments, locations): Usa Navigation
+   - Páginas sin navbar (login, register, onboarding): Posición fija
+
+2. **Colores**:
    - Color primario: `#13a4ec` (Clyok blue)
    - Fondo de página: `bg-[#f6f7f8]`
    - Tarjetas: `bg-white/50 backdrop-blur-sm`
    - **NO usar dark mode** (sin clases `dark:`)
 
-2. **Logo**:
+3. **Logo**:
    - Usar componente `<Logo>` de `/nextjs-app/src/components/Logo.tsx`
    - Siempre centrado: `<div className="flex justify-center mb-4"><Logo size="lg" /></div>`
    - NO usar `<LogoWithText>` en headers
 
-3. **Inputs**:
+4. **Inputs**:
    - Background: `bg-[#f6f7f8]`
    - Focus: `focus:ring-[#13a4ec]`
    - Border: `border-gray-300`
 
-4. **Botones primarios**:
+5. **Botones primarios**:
    - `bg-[#13a4ec] hover:bg-[#0f8fcd] text-white`
 
-5. **Links**:
+6. **Links**:
    - `text-[#13a4ec] hover:text-[#0f8fcd]`
 
 ### Antes de crear/modificar UI:

@@ -18,6 +18,7 @@ export interface Appointment {
   specialistId: string;
   startTime: string;
   endTime: string;
+  estimatedDuration: number; // Duración estimada del servicio en minutos
   status: 'confirmed' | 'pending' | 'cancelled' | 'no-show' | 'completed';
   resourceId: string;
   notes?: string;

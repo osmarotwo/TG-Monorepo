@@ -1,0 +1,23 @@
+{
+  "name": "data-handler",
+  "version": "1.0.0",
+  "description": "Lambda handler for Clyok dashboard data (appointments, locations, businesses, KPIs)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rm -rf dist",
+    "seed": "node dist/seed/seed-data.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.138",
+    "@types/node": "^20.14.0",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^5.4.5"
+  }
+}

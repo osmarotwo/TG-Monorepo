@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Logo } from '@/components/Logo'
@@ -8,11 +8,6 @@ import AppointmentCard from '@/components/dashboard/AppointmentCard'
 import LocationCard from '@/components/dashboard/LocationCard'
 import KpiCard from '@/components/dashboard/KpiCard'
 import MapSection from '@/components/dashboard/MapSection'
-import IndustryFilter, { type Industry } from '@/components/dashboard/IndustryFilter'
-import { AppointmentCardSkeleton, LocationCardSkeleton, KpiCardSkeleton, MapSkeleton } from '@/components/dashboard/Skeletons'
-import { ToastContainer, useToast } from '@/components/Toast'
-import Modal from '@/components/Modal'
-import NewAppointmentForm, { type AppointmentFormData } from '@/components/dashboard/NewAppointmentForm'
 import { fetchUpcomingAppointments } from '@/services/api/appointments'
 import { fetchBusinessesByOwner } from '@/services/api/businesses'
 import { fetchLocationsByBusiness } from '@/services/api/locations'
@@ -22,7 +17,6 @@ import type { DashboardData } from '@/types/dashboard'
 export default function DashboardV2Page() {
   const { user, logout, status } = useAuth()
   const router = useRouter()
-  const toast = useToast()
   
   // Dashboard state
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -33,13 +27,6 @@ export default function DashboardV2Page() {
     loading: true,
     error: null,
   })
-
-  // Industry filter state
-  const [selectedIndustry, setSelectedIndustry] = useState<Industry>('all')
-
-  // Modal states
-  const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false)
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
 
   // Redirigir si no está autenticado o si el perfil no está completo
   useEffect(() => {
@@ -115,47 +102,7 @@ export default function DashboardV2Page() {
         loading: false,
         error: 'Error al cargar los datos del dashboard',
       }))
-      toast.error('Error al cargar los datos del dashboard. Por favor, intenta de nuevo.')
     }
-  }
-
-  // Filter locations by industry
-  const filteredLocations = useMemo(() => {
-    if (selectedIndustry === 'all') {
-      return dashboardData.locations
-    }
-    return dashboardData.locations.filter(
-      loc => loc.industry === selectedIndustry
-    )
-  }, [dashboardData.locations, selectedIndustry])
-
-  // Handle new appointment submission
-  const handleNewAppointment = async (data: AppointmentFormData) => {
-    try {
-      // TODO: Implement API call to create appointment
-      console.log('Creating appointment:', data)
-      toast.success('¡Cita agendada exitosamente!')
-      setIsNewAppointmentModalOpen(false)
-      
-      // Reload dashboard data
-      await loadDashboardData()
-    } catch (error) {
-      console.error('Error creating appointment:', error)
-      toast.error('Error al agendar la cita. Intenta de nuevo.')
-    }
-  }
-
-  // Handle view appointment details
-  const handleViewAppointmentDetails = (appointmentId: string) => {
-    setSelectedAppointmentId(appointmentId)
-    toast.info('Detalles de cita próximamente disponibles')
-    // TODO: Open appointment details modal
-  }
-
-  // Handle view all appointments
-  const handleViewAllAppointments = () => {
-    router.push('/appointments')
-    // TODO: Navigate to appointments page
   }
 
   // Mostrar loading mientras se verifica
@@ -167,60 +114,14 @@ export default function DashboardV2Page() {
     )
   }
 
-  // Loading state with skeletons
+  // Loading state
   if (dashboardData.loading) {
     return (
-      <div className="min-h-screen bg-[#f6f7f8]">
-        <header className="sticky top-0 z-10 bg-[#f6f7f8]/80 backdrop-blur-sm border-b border-gray-200">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-10">
-            <div className="flex items-center justify-between py-4">
-              <div className="flex items-center gap-4">
-                <Logo size="md" />
-                <div className="h-6 w-32 bg-gray-300 rounded animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        </header>
-        
-        <main className="max-w-5xl mx-auto p-4 sm:p-6 md:p-10">
-          <div className="space-y-8">
-            {/* Welcome skeleton */}
-            <div className="space-y-2">
-              <div className="h-10 w-3/4 bg-gray-300 rounded animate-pulse"></div>
-              <div className="h-6 w-full bg-gray-300 rounded animate-pulse"></div>
-            </div>
-            
-            {/* Appointments skeletons */}
-            <div className="space-y-4">
-              <div className="h-8 w-48 bg-gray-300 rounded animate-pulse"></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AppointmentCardSkeleton />
-                <AppointmentCardSkeleton />
-              </div>
-            </div>
-            
-            {/* KPIs skeletons */}
-            <div className="space-y-4">
-              <div className="h-8 w-40 bg-gray-300 rounded animate-pulse"></div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <KpiCardSkeleton />
-                <KpiCardSkeleton />
-                <KpiCardSkeleton />
-              </div>
-            </div>
-            
-            {/* Locations skeletons */}
-            <div className="space-y-4">
-              <div className="h-8 w-32 bg-gray-300 rounded animate-pulse"></div>
-              <MapSkeleton />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <LocationCardSkeleton />
-                <LocationCardSkeleton />
-                <LocationCardSkeleton />
-              </div>
-            </div>
-          </div>
-        </main>
+      <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#13a4ec] mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando dashboard...</p>
+        </div>
       </div>
     )
   }
@@ -278,14 +179,6 @@ export default function DashboardV2Page() {
               Aquí tienes un resumen de tus próximas citas y ubicaciones.
             </p>
           </div>
-
-          {/* Industry Filter */}
-          {dashboardData.business && dashboardData.locations.length > 0 && (
-            <IndustryFilter
-              selected={selectedIndustry}
-              onChange={setSelectedIndustry}
-            />
-          )}
           
           {/* Error State */}
           {dashboardData.error && (
@@ -329,7 +222,7 @@ export default function DashboardV2Page() {
                       <AppointmentCard
                         key={appointment.appointmentId}
                         appointment={appointment}
-                        onViewDetails={handleViewAppointmentDetails}
+                        onViewDetails={(id) => console.log('View details:', id)}
                       />
                     ))}
                   </div>
@@ -337,12 +230,6 @@ export default function DashboardV2Page() {
                   <div className="bg-white/50 backdrop-blur-sm rounded-xl p-8 text-center">
                     <div className="text-4xl mb-2">📅</div>
                     <p className="text-gray-600">No tienes citas próximas</p>
-                    <button
-                      onClick={() => setIsNewAppointmentModalOpen(true)}
-                      className="mt-4 bg-[#13a4ec] hover:bg-[#0f8fcd] text-white font-medium px-6 py-2 rounded-lg transition-colors"
-                    >
-                      Agendar Primera Cita
-                    </button>
                   </div>
                 )}
               </div>
@@ -383,75 +270,37 @@ export default function DashboardV2Page() {
               {/* Locations Section */}
               {dashboardData.locations.length > 0 && (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-gray-900">Mis Sedes</h3>
-                    {selectedIndustry !== 'all' && (
-                      <span className="text-sm text-gray-600">
-                        {filteredLocations.length} de {dashboardData.locations.length} sedes
-                      </span>
-                    )}
-                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Mis Sedes</h3>
                   
-                  {filteredLocations.length > 0 ? (
-                    <>
-                      {/* Map */}
-                      <MapSection locations={filteredLocations} />
-                      
-                      {/* Locations Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredLocations.map(location => (
-                          <LocationCard
-                            key={location.locationId}
-                            location={location}
-                            onClick={(id) => console.log('View location:', id)}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-8 text-center">
-                      <div className="text-4xl mb-2">🔍</div>
-                      <p className="text-gray-600">No hay sedes de esta industria</p>
-                    </div>
-                  )}
+                  {/* Map */}
+                  <MapSection locations={dashboardData.locations} />
+                  
+                  {/* Locations Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {dashboardData.locations.map(location => (
+                      <LocationCard
+                        key={location.locationId}
+                        location={location}
+                        onClick={(id) => console.log('View location:', id)}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
               
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <button 
-                  onClick={() => setIsNewAppointmentModalOpen(true)}
-                  className="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#13a4ec] px-6 text-sm font-bold text-white transition-all hover:bg-[#0f8fcd] hover:scale-105"
-                >
-                  <span>➕ Agendar Nueva Cita</span>
+                <button className="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#13a4ec] px-6 text-sm font-bold text-white transition-opacity hover:bg-[#0f8fcd]">
+                  <span>Agendar Nueva Cita</span>
                 </button>
-                <button 
-                  onClick={handleViewAllAppointments}
-                  className="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#13a4ec]/10 px-6 text-sm font-bold text-[#13a4ec] transition-all hover:bg-[#13a4ec]/20 hover:scale-105"
-                >
-                  <span>📅 Ver Todas las Citas</span>
+                <button className="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#13a4ec]/10 px-6 text-sm font-bold text-[#13a4ec] transition-colors hover:bg-[#13a4ec]/20">
+                  <span>Ver Todas las Citas</span>
                 </button>
               </div>
             </>
           )}
         </div>
       </main>
-
-      {/* New Appointment Modal */}
-      <Modal
-        isOpen={isNewAppointmentModalOpen}
-        onClose={() => setIsNewAppointmentModalOpen(false)}
-        title="Agendar Nueva Cita"
-        size="lg"
-      >
-        <NewAppointmentForm
-          onSubmit={handleNewAppointment}
-          onCancel={() => setIsNewAppointmentModalOpen(false)}
-        />
-      </Modal>
-
-      {/* Toast Notifications */}
-      <ToastContainer toasts={toast.toasts} onClose={toast.closeToast} />
     </div>
   )
 }

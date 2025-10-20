@@ -4,6 +4,7 @@ import * as cdk from 'aws-cdk-lib';
 import { ApiLambdaStack } from '../lib/api-lambda-stack';
 import { AuthStack } from '../lib/auth-stack';
 import { AmplifyStack } from '../lib/amplify-stack';
+import { DataStack } from '../lib/data-stack';
 
 const app = new cdk.App();
 
@@ -23,6 +24,11 @@ const authStack = new AuthStack(app, 'AuthStack', {
   env,
 });
 
+// Data Stack for Dashboard (Appointments, Locations, Businesses, KPIs)
+const dataStack = new DataStack(app, 'DataStack', {
+  env,
+});
+
 // Frontend Amplify Stack
 const amplifyStack = new AmplifyStack(app, 'AmplifyStack', {
   env,
@@ -36,3 +42,4 @@ const amplifyStack = new AmplifyStack(app, 'AmplifyStack', {
 // Add dependencies to ensure proper deployment order
 amplifyStack.addDependency(authStack);
 amplifyStack.addDependency(apiStack);
+amplifyStack.addDependency(dataStack);

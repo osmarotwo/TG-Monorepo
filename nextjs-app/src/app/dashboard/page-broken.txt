@@ -1,28 +1,25 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useLocale } from '@/contexts/LocaleContext'
+import LanguageSelector from '@/components/LanguageSelector'
 import { Logo } from '@/components/Logo'
+import { useRouter } from 'next/navigation'
 import AppointmentCard from '@/components/dashboard/AppointmentCard'
 import LocationCard from '@/components/dashboard/LocationCard'
 import KpiCard from '@/components/dashboard/KpiCard'
 import MapSection from '@/components/dashboard/MapSection'
-import IndustryFilter, { type Industry } from '@/components/dashboard/IndustryFilter'
-import { AppointmentCardSkeleton, LocationCardSkeleton, KpiCardSkeleton, MapSkeleton } from '@/components/dashboard/Skeletons'
-import { ToastContainer, useToast } from '@/components/Toast'
-import Modal from '@/components/Modal'
-import NewAppointmentForm, { type AppointmentFormData } from '@/components/dashboard/NewAppointmentForm'
 import { fetchUpcomingAppointments } from '@/services/api/appointments'
 import { fetchBusinessesByOwner } from '@/services/api/businesses'
 import { fetchLocationsByBusiness } from '@/services/api/locations'
 import { fetchAggregatedKpis } from '@/services/api/kpis'
 import type { DashboardData } from '@/types/dashboard'
 
-export default function DashboardV2Page() {
+export default function DashboardPage() {
   const { user, logout, status } = useAuth()
+  const { t } = useLocale()
   const router = useRouter()
-  const toast = useToast()
   
   // Dashboard state
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -33,13 +30,6 @@ export default function DashboardV2Page() {
     loading: true,
     error: null,
   })
-
-  // Industry filter state
-  const [selectedIndustry, setSelectedIndustry] = useState<Industry>('all')
-
-  // Modal states
-  const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false)
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
 
   // Redirigir si no está autenticado o si el perfil no está completo
   useEffect(() => {
@@ -68,8 +58,8 @@ export default function DashboardV2Page() {
     setDashboardData(prev => ({ ...prev, loading: true, error: null }))
     
     try {
-      // For demo, use test user ID
-      const userId = 'test-user-camila'
+      // For demo, use test user ID if user doesn't have a business yet
+      const userId = user.userId || 'test-user-camila'
       
       // Fetch businesses
       const businesses = await fetchBusinessesByOwner(userId)
@@ -115,47 +105,7 @@ export default function DashboardV2Page() {
         loading: false,
         error: 'Error al cargar los datos del dashboard',
       }))
-      toast.error('Error al cargar los datos del dashboard. Por favor, intenta de nuevo.')
     }
-  }
-
-  // Filter locations by industry
-  const filteredLocations = useMemo(() => {
-    if (selectedIndustry === 'all') {
-      return dashboardData.locations
-    }
-    return dashboardData.locations.filter(
-      loc => loc.industry === selectedIndustry
-    )
-  }, [dashboardData.locations, selectedIndustry])
-
-  // Handle new appointment submission
-  const handleNewAppointment = async (data: AppointmentFormData) => {
-    try {
-      // TODO: Implement API call to create appointment
-      console.log('Creating appointment:', data)
-      toast.success('¡Cita agendada exitosamente!')
-      setIsNewAppointmentModalOpen(false)
-      
-      // Reload dashboard data
-      await loadDashboardData()
-    } catch (error) {
-      console.error('Error creating appointment:', error)
-      toast.error('Error al agendar la cita. Intenta de nuevo.')
-    }
-  }
-
-  // Handle view appointment details
-  const handleViewAppointmentDetails = (appointmentId: string) => {
-    setSelectedAppointmentId(appointmentId)
-    toast.info('Detalles de cita próximamente disponibles')
-    // TODO: Open appointment details modal
-  }
-
-  // Handle view all appointments
-  const handleViewAllAppointments = () => {
-    router.push('/appointments')
-    // TODO: Navigate to appointments page
   }
 
   // Mostrar loading mientras se verifica
@@ -167,60 +117,14 @@ export default function DashboardV2Page() {
     )
   }
 
-  // Loading state with skeletons
+  // Loading state
   if (dashboardData.loading) {
     return (
-      <div className="min-h-screen bg-[#f6f7f8]">
-        <header className="sticky top-0 z-10 bg-[#f6f7f8]/80 backdrop-blur-sm border-b border-gray-200">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-10">
-            <div className="flex items-center justify-between py-4">
-              <div className="flex items-center gap-4">
-                <Logo size="md" />
-                <div className="h-6 w-32 bg-gray-300 rounded animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        </header>
-        
-        <main className="max-w-5xl mx-auto p-4 sm:p-6 md:p-10">
-          <div className="space-y-8">
-            {/* Welcome skeleton */}
-            <div className="space-y-2">
-              <div className="h-10 w-3/4 bg-gray-300 rounded animate-pulse"></div>
-              <div className="h-6 w-full bg-gray-300 rounded animate-pulse"></div>
-            </div>
-            
-            {/* Appointments skeletons */}
-            <div className="space-y-4">
-              <div className="h-8 w-48 bg-gray-300 rounded animate-pulse"></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AppointmentCardSkeleton />
-                <AppointmentCardSkeleton />
-              </div>
-            </div>
-            
-            {/* KPIs skeletons */}
-            <div className="space-y-4">
-              <div className="h-8 w-40 bg-gray-300 rounded animate-pulse"></div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <KpiCardSkeleton />
-                <KpiCardSkeleton />
-                <KpiCardSkeleton />
-              </div>
-            </div>
-            
-            {/* Locations skeletons */}
-            <div className="space-y-4">
-              <div className="h-8 w-32 bg-gray-300 rounded animate-pulse"></div>
-              <MapSkeleton />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <LocationCardSkeleton />
-                <LocationCardSkeleton />
-                <LocationCardSkeleton />
-              </div>
-            </div>
-          </div>
-        </main>
+      <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#13a4ec] mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando dashboard...</p>
+        </div>
       </div>
     )
   }
@@ -278,14 +182,6 @@ export default function DashboardV2Page() {
               Aquí tienes un resumen de tus próximas citas y ubicaciones.
             </p>
           </div>
-
-          {/* Industry Filter */}
-          {dashboardData.business && dashboardData.locations.length > 0 && (
-            <IndustryFilter
-              selected={selectedIndustry}
-              onChange={setSelectedIndustry}
-            />
-          )}
           
           {/* Error State */}
           {dashboardData.error && (
@@ -329,7 +225,7 @@ export default function DashboardV2Page() {
                       <AppointmentCard
                         key={appointment.appointmentId}
                         appointment={appointment}
-                        onViewDetails={handleViewAppointmentDetails}
+                        onViewDetails={(id) => console.log('View details:', id)}
                       />
                     ))}
                   </div>
@@ -337,12 +233,6 @@ export default function DashboardV2Page() {
                   <div className="bg-white/50 backdrop-blur-sm rounded-xl p-8 text-center">
                     <div className="text-4xl mb-2">📅</div>
                     <p className="text-gray-600">No tienes citas próximas</p>
-                    <button
-                      onClick={() => setIsNewAppointmentModalOpen(true)}
-                      className="mt-4 bg-[#13a4ec] hover:bg-[#0f8fcd] text-white font-medium px-6 py-2 rounded-lg transition-colors"
-                    >
-                      Agendar Primera Cita
-                    </button>
                   </div>
                 )}
               </div>
@@ -383,75 +273,154 @@ export default function DashboardV2Page() {
               {/* Locations Section */}
               {dashboardData.locations.length > 0 && (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-gray-900">Mis Sedes</h3>
-                    {selectedIndustry !== 'all' && (
-                      <span className="text-sm text-gray-600">
-                        {filteredLocations.length} de {dashboardData.locations.length} sedes
-                      </span>
-                    )}
-                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Mis Sedes</h3>
                   
-                  {filteredLocations.length > 0 ? (
-                    <>
-                      {/* Map */}
-                      <MapSection locations={filteredLocations} />
-                      
-                      {/* Locations Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredLocations.map(location => (
-                          <LocationCard
-                            key={location.locationId}
-                            location={location}
-                            onClick={(id) => console.log('View location:', id)}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-8 text-center">
-                      <div className="text-4xl mb-2">🔍</div>
-                      <p className="text-gray-600">No hay sedes de esta industria</p>
-                    </div>
-                  )}
+                  {/* Map */}
+                  <MapSection locations={dashboardData.locations} />
+                  
+                  {/* Locations Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {dashboardData.locations.map(location => (
+                      <LocationCard
+                        key={location.locationId}
+                        location={location}
+                        onClick={(id) => console.log('View location:', id)}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
               
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <button 
-                  onClick={() => setIsNewAppointmentModalOpen(true)}
-                  className="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#13a4ec] px-6 text-sm font-bold text-white transition-all hover:bg-[#0f8fcd] hover:scale-105"
-                >
-                  <span>➕ Agendar Nueva Cita</span>
+                <button className="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#13a4ec] px-6 text-sm font-bold text-white transition-opacity hover:bg-[#0f8fcd]">
+                  <span>Agendar Nueva Cita</span>
                 </button>
-                <button 
-                  onClick={handleViewAllAppointments}
-                  className="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#13a4ec]/10 px-6 text-sm font-bold text-[#13a4ec] transition-all hover:bg-[#13a4ec]/20 hover:scale-105"
-                >
-                  <span>📅 Ver Todas las Citas</span>
+                <button className="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#13a4ec]/10 px-6 text-sm font-bold text-[#13a4ec] transition-colors hover:bg-[#13a4ec]/20">
+                  <span>Ver Todas las Citas</span>
                 </button>
               </div>
             </>
           )}
+              
+              {/* User Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-[#f6f7f8] rounded-lg p-4">
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">
+                    {t('profile', 'navigation')}
+                  </h3>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p><strong>Email:</strong> {user?.email}</p>
+                    <p><strong>{t('fullName', 'auth')}:</strong> {user?.firstName} {user?.lastName}</p>
+                    {user?.phone && <p><strong>{t('phone', 'user')}:</strong> {user.phone}</p>}
+                    {user?.birthDate && <p><strong>{t('birthDate', 'user')}:</strong> {user.birthDate}</p>}
+                    <div className="flex items-center">
+                      <strong className="mr-2">{t('provider', 'dashboard')}:</strong>
+                      {user?.provider === 'google' ? (
+                        <div className="flex items-center">
+                          <svg className="h-5 w-5 mr-1" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                          </svg>
+                          Google
+                        </div>
+                      ) : (
+                        <div className="flex items-center">
+                          <svg className="h-5 w-5 mr-1 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                          </svg>
+                          Email
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-[#f6f7f8] rounded-lg p-4">
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">
+                    {t('accountStatus', 'dashboard')}
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center">
+                      {user?.emailVerified ? (
+                        <>
+                          <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          {t('emailVerified', 'dashboard')}
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-4 w-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                          {t('emailNotVerified', 'dashboard')}
+                        </>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center">
+                      {user?.profileCompleted ? (
+                        <>
+                          <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          {t('profileComplete', 'dashboard')}
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-4 w-4 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {t('profileIncomplete', 'dashboard')}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Session Info */}
+              {(user?.createdAt || user?.updatedAt) && (
+                <div className="mt-6 bg-[#f6f7f8] rounded-lg p-4">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">
+                    {t('sessionInfo', 'dashboard')}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                    {user?.createdAt && (
+                      <div>
+                        <strong>{t('createdAt', 'dashboard')}:</strong>{' '}
+                        {new Date(user.createdAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    )}
+                    {user?.updatedAt && (
+                      <div>
+                        <strong>{t('lastLogin', 'dashboard')}:</strong>{' '}
+                        {new Date(user.updatedAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </main>
-
-      {/* New Appointment Modal */}
-      <Modal
-        isOpen={isNewAppointmentModalOpen}
-        onClose={() => setIsNewAppointmentModalOpen(false)}
-        title="Agendar Nueva Cita"
-        size="lg"
-      >
-        <NewAppointmentForm
-          onSubmit={handleNewAppointment}
-          onCancel={() => setIsNewAppointmentModalOpen(false)}
-        />
-      </Modal>
-
-      {/* Toast Notifications */}
-      <ToastContainer toasts={toast.toasts} onClose={toast.closeToast} />
     </div>
   )
 }

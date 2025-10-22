@@ -7,7 +7,9 @@
     "build": "tsc",
     "watch": "tsc -w",
     "clean": "rm -rf dist",
-    "seed": "node dist/seed/seed-data.js"
+    "seed": "node dist/seed/seed-data.js",
+    "seed:optimizable": "node dist/seed/seed-optimizable-route.js",
+    "seed:availability": "node dist/seed/seed-availability.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.600.0",

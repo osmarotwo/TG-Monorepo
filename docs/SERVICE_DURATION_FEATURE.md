@@ -1,13 +1,30 @@
-# Funcionalidad de Duración de Servicio y Detección de Conflictos
+# 🎯 Feature: Duración Real de Servicios en Optimización
 
-## 📋 Descripción
+## 📋 Resumen
 
-Esta funcionalidad permite al sistema verificar si el usuario puede llegar a tiempo a cada cita, considerando:
-- **Tiempo de finalización del servicio actual** (startTime + estimatedDuration)
-- **Tiempo de viaje** al siguiente negocio (de Google Maps API o estimación Haversine)
-- **Hora de inicio** del siguiente servicio
+Se implementó el uso de **duraciones reales de servicios** en lugar de un valor hardcoded de 60 minutos, asegurando que:
 
-Si la suma de (fin de servicio + viaje) excede el inicio del siguiente servicio, se marca como **conflicto** y se alerta al usuario.
+1. ✅ El algoritmo de optimización usa `appointment.estimatedDuration` en cálculos
+2. ✅ La tabla de reprogramación muestra la duración de cada servicio
+3. ✅ Los horarios propuestos son precisos para servicios de cualquier duración
+
+## 🔍 Problema Identificado
+
+### Antes de la implementación:
+
+```typescript
+// ❌ Duración hardcoded en el algoritmo
+const SERVICE_DURATION_MINUTES = 60;
+currentTime = new Date(currentTime.getTime() + SERVICE_DURATION_MINUTES * 60 * 1000);
+```
+
+**Consecuencias:**
+- Un corte de pelo (30 min) generaba 30 minutos de tiempo muerto
+- Una keratina (120 min) causaba conflictos de horarios superpuestos
+- Usuarios no podían ver cuánto duraría cada servicio
+- Imposible validar si los horarios propuestos eran correctos
+
+## ✅ Solución Implementada
 
 ---
 

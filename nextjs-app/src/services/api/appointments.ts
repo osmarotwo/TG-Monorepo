@@ -25,6 +25,10 @@ export interface Appointment {
   imageUrl?: string;
   createdAt: string;
   updatedAt: string;
+  // Campos adicionales de DynamoDB (date/time separados)
+  date?: string; // YYYY-MM-DD
+  time?: string; // HH:MM
+  serviceName?: string; // Nombre del servicio
 }
 
 export interface AppointmentsResponse {
@@ -89,6 +93,46 @@ export async function fetchAppointmentById(appointmentId: string): Promise<Appoi
     return data.appointment;
   } catch (error) {
     console.error('Error fetching appointment:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update appointment times (for route optimization)
+ */
+export async function updateAppointmentTimes(
+  appointmentId: string,
+  userId: string,
+  startTime: string,
+  endTime: string
+): Promise<Appointment> {
+  try {
+    const token = getAuthToken();
+    const response = await fetch(
+      `${API_BASE_URL}/api/appointments/${appointmentId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId,
+          startTime,
+          endTime,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Failed to update appointment: ${errorData.error || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.appointment;
+  } catch (error) {
+    console.error('Error updating appointment:', error);
     throw error;
   }
 }

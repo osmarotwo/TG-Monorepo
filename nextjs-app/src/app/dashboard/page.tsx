@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import AppointmentMapSection from '@/components/dashboard/AppointmentMapSection'
+import RouteOptimizationCard from '@/components/dashboard/RouteOptimizationCard'
 import { fetchUpcomingAppointments, type Appointment as AppointmentType } from '@/services/api/appointments'
 import { fetchLocationById, type Location } from '@/services/api/locations'
 import { fetchBusinessById, type Business } from '@/services/api/businesses'
 import { useToast, ToastContainer } from '@/components/Toast'
+import { useRouteOptimizationWithRescheduling } from '@/hooks/useRouteOptimizationWithRescheduling'
 
 interface AppointmentWithDetails extends AppointmentType {
   location?: Location
@@ -22,6 +24,75 @@ export default function DashboardPage() {
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([])
   const [appointmentLocations, setAppointmentLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [optimizationAttempted, setOptimizationAttempted] = useState(false) // Prevenir loop infinito
+
+  // Hook de optimización de rutas con reprogramación
+  const {
+    optimizationResult,
+    isOptimizing,
+    error: optimizationError,
+    rescheduledAppointments,
+    hasSignificantImprovement,
+    optimize,
+    applyOptimization,
+    reset: dismissOptimization,
+  } = useRouteOptimizationWithRescheduling(appointments, userLocation || { lat: 5.0214, lng: -73.9919 })
+
+  console.log('📊 Dashboard optimization state:', {
+    hasOptimization: hasSignificantImprovement,
+    isOptimizing,
+    optimizationResult: !!optimizationResult,
+    appointmentsCount: appointments.length,
+    locationsCount: appointmentLocations.length,
+    hasUserLocation: !!userLocation,
+    rescheduledCount: rescheduledAppointments.length
+  })
+
+  // Trigger optimization when appointments are loaded (solo una vez)
+  useEffect(() => {
+    if (appointments.length >= 2 && !isOptimizing && !optimizationResult && !optimizationAttempted) {
+      console.log('🔄 Auto-triggering optimization...');
+      setOptimizationAttempted(true); // Marcar como intentado
+      optimize();
+    }
+  }, [appointments, isOptimizing, optimizationResult, optimizationAttempted, optimize]);
+
+  // Obtener ubicación del usuario
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log('📍 Ubicación detectada:', {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          })
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          })
+        },
+        (error) => {
+          // Silenciar error si es "unavailable" (común en localhost)
+          if (error.code !== 2) {
+            console.warn('⚠️ Geolocalización no disponible:', error.message)
+          }
+          // Fallback a Zipaquirá (centro de las citas de prueba)
+          console.log('📍 Usando ubicación por defecto: Zipaquirá')
+          setUserLocation({ lat: 5.0214, lng: -74.0637 })
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 300000, // Cache por 5 minutos
+        }
+      )
+    } else {
+      // Fallback a Zipaquirá
+      console.log('📍 Geolocalización no soportada, usando Zipaquirá')
+      setUserLocation({ lat: 5.0214, lng: -74.0637 })
+    }
+  }, [])
 
   useEffect(() => {
     if (status === 'loading') return
@@ -108,6 +179,78 @@ export default function DashboardPage() {
             </p>
           </div>
 
+          {/* Error de optimización */}
+          {optimizationError && (
+            <div className="mb-8 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+              <div className="flex items-start">
+                <span className="text-2xl mr-3">⚠️</span>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-yellow-900 mb-1">
+                    Optimización no disponible temporalmente
+                  </h3>
+                  <p className="text-sm text-yellow-800">
+                    No pudimos verificar disponibilidad de horarios. Intenta más tarde.
+                  </p>
+                  {optimizationError && (
+                    <p className="text-xs text-yellow-700 mt-2">
+                      Error: {optimizationError.message}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setOptimizationAttempted(false);
+                    optimize();
+                  }}
+                  className="ml-4 text-sm text-yellow-900 hover:text-yellow-700 font-medium"
+                >
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Route Optimization Card - Solo mostrar si hay mejora */}
+          {hasSignificantImprovement && optimizationResult && !optimizationError && (
+            <div className="mb-8">
+              <RouteOptimizationCard
+                optimizationResult={optimizationResult}
+                rescheduledAppointments={rescheduledAppointments}
+                isOptimizing={isOptimizing}
+                userLocation={userLocation || undefined}
+                onApply={async () => {
+                  try {
+                    const reorderedAppointments = await applyOptimization()
+                    if (reorderedAppointments.length > 0) {
+                      // Actualizar el estado con las citas reordenadas
+                      const enrichedReordered = reorderedAppointments.map((apt: AppointmentType) => {
+                        const original = appointments.find(a => a.appointmentId === apt.appointmentId)
+                        return {
+                          ...(original || apt),
+                          startTime: apt.startTime,
+                          endTime: apt.endTime,
+                          date: apt.date,
+                          time: apt.time,
+                        }
+                      })
+                      setAppointments(enrichedReordered as AppointmentWithDetails[])
+                      dismissOptimization() // Ocultar tarjeta de optimización
+                      toast.success('✅ Optimización aplicada! Citas actualizadas en la base de datos.')
+                    }
+                  } catch (error) {
+                    console.error('❌ Error aplicando optimización:', error)
+                    toast.error('❌ Error al aplicar optimización. Por favor intenta de nuevo.')
+                  }
+                }}
+                onDismiss={dismissOptimization}
+                onViewDetails={() => {
+                  console.log('View details:', optimizationResult)
+                  // TODO: Abrir modal con detalles completos
+                }}
+              />
+            </div>
+          )}
+
           {/* Upcoming Appointments */}
           <div className="mb-12">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Upcoming Appointments</h2>
@@ -138,7 +281,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {appointments.slice(0, 4).map((appointment) => {
+                {appointments.slice(0, 4).map((appointment: AppointmentWithDetails) => {
                   const industryEmojis = {
                     beauty: '💅',
                     restaurant: '🍽️',

@@ -1,8 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { getAppointments, getAppointmentById } from './handlers/appointments';
+import { getAppointments, getAppointmentById, updateAppointment } from './handlers/appointments';
 import { getLocations, getLocationById } from './handlers/locations';
 import { getBusinesses, getBusinessById } from './handlers/businesses';
 import { getKpisByLocation } from './handlers/kpis';
+import { getAvailableSlots, checkMultipleAvailability, reserveSlot } from './handlers/availability';
 
 /**
  * Main Lambda handler - Routes requests to appropriate handlers
@@ -43,6 +44,30 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       // KPIs routes
       if (path.match(/^\/api\/kpis\/[^/]+$/)) {
         return await getKpisByLocation(event);
+      }
+
+      // Availability routes
+      if (path.match(/^\/api\/availability\/[^/]+\/[^/]+$/)) {
+        // GET /api/availability/:locationId/:date
+        return await getAvailableSlots(event);
+      }
+    }
+
+    // POST routes
+    if (method === 'POST') {
+      if (path === '/api/availability/check-multiple') {
+        return await checkMultipleAvailability(event);
+      }
+      if (path === '/api/availability/reserve') {
+        return await reserveSlot(event);
+      }
+    }
+
+    // PUT routes
+    if (method === 'PUT') {
+      if (path.match(/^\/api\/appointments\/[^/]+$/)) {
+        // PUT /api/appointments/:appointmentId
+        return await updateAppointment(event);
       }
     }
 

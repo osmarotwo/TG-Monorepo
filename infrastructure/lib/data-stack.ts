@@ -11,6 +11,7 @@ export class DataStack extends cdk.Stack {
   public readonly businessesTable: dynamodb.Table;
   public readonly locationsTable: dynamodb.Table;
   public readonly kpisTable: dynamodb.Table;
+  public readonly availabilityTable: dynamodb.Table; // NUEVA TABLA
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -103,6 +104,30 @@ export class DataStack extends cdk.Stack {
       // timeToLiveAttribute: 'ttl',
     });
 
+    // Availability Table (NEW - for scheduling & availability)
+    this.availabilityTable = new dynamodb.Table(this, 'AvailabilityTable', {
+      tableName: 'Availability',
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      pointInTimeRecovery: true,
+    });
+
+    // GSI1: Query by date and location (for finding available slots)
+    this.availabilityTable.addGlobalSecondaryIndex({
+      indexName: 'GSI1',
+      partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
+    });
+
+    // GSI2: Query by specialist and date range
+    this.availabilityTable.addGlobalSecondaryIndex({
+      indexName: 'GSI2',
+      partitionKey: { name: 'GSI2PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'GSI2SK', type: dynamodb.AttributeType.STRING },
+    });
+
     // ====================
     // Lambda Function
     // ====================
@@ -116,6 +141,7 @@ export class DataStack extends cdk.Stack {
         BUSINESSES_TABLE: this.businessesTable.tableName,
         LOCATIONS_TABLE: this.locationsTable.tableName,
         KPIS_TABLE: this.kpisTable.tableName,
+        AVAILABILITY_TABLE: this.availabilityTable.tableName, // NUEVA
         NODE_ENV: 'production',
       },
       timeout: cdk.Duration.seconds(30),
@@ -127,6 +153,7 @@ export class DataStack extends cdk.Stack {
     this.businessesTable.grantReadWriteData(dataHandler);
     this.locationsTable.grantReadWriteData(dataHandler);
     this.kpisTable.grantReadWriteData(dataHandler);
+    this.availabilityTable.grantReadWriteData(dataHandler); // NUEVA
 
     // ====================
     // API Gateway
@@ -159,6 +186,7 @@ export class DataStack extends cdk.Stack {
     appointmentsResource.addMethod('GET', dataIntegration); // GET /api/appointments
     const appointmentByIdResource = appointmentsResource.addResource('{id}');
     appointmentByIdResource.addMethod('GET', dataIntegration); // GET /api/appointments/{id}
+    appointmentByIdResource.addMethod('PUT', dataIntegration); // PUT /api/appointments/{id}
 
     // Locations routes
     const locationsResource = apiResource.addResource('locations');
@@ -176,6 +204,22 @@ export class DataStack extends cdk.Stack {
     const kpisResource = apiResource.addResource('kpis');
     const kpisByLocationResource = kpisResource.addResource('{locationId}');
     kpisByLocationResource.addMethod('GET', dataIntegration); // GET /api/kpis/{locationId}
+
+    // Availability routes (NEW)
+    const availabilityResource = apiResource.addResource('availability');
+    
+    // GET /api/availability/:locationId/:date
+    const availabilityByLocationResource = availabilityResource.addResource('{locationId}');
+    const availabilityByDateResource = availabilityByLocationResource.addResource('{date}');
+    availabilityByDateResource.addMethod('GET', dataIntegration);
+    
+    // POST /api/availability/check-multiple
+    const checkMultipleResource = availabilityResource.addResource('check-multiple');
+    checkMultipleResource.addMethod('POST', dataIntegration);
+    
+    // POST /api/availability/reserve
+    const reserveResource = availabilityResource.addResource('reserve');
+    reserveResource.addMethod('POST', dataIntegration);
 
     // ====================
     // Outputs

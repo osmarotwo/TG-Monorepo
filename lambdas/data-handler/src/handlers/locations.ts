@@ -63,12 +63,18 @@ export async function getLocationById(event: APIGatewayProxyEvent): Promise<APIG
       };
     }
 
-    const item = await getItem(LOCATIONS_TABLE, {
-      PK: `LOCATION#${locationId}`,
-      SK: 'METADATA',
+    // Buscar usando GSI1 ya que las locaciones tienen:
+    // PK: BUSINESS#{businessId}, SK: LOCATION#{locationId}, GSI1PK: LOCATION#{locationId}
+    const items = await queryItems({
+      tableName: LOCATIONS_TABLE,
+      indexName: 'GSI1',
+      keyConditionExpression: 'GSI1PK = :gsi1pk',
+      expressionAttributeValues: {
+        ':gsi1pk': `LOCATION#${locationId}`,
+      },
     });
 
-    if (!item) {
+    if (!items || items.length === 0) {
       return {
         statusCode: 404,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -79,7 +85,7 @@ export async function getLocationById(event: APIGatewayProxyEvent): Promise<APIG
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ location: item }),
+      body: JSON.stringify({ location: items[0] }),
     };
   } catch (error) {
     console.error('Error fetching location:', error);

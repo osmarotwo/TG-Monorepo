@@ -299,7 +299,253 @@ export const brandConfig = {
 
 ---
 
-## 📁 Archivos Clave Modificados
+## � CRITICAL: Creación de Scripts de Seed para DynamoDB
+
+### ⚠️ IMPORTANTE: Estructura de Datos de Appointments
+
+**SIEMPRE incluir estos campos en cada appointment seed:**
+
+#### Campos Obligatorios para DynamoDB:
+```typescript
+{
+  // Keys principales
+  PK: `USER#${userId}`,           // ⚠️ CRÍTICO: Partition Key
+  SK: `APPOINTMENT#${appointmentId}`, // ⚠️ CRÍTICO: Sort Key
+  
+  // IDs y referencias
+  appointmentId: string,          // UUID único
+  userId: string,                 // ID del usuario/especialista
+  businessId: string,             // ID del negocio
+  locationId: string,             // ID de la sede
+  customerId: string,             // ID del cliente
+  specialistId: string,           // ID del especialista
+  
+  // Información básica
+  customerName: string,           // Nombre del cliente
+  specialistName: string,         // Nombre del especialista
+  locationName: string,           // Nombre de la sede
+  serviceType: string,            // Tipo de servicio
+  status: 'confirmed' | 'pending' | 'cancelled' | 'no-show' | 'completed',
+  
+  // ⚠️ CRÍTICO: Campos de fecha/hora SEPARADOS (requeridos por handler)
+  date: string,                   // ⚠️ FORMATO: "YYYY-MM-DD" (ej: "2025-10-24")
+  time: string,                   // ⚠️ FORMATO: "HH:MM" (ej: "08:00")
+  startTime: string,              // ISO 8601 completo
+  endTime: string,                // ISO 8601 completo
+  estimatedDuration: number,      // Duración en minutos
+  
+  // Ubicación (objeto completo)
+  location: {
+    name: string,
+    address: string,
+    city: string,
+    latitude: number,
+    longitude: number
+  },
+  
+  // Metadata
+  resourceId: string,
+  notes?: string,
+  createdAt: string,              // ISO timestamp
+  updatedAt: string,              // ISO timestamp
+  
+  // GSI Keys (para búsquedas optimizadas)
+  GSI1PK: `DATE#${date}`,
+  GSI1SK: `USER#${userId}#${startTime}`,
+  GSI2PK: `LOCATION#${locationId}`,
+  GSI2SK: `DATE#${date}#${startTime}`
+}
+```
+
+### 🚨 ERROR COMÚN: Olvidar campos `date` y `time`
+
+**❌ INCORRECTO** (seed fallará en frontend):
+```typescript
+{
+  PK: `USER#${userId}`,
+  SK: `APPOINTMENT#${id}`,
+  startTime: "2025-10-24T08:00:00.000Z",  // Solo ISO
+  endTime: "2025-10-24T08:30:00.000Z"
+  // ⚠️ FALTA date y time separados
+}
+```
+
+**✅ CORRECTO** (funciona con handler):
+```typescript
+{
+  PK: `USER#${userId}`,
+  SK: `APPOINTMENT#${id}`,
+  date: "2025-10-24",                     // ✅ Campo separado
+  time: "08:00",                          // ✅ Campo separado
+  startTime: "2025-10-24T08:00:00.000Z",  // ✅ También incluir ISO
+  endTime: "2025-10-24T08:30:00.000Z"
+}
+```
+
+### 📋 Template Completo para Seed Scripts:
+
+```typescript
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, ScanCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { v4 as uuidv4 } from 'uuid';
+
+const client = new DynamoDBClient({ region: 'us-east-1' });
+const docClient = DynamoDBDocumentClient.from(client);
+
+const APPOINTMENTS_TABLE = 'Appointments';
+
+// ⚠️ SIEMPRE verificar el userId correcto:
+// - Valerie: '5fabb21e-3722-43ab-b491-5e53a45f9616'
+// - Oscar: 'user_2ou2yWhWI2pF5r4Zs9MbjCjPYHM'
+const USER_ID = '5fabb21e-3722-43ab-b491-5e53a45f9616'; // Valerie
+const USER_NAME = 'Valerie Sofia Martinez';
+
+// Fecha objetivo
+const TARGET_DATE = '2025-10-24'; // YYYY-MM-DD
+
+async function createAppointment(appointmentData: {
+  location: Location,
+  customer: Customer,
+  service: string,
+  time: string // "08:00" format
+}) {
+  const serviceDetails = SERVICES.find(s => s.name === appointmentData.service);
+  const startTime = `${TARGET_DATE}T${appointmentData.time}:00.000Z`;
+  const endTime = new Date(
+    new Date(startTime).getTime() + serviceDetails!.duration * 60000
+  ).toISOString();
+
+  const appointmentId = `APT-${uuidv4().substring(0, 8)}`;
+  const now = new Date().toISOString();
+
+  const appointment = {
+    // ⚠️ Keys principales
+    PK: `USER#${USER_ID}`,
+    SK: `APPOINTMENT#${appointmentId}`,
+    
+    // ⚠️ IDs
+    appointmentId,
+    userId: USER_ID,
+    businessId: appointmentData.location.businessId,
+    locationId: appointmentData.location.locationId,
+    customerId: appointmentData.customer.id,
+    specialistId: USER_ID,
+    
+    // ⚠️ Nombres
+    customerName: appointmentData.customer.name,
+    specialistName: USER_NAME,
+    locationName: appointmentData.location.name,
+    serviceType: appointmentData.service,
+    
+    // ⚠️ CRÍTICO: Fecha/hora separados
+    date: TARGET_DATE,              // ✅ "YYYY-MM-DD"
+    time: appointmentData.time,     // ✅ "HH:MM"
+    startTime,                      // ISO completo
+    endTime,                        // ISO completo
+    estimatedDuration: serviceDetails!.duration,
+    
+    // ⚠️ Status y metadata
+    status: 'confirmed',
+    resourceId: `RES-${appointmentData.location.locationId}`,
+    notes: `Cita generada automáticamente`,
+    
+    // ⚠️ Location completa
+    location: {
+      name: appointmentData.location.name,
+      address: appointmentData.location.address,
+      city: appointmentData.location.city,
+      latitude: appointmentData.location.coordinates.latitude,
+      longitude: appointmentData.location.coordinates.longitude
+    },
+    
+    // Timestamps
+    createdAt: now,
+    updatedAt: now,
+    
+    // ⚠️ GSI Keys
+    GSI1PK: `DATE#${TARGET_DATE}`,
+    GSI1SK: `USER#${USER_ID}#${startTime}`,
+    GSI2PK: `LOCATION#${appointmentData.location.locationId}`,
+    GSI2SK: `DATE#${TARGET_DATE}#${startTime}`
+  };
+
+  await docClient.send(new PutCommand({
+    TableName: APPOINTMENTS_TABLE,
+    Item: appointment
+  }));
+
+  return appointment;
+}
+```
+
+### 🔍 Por Qué `date` y `time` Separados:
+
+**Razón**: El handler `/api/appointments` usa estos campos para filtrar "upcoming appointments":
+
+```typescript
+// Handler code (appointments.ts líneas 42-48):
+appointments = items.filter((item: any) => {
+  // Comparar fecha y hora
+  if (item.date > todayStr) return true; // ✅ Usa 'date'
+  if (item.date === todayStr && item.time >= currentTimeStr) return true; // ✅ Usa 'time'
+  return false;
+});
+```
+
+**Sin estos campos**: El dashboard mostrará "No upcoming appointments" aunque existan citas en DynamoDB.
+
+### ✅ Checklist para Nuevos Seeds:
+
+- [ ] Verificar `userId` correcto (Valerie vs Oscar)
+- [ ] Incluir campos `date` (YYYY-MM-DD) y `time` (HH:MM)
+- [ ] Incluir `startTime` y `endTime` en ISO 8601
+- [ ] Objeto `location` completo con coordenadas
+- [ ] Status válido ('confirmed', 'pending', etc.)
+- [ ] GSI1PK y GSI1SK para búsqueda por fecha
+- [ ] GSI2PK y GSI2SK para búsqueda por location
+- [ ] `estimatedDuration` en minutos
+- [ ] Probar con `npx tsx scripts/nombre-del-seed.ts`
+
+### 📝 Ejemplo Completo Funcional:
+
+Ver archivo: `/lambdas/data-handler/scripts/seed-appointments-oct24.ts`
+
+---
+
+## 👥 Usuarios del Sistema
+
+### Usuarios Conocidos:
+
+#### 1. **Valerie Sofia Martinez** (Usuario Principal)
+```typescript
+userId: '5fabb21e-3722-43ab-b491-5e53a45f9616'
+name: 'Valerie Sofia Martinez'
+role: 'Especialista' // Atiende citas en múltiples negocios
+```
+**Uso**: Usuario principal para pruebas y desarrollo
+
+#### 2. **Oscar Marin** (Usuario Secundario)
+```typescript
+userId: 'user_2ou2yWhWI2pF5r4Zs9MbjCjPYHM'
+name: 'Oscar Marin'
+role: 'Especialista'
+```
+**Uso**: Usuario alternativo para pruebas multi-usuario
+
+### ⚠️ IMPORTANTE: Verificar Usuario Antes de Seeds
+
+**Siempre confirmar** qué usuario debe recibir las citas:
+```typescript
+// ❌ INCORRECTO: Asumir usuario
+const USER_ID = 'user_2ou2yWhWI2pF5r4Zs9MbjCjPYHM'; // Oscar
+
+// ✅ CORRECTO: Preguntar o verificar contexto
+const USER_ID = '5fabb21e-3722-43ab-b491-5e53a45f9616'; // Valerie (usuario principal)
+```
+
+---
+
+## �📁 Archivos Clave Modificados
 
 ### Archivos Principales:
 1. `frontend/src/App.tsx` - Integración ThemeProvider + RegistrationForm

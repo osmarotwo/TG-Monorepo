@@ -6,7 +6,6 @@
  * - Rutas entre citas consecutivas
  */
 
-// @ts-nocheck - Google Maps API types
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -47,13 +46,13 @@ export default function AppointmentMapSection({
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [mapError, setMapError] = useState<string | null>(null)
   const [hasCalculatedRoutes, setHasCalculatedRoutes] = useState(false)
-  const [travelTimesData, setTravelTimesData] = useState<any[]>([])
+  const [travelTimesData, setTravelTimesData] = useState<AppointmentWithLocation[]>([])
   const [timeConflicts, setTimeConflicts] = useState<TimeConflict[]>([])
   
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const markersRef = useRef<any[]>([])
-  const directionsRendererRef = useRef<any>(null)
+  const mapInstanceRef = useRef<google.maps.Map | null>(null)
+  const markersRef = useRef<(google.maps.Marker | google.maps.marker.AdvancedMarkerElement)[]>([])
+  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null)
   const isInitializingRef = useRef(false)
 
   // Combinar appointments con locations - usar ref para evitar re-renders
@@ -78,7 +77,7 @@ export default function AppointmentMapSection({
             })
           }
         },
-        (error) => {
+        () => {
           // Usuario denegó permisos o error - usar Bogotá por defecto
           if (mounted) {
             setUserLocation({ lat: 4.711, lng: -74.073 })
@@ -203,10 +202,10 @@ export default function AppointmentMapSection({
 
       // Clear previous markers
       markersRef.current.forEach((marker) => {
-        if (marker.setMap) {
+        if ('setMap' in marker && typeof marker.setMap === 'function') {
           marker.setMap(null) // Old API
-        } else if (marker.map) {
-          marker.map = null // New API
+        } else if ('map' in marker) {
+          (marker as google.maps.marker.AdvancedMarkerElement).map = null // New API
         }
       })
       markersRef.current = []
@@ -350,7 +349,7 @@ export default function AppointmentMapSection({
 
   // Calculate routes and travel times
   const calculateRoutes = async (
-    map: any,
+    map: google.maps.Map,
     userLoc: { lat: number; lng: number },
     appointments: AppointmentWithLocation[]
   ) => {
@@ -389,7 +388,7 @@ export default function AppointmentMapSection({
     }
 
     try {
-      directionsService.route(request, (result: any, status: any) => {
+      directionsService.route(request, (result: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
         if (status === 'OK' && result && result.routes && result.routes[0]) {
           // ✅ SUCCESS: Usar datos reales de la API
           const directionsRenderer = new window.google.maps.DirectionsRenderer({

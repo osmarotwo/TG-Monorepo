@@ -41,8 +41,7 @@ export default function MapSection({ locations, height = 'h-80' }: MapSectionPro
       return;
     }
 
-    // @ts-ignore - Check if Google Maps API is fully available
-    if (window.google?.maps?.Map) {
+    if ((window as typeof window & { google?: typeof google }).google?.maps?.Map) {
       console.log('✅ Google Maps already loaded');
       setIsLoaded(true);
       return;
@@ -57,8 +56,7 @@ export default function MapSection({ locations, height = 'h-80' }: MapSectionPro
       console.log('⏳ Google Maps script found, waiting for API to be ready...');
       // Script exists, poll for API availability
       const checkInterval = setInterval(() => {
-        // @ts-ignore
-        if (window.google?.maps?.Map) {
+        if ((window as typeof window & { google?: typeof google }).google?.maps?.Map) {
           console.log('✅ Google Maps API ready');
           clearInterval(checkInterval);
           setIsLoaded(true);
@@ -80,8 +78,7 @@ export default function MapSection({ locations, height = 'h-80' }: MapSectionPro
       console.log('📦 Script loaded, waiting for API...');
       // Poll for API availability after script loads
       const checkInterval = setInterval(() => {
-        // @ts-ignore
-        if (window.google?.maps?.Map) {
+        if ((window as typeof window & { google?: typeof google }).google?.maps?.Map) {
           console.log('✅ Google Maps API ready');
           clearInterval(checkInterval);
           setIsLoaded(true);
@@ -101,14 +98,14 @@ export default function MapSection({ locations, height = 'h-80' }: MapSectionPro
   useEffect(() => {
     if (!isLoaded || !mapRef.current || locations.length === 0) return;
 
-    // @ts-ignore - Verify Google Maps API is fully loaded
-    if (!window.google?.maps?.Map) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const windowWithGoogle = window as any;
+    if (!windowWithGoogle.google?.maps?.Map) {
       console.log('⚠️ Google Maps API not ready yet, waiting...');
       return;
     }
     
-    // @ts-ignore - Google Maps API
-    const google = window.google;
+    const google = windowWithGoogle.google;
     
     try {
       const map = new google.maps.Map(mapRef.current, {
@@ -206,14 +203,14 @@ export default function MapSection({ locations, height = 'h-80' }: MapSectionPro
   useEffect(() => {
     if (!isFullscreen || !isLoaded || !fullscreenMapRef.current || locations.length === 0) return;
 
-    // @ts-ignore - Verify Google Maps API is fully loaded
-    if (!window.google?.maps?.Map) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const windowWithGoogle = window as any;
+    if (!windowWithGoogle.google?.maps?.Map) {
       console.log('⚠️ Google Maps API not ready for fullscreen yet, waiting...');
       return;
     }
     
-    // @ts-ignore - Google Maps API
-    const google = window.google;
+    const google = windowWithGoogle.google;
     
     try {
       const map = new google.maps.Map(fullscreenMapRef.current, {

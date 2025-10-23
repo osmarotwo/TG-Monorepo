@@ -8,7 +8,7 @@ import LanguageSelector from '@/components/LanguageSelector'
 
 export default function Navigation() {
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
 
   const navItems = [
     { label: 'Home', href: '/dashboard', icon: '🏠' },

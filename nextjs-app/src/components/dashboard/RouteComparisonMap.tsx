@@ -33,7 +33,7 @@ export default function RouteComparisonMap({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
   })
 
-  const [map, setMap] = useState<google.maps.Map | null>(null)
+  const [, setMap] = useState<google.maps.Map | null>(null)
   const [originalDirections, setOriginalDirections] = useState<google.maps.DirectionsResult | null>(null)
   const [optimizedDirections, setOptimizedDirections] = useState<google.maps.DirectionsResult | null>(null)
   const [loading, setLoading] = useState(true)

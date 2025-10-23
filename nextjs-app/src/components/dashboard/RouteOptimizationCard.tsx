@@ -283,8 +283,8 @@ export default function RouteOptimizationCard({
           </div>
           
           <RouteComparisonMap
-            originalRoute={originalRoute as any}
-            optimizedRoute={optimizedRoute as any}
+            originalRoute={originalRoute as unknown as RouteNode[]}
+            optimizedRoute={optimizedRoute as unknown as RouteNode[]}
             userLocation={userLocation}
             height="h-[500px]"
           />

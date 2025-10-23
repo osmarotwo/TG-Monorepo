@@ -13,15 +13,10 @@ import {
   RouteComparison,
   OptimizerConfig,
   DEFAULT_CONFIG,
-  ScoredCandidate,
-  ScoreFactors,
 } from './types'
 import { getTravelTime } from './travelMatrixService'
 import {
-  calculateScore,
-  isAppointmentViable,
   calculateWaitTime,
-  findBestCandidate,
 } from './scoringEngine'
 
 // ============================================================================
@@ -188,8 +183,7 @@ async function buildOriginalRoute(
  */
 async function buildOptimizedRoute(
   appointments: OptimizableAppointment[],
-  userLocation: { lat: number; lng: number },
-  _config: OptimizerConfig
+  userLocation: { lat: number; lng: number }
 ): Promise<RouteNode[]> {
   console.log('🟢 Building OPTIMIZED route using Geographic Clustering...')
   
@@ -438,12 +432,15 @@ export async function optimizeRoute(
   const originalConflicts = findConflicts(originalRoute)
 
   // Construir ruta optimizada
-  const optimizedRoute = await buildOptimizedRoute(optimizable, userLocation, config)
+  const optimizedRoute = await buildOptimizedRoute(optimizable, userLocation)
   const optimizedMetrics = calculateRouteMetrics(optimizedRoute)
   const optimizedConflicts = findConflicts(optimizedRoute)
 
   // Calcular mejoras
   const improvement = calculateImprovement(originalRoute, optimizedRoute)
+  
+  // Suprimir warning de config no usado
+  void config
 
   console.log('📊 Route Optimization Metrics:', {
     originalDistance: originalMetrics.totalDistance,

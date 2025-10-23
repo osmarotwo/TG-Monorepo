@@ -6,28 +6,28 @@
   "workspaces": [
     "infrastructure",
     "lambdas/*",
-    "frontend"
+    "nextjs-app"
   ],
   "scripts": {
     "install:all": "npm install && npm run install:infrastructure && npm run install:lambdas && npm run install:frontend",
     "install:infrastructure": "cd infrastructure && npm install",
     "install:lambdas": "cd lambdas/api-handler && npm install",
-    "install:frontend": "cd frontend && npm install",
+    "install:frontend": "cd nextjs-app && npm install",
     "build": "npm run build:lambdas && npm run build:infrastructure && npm run build:frontend",
     "build:infrastructure": "cd infrastructure && npm run build",
     "build:lambdas": "cd lambdas/api-handler && npm run build",
-    "build:frontend": "cd frontend && npm run build",
+    "build:frontend": "cd nextjs-app && npm run build",
     "test": "npm run test:infrastructure && npm run test:lambdas && npm run test:frontend",
     "test:infrastructure": "cd infrastructure && npm run test",
     "test:lambdas": "cd lambdas/api-handler && npm run test",
-    "test:frontend": "cd frontend && npm run test",
+    "test:frontend": "cd nextjs-app && npm run test",
     "deploy:infrastructure": "cd infrastructure && npm run deploy",
-    "deploy:frontend": "cd frontend && npm run deploy",
+    "deploy:frontend": "cd nextjs-app && npm run deploy",
     "destroy:infrastructure": "cd infrastructure && npm run destroy",
     "cdk": "cd infrastructure && npm run cdk",
-    "dev:frontend": "cd frontend && npm run dev",
-    "preview:frontend": "cd frontend && npm run preview",
-    "lint:frontend": "cd frontend && npm run lint",
+    "dev:frontend": "cd nextjs-app && npm run dev",
+    "preview:frontend": "cd nextjs-app && npm run preview",
+    "lint:frontend": "cd nextjs-app && npm run lint",
     "clean": "rm -rf node_modules infrastructure/node_modules lambdas/*/node_modules frontend/node_modules"
   },
   "devDependencies": {

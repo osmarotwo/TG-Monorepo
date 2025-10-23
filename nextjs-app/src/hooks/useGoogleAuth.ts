@@ -68,8 +68,10 @@ export const useGoogleAuth = () => {
 
     const initializeGoogleAuth = () => {
       console.log('Inicializando Google Auth...')
-      if (window.google?.accounts && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-        window.google.accounts.id.initialize({
+      // Type assertion para evitar conflictos con @types/google.maps
+      const googleAccounts = (window as any).google?.accounts
+      if (googleAccounts && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+        googleAccounts.id.initialize({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
           auto_select: false,
@@ -81,12 +83,12 @@ export const useGoogleAuth = () => {
     }
 
     // Verificar si Google SDK ya está cargado
-    if (window.google) {
+    if ((window as any).google) {
       initializeGoogleAuth()
     } else {
       // Esperar a que se cargue el SDK
       const checkGoogle = setInterval(() => {
-        if (window.google) {
+        if ((window as any).google) {
           initializeGoogleAuth()
           clearInterval(checkGoogle)
         }
@@ -95,7 +97,7 @@ export const useGoogleAuth = () => {
       // Cleanup después de 10 segundos
       setTimeout(() => {
         clearInterval(checkGoogle)
-        if (!window.google) {
+        if (!(window as any).google) {
           setError('Google SDK no se pudo cargar')
         }
       }, 10000)
@@ -153,8 +155,9 @@ Nota: Después de autenticarte, volverás a esta página automáticamente.`)
     localStorage.removeItem('googleUser')
     
     // Desactivar auto-selección de Google
-    if (window.google?.accounts) {
-      window.google.accounts.id.disableAutoSelect()
+    const googleAccounts = (window as any).google?.accounts
+    if (googleAccounts) {
+      googleAccounts.id.disableAutoSelect()
     }
     
     console.log('Sesión cerrada exitosamente')

@@ -1,12 +1,10 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 
 export default function ServicesPage() {
   const { user, status } = useAuth()
-  const router = useRouter()
 
   if (status === 'loading' || !user) {
     return (

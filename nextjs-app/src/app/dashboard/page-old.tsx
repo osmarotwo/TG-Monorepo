@@ -25,7 +25,11 @@ export default function DashboardV2Page() {
   const toast = useToast()
   
   // Business selection state
-  const [allBusinesses, setAllBusinesses] = useState<any[]>([])
+  const [allBusinesses, setAllBusinesses] = useState<Array<{
+    businessId: string;
+    name: string;
+    locations?: unknown[];
+  }>>([])
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null)
   
   // Dashboard state
@@ -43,7 +47,6 @@ export default function DashboardV2Page() {
 
   // Modal states
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false)
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
 
   // Redirigir si no está autenticado o si el perfil no está completo
   useEffect(() => {
@@ -63,6 +66,7 @@ export default function DashboardV2Page() {
     if (user) {
       loadDashboardData()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, user, router])
 
   // Reload dashboard when selected business changes
@@ -70,7 +74,8 @@ export default function DashboardV2Page() {
     if (user && selectedBusinessId) {
       loadDashboardData()
     }
-  }, [selectedBusinessId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBusinessId, user])
 
   // Handle business change
   const handleBusinessChange = (businessId: string) => {
@@ -185,8 +190,7 @@ export default function DashboardV2Page() {
   }
 
   // Handle view appointment details
-  const handleViewAppointmentDetails = (appointmentId: string) => {
-    setSelectedAppointmentId(appointmentId)
+  const handleViewAppointmentDetails = (_appointmentId: string) => {
     toast.info('Detalles de cita próximamente disponibles')
     // TODO: Open appointment details modal
   }

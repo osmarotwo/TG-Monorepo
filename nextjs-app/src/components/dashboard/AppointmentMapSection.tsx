@@ -379,7 +379,7 @@ export default function AppointmentMapSection({
     const origin = new window.google.maps.LatLng(userLoc.lat, userLoc.lng)
     const destination = waypoints[waypoints.length - 1].location
 
-    const request: any = {
+    const request: google.maps.DirectionsRequest = {
       origin,
       destination,
       waypoints: waypoints.slice(0, -1),

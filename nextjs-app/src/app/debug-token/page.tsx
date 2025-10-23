@@ -2,8 +2,19 @@
 
 import { useEffect, useState } from 'react';
 
+interface TokenInfo {
+  token: string;
+  payload: Record<string, unknown>;
+  sessionId?: string;
+  sessionIdType?: string;
+  userId?: string;
+  email?: string;
+  exp?: string;
+  [key: string]: unknown;
+}
+
 export default function DebugTokenPage() {
-  const [tokenInfo, setTokenInfo] = useState<any>(null);
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isValid, setIsValid] = useState<boolean>(false);
 
@@ -114,7 +125,7 @@ export default function DebugTokenPage() {
             <div style={{ fontSize: '14px', wordBreak: 'break-all', marginTop: '5px' }}>
               {tokenInfo.sessionId}
             </div>
-            <div style={{ marginTop: '5px', color: tokenInfo.sessionIdType.includes('✅') ? 'green' : 'red' }}>
+            <div style={{ marginTop: '5px', color: tokenInfo.sessionIdType?.includes('✅') ? 'green' : 'red' }}>
               Tipo: {tokenInfo.sessionIdType}
             </div>
           </div>

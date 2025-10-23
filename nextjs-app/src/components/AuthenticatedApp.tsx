@@ -35,7 +35,6 @@ function LoadingScreen() {
 // Componente principal - redirige usuarios no autenticados al login
 export default function AuthenticatedApp() {
   const { status, user, isLoading } = useAuth()
-  const { t } = useLocale()
   const router = useRouter()
 
   // Manejar redirecciones basadas en el estado de autenticación

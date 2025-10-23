@@ -10,7 +10,7 @@ import type { ChangeEvent, FormEvent } from "react";
 
 // Componente de completar perfil que obtiene el usuario del contexto
 export default function ProfileCompletion() {
-  const { user, logout, completeProfile } = useAuth(); // Obtener completeProfile del contexto
+  const { user, completeProfile } = useAuth(); // Obtener completeProfile del contexto
   const [form, setForm] = useState({
     fullName: "",
     email: "",

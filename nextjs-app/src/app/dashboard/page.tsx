@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
@@ -110,6 +110,7 @@ export default function DashboardPage() {
     if (user) {
       loadAppointments()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, user, router])
 
   const loadAppointments = async () => {
@@ -175,7 +176,7 @@ export default function DashboardPage() {
               Welcome back, {user?.firstName}!
             </h1>
             <p className="text-gray-600 mt-2">
-              Here's a snapshot of your upcoming appointments and nearby options.
+              Here&apos;s a snapshot of your upcoming appointments and nearby options.
             </p>
           </div>
 
@@ -243,10 +244,6 @@ export default function DashboardPage() {
                   }
                 }}
                 onDismiss={dismissOptimization}
-                onViewDetails={() => {
-                  console.log('View details:', optimizationResult)
-                  // TODO: Abrir modal con detalles completos
-                }}
               />
             </div>
           )}
@@ -306,6 +303,7 @@ export default function DashboardPage() {
                       <div className="flex items-start gap-4">
                         {/* Business Logo */}
                         {appointment.business?.logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={appointment.business.logoUrl}
                             alt={appointment.business.name}

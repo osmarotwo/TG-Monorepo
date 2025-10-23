@@ -46,6 +46,7 @@ export default function DashboardV2Page() {
     if (user) {
       loadDashboardData()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, user, router])
   
   // Load dashboard data

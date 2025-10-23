@@ -30,7 +30,7 @@ export interface TravelMatrix {
     [toLocationId: string]: {
       distance: number // metros
       duration: number // minutos
-      route?: any // Ruta completa de Google Maps (opcional)
+      route?: google.maps.DirectionsRoute // Ruta completa de Google Maps (opcional)
       lastUpdated: Date // Para cache
       expiresAt: Date // Expira en 7 días
     }
@@ -219,7 +219,7 @@ export class OptimizationError extends Error {
   constructor(
     message: string,
     public code: 'NO_SOLUTION' | 'API_ERROR' | 'INVALID_DATA' | 'TIMEOUT',
-    public details?: any
+    public details?: Record<string, unknown>
   ) {
     super(message)
     this.name = 'OptimizationError'

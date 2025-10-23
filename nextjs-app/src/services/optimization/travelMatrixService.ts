@@ -190,7 +190,7 @@ async function fetchGoogleDirections(
       },
     }
 
-    directionsService.route(request, (result: any, status: any) => {
+    directionsService.route(request, (result: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
       if (status === 'OK' && result?.routes[0]?.legs[0]) {
         const leg = result.routes[0].legs[0]
         resolve({

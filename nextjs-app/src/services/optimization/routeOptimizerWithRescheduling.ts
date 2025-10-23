@@ -51,8 +51,9 @@ const SERVICE_DURATION_MINUTES = 60;
 
 /**
  * Helper para parsear date (YYYY-MM-DD) y time (HH:MM) a Date object
+ * @deprecated - Not currently used, consider removing
  */
-function parseAppointmentDateTime(date: string, time: string): Date | null {
+/* function parseAppointmentDateTime(date: string, time: string): Date | null {
   if (!date || !time) {
     console.error('❌ parseAppointmentDateTime: Missing date or time', { date, time });
     return null;
@@ -73,7 +74,7 @@ function parseAppointmentDateTime(date: string, time: string): Date | null {
     console.error('❌ parseAppointmentDateTime: Error parsing', { date, time, error });
     return null;
   }
-}
+} */
 
 /**
  * Calcula distancia entre dos puntos (fórmula de Haversine)
@@ -339,7 +340,15 @@ export async function buildOptimizedRouteWithRescheduling(
       const originalStart = new Date(originalAppointment.startTime);
       const timeDiff = Math.round((proposedStart.getTime() - originalStart.getTime()) / (60 * 1000));
       
-      const rescheduled: any = {
+      // Type-safe way to access optional properties
+      const appointmentWithExtras = originalAppointment as Appointment & {
+        specialistId?: string;
+        specialistName?: string;
+        businessName?: string;
+        business?: { name?: string };
+      };
+      
+      const rescheduled: RescheduledAppointment = {
         appointmentId: conflict.appointmentId,
         clientName: originalAppointment.clientName || '',
         serviceType: originalAppointment.serviceType || '',
@@ -351,11 +360,11 @@ export async function buildOptimizedRouteWithRescheduling(
         proposedEndTime: proposedEnd.toISOString(),
         timeDifferenceMinutes: timeDiff,
         durationMinutes: serviceDuration,
-        specialistId: (originalAppointment as any).specialistId || '',
-        specialistName: (originalAppointment as any).specialistName || '',
-        status: 'proposed',
+        specialistId: appointmentWithExtras.specialistId || '',
+        specialistName: appointmentWithExtras.specialistName || '',
+        status: 'proposed' as const,
         reason: conflict.reason,
-        businessName: (originalAppointment as any).businessName || (originalAppointment as any).business?.name || 'Salón de Belleza Premium'
+        businessName: appointmentWithExtras.businessName || appointmentWithExtras.business?.name || 'Salón de Belleza Premium'
       };
       
       return rescheduled;
@@ -366,12 +375,16 @@ export async function buildOptimizedRouteWithRescheduling(
   const rescheduledAppointments = [
     ...available.map(a => {
       const originalAppointment = appointments.find(app => app.id === a.appointmentId);
+      const appointmentWithExtras = originalAppointment as Appointment & {
+        businessName?: string;
+        business?: { name?: string };
+      };
       return {
         ...a,
         clientName: originalAppointment?.clientName || '',
         locationName: originalAppointment?.locationName || '',
         durationMinutes: originalAppointment?.estimatedDuration || SERVICE_DURATION_MINUTES,
-        businessName: (originalAppointment as any)?.businessName || (originalAppointment as any)?.business?.name || 'Salón de Belleza Premium'
+        businessName: appointmentWithExtras?.businessName || appointmentWithExtras?.business?.name || 'Salón de Belleza Premium'
       };
     }),
     ...conflictsAsRescheduled

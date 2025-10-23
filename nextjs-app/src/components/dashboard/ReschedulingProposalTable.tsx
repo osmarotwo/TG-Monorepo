@@ -90,7 +90,7 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
                 <td className="px-4 py-3 text-gray-900 font-medium">
                   <div className="flex items-center gap-1">
                     <span className="text-xs">🏪</span>
-                    <span>{(appointment as any).businessName || 'Salón de Belleza Premium'}</span>
+                    <span>{appointment.businessName || 'Salón de Belleza Premium'}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-700">

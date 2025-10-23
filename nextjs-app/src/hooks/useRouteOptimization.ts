@@ -11,7 +11,6 @@ import { Location } from '@/services/api/locations'
 import {
   RouteComparison,
   OptimizationStatus,
-  OptimizationError,
 } from '@/services/optimization/types'
 import { optimizeRoute } from '@/services/optimization'
 

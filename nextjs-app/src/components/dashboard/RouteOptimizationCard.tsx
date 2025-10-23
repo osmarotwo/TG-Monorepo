@@ -11,7 +11,7 @@ import { OptimizationResult } from '@/services/optimization/routeOptimizerWithRe
 import { RescheduledAppointment } from '@/services/api/availabilityService'
 import ReschedulingProposalTable from './ReschedulingProposalTable'
 import RouteComparisonMap from './RouteComparisonMap'
-import { RouteNode } from '@/services/optimization/types'
+import type { RouteNode } from '@/services/optimization/types'
 
 interface RouteOptimizationCardProps {
   optimizationResult: OptimizationResult
@@ -20,7 +20,6 @@ interface RouteOptimizationCardProps {
   userLocation?: { lat: number; lng: number }
   onApply?: () => void
   onDismiss?: () => void
-  onViewDetails?: () => void
 }
 
 export default function RouteOptimizationCard({
@@ -30,7 +29,6 @@ export default function RouteOptimizationCard({
   userLocation,
   onApply,
   onDismiss,
-  onViewDetails,
 }: RouteOptimizationCardProps) {
   const { originalMetrics, optimizedMetrics, improvements, originalRoute: originalAppointments, optimizedRoute: optimizedAppointments } = optimizationResult
   const [showMap, setShowMap] = useState(false)

@@ -100,12 +100,11 @@ export async function fetchAggregatedKpis(locationIds: string[], period: string 
   }
 }
 
-
-
 /**
  * Helper: Get auth token from localStorage or sessionStorage
+ * @deprecated - Not currently used, consider removing
  */
-function getAuthToken(): string {
+/* function getAuthToken(): string {
   if (typeof window === 'undefined') return '';
   
   let token = localStorage.getItem('authToken');
@@ -114,4 +113,4 @@ function getAuthToken(): string {
   }
   
   return token || '';
-}
+} */

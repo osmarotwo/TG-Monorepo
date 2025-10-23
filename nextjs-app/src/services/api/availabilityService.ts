@@ -23,6 +23,7 @@ export interface RescheduledAppointment {
   durationMinutes: number; // Duración del servicio
   specialistId: string;
   specialistName: string;
+  businessName?: string; // Nombre del comercio
   status: 'proposed' | 'approved' | 'rejected';
   reason?: string;
 }

@@ -87,10 +87,26 @@ export class AmplifyStack extends cdk.Stack {
       
       // Environment variables para el frontend
       environmentVariables: [
-        ...(apiGatewayUrl ? [{
-          name: 'NEXT_PUBLIC_API_URL',
-          value: apiGatewayUrl,
-        }] : []),
+        {
+          name: 'NEXT_PUBLIC_AUTH_API_URL',
+          value: 'https://ectre1y1fg.execute-api.us-east-1.amazonaws.com/prod',
+        },
+        {
+          name: 'NEXT_PUBLIC_DATA_API_URL',
+          value: 'https://v0igzegm95.execute-api.us-east-1.amazonaws.com/prod',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
+          value: this.node.tryGetContext('googleMapsApiKey') || '',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_REDIRECT_URI',
+          value: 'https://feature-frontend-user.d3npwupb455k1n.amplifyapp.com/auth/google',
+        },
         {
           name: 'NEXT_PUBLIC_APP_NAME',
           value: 'TG Platform',
@@ -98,10 +114,6 @@ export class AmplifyStack extends cdk.Stack {
         {
           name: 'NEXT_PUBLIC_ENVIRONMENT',
           value: 'production',
-        },
-        {
-          name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
-          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
         }
       ],
       
@@ -120,10 +132,26 @@ export class AmplifyStack extends cdk.Stack {
       
       // Production environment variables
       environmentVariables: [
-        ...(apiGatewayUrl ? [{
-          name: 'NEXT_PUBLIC_API_URL',
-          value: apiGatewayUrl,
-        }] : []),
+        {
+          name: 'NEXT_PUBLIC_AUTH_API_URL',
+          value: 'https://ectre1y1fg.execute-api.us-east-1.amazonaws.com/prod',
+        },
+        {
+          name: 'NEXT_PUBLIC_DATA_API_URL',
+          value: 'https://v0igzegm95.execute-api.us-east-1.amazonaws.com/prod',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
+          value: this.node.tryGetContext('googleMapsApiKey') || '',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_REDIRECT_URI',
+          value: 'https://feature-frontend-user.d3npwupb455k1n.amplifyapp.com/auth/google',
+        },
         {
           name: 'NEXT_PUBLIC_APP_NAME',
           value: 'TG Platform',
@@ -135,10 +163,6 @@ export class AmplifyStack extends cdk.Stack {
         {
           name: 'NEXT_PUBLIC_APP_VERSION',
           value: '1.0.0',
-        },
-        {
-          name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
-          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
         }
       ],
       
@@ -163,10 +187,26 @@ export class AmplifyStack extends cdk.Stack {
       
       // Staging environment variables
       environmentVariables: [
-        ...(apiGatewayUrl ? [{
-          name: 'NEXT_PUBLIC_API_URL',
-          value: apiGatewayUrl.replace('/prod', '/dev'), // Use dev stage if available
-        }] : []),
+        {
+          name: 'NEXT_PUBLIC_AUTH_API_URL',
+          value: 'https://ectre1y1fg.execute-api.us-east-1.amazonaws.com/prod',
+        },
+        {
+          name: 'NEXT_PUBLIC_DATA_API_URL',
+          value: 'https://v0igzegm95.execute-api.us-east-1.amazonaws.com/prod',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
+          value: this.node.tryGetContext('googleMapsApiKey') || '',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
+        },
+        {
+          name: 'NEXT_PUBLIC_GOOGLE_REDIRECT_URI',
+          value: 'https://develop.d3npwupb455k1n.amplifyapp.com/auth/google',
+        },
         {
           name: 'NEXT_PUBLIC_APP_NAME',
           value: 'TG Platform (Staging)',
@@ -178,10 +218,6 @@ export class AmplifyStack extends cdk.Stack {
         {
           name: 'NEXT_PUBLIC_DEBUG',
           value: 'true',
-        },
-        {
-          name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
-          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
         }
       ],
       

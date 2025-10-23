@@ -12,7 +12,6 @@ import ReschedulingProposalTable from './ReschedulingProposalTable';
 
 interface RouteOptimizationCardV2Props {
   optimizationResult: OptimizationResult;
-  isOptimizing: boolean;
   rescheduledAppointments: RescheduledAppointment[];
   userLocation?: { lat: number; lng: number };
   onApply?: () => Promise<void>;
@@ -21,7 +20,6 @@ interface RouteOptimizationCardV2Props {
 
 export default function RouteOptimizationCardV2({
   optimizationResult,
-  isOptimizing,
   rescheduledAppointments,
   userLocation,
   onApply,

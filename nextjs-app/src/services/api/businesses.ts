@@ -13,7 +13,7 @@ export interface Business {
   logoUrl?: string;
   description?: string;
   totalLocations: number;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

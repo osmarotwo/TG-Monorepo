@@ -7,7 +7,6 @@ import { Appointment } from '@/services/api/appointments'
 import { Location } from '@/services/api/locations'
 import {
   OptimizableAppointment,
-  OptimizedRoute,
   RouteNode,
   RouteConflict,
   ImprovementMetrics,
@@ -17,7 +16,7 @@ import {
   ScoredCandidate,
   ScoreFactors,
 } from './types'
-import { buildTravelMatrix, getTravelTime } from './travelMatrixService'
+import { getTravelTime } from './travelMatrixService'
 import {
   calculateScore,
   isAppointmentViable,
@@ -129,8 +128,9 @@ async function buildOriginalRoute(
 
 /**
  * Encontrar mejor próxima cita usando scoring
+ * @deprecated - No usado actualmente, usar buildOptimizedRoute directamente
  */
-async function findBestNext(
+/* async function findBestNext(
   currentLocation: { lat: number; lng: number },
   currentTime: Date,
   candidates: OptimizableAppointment[],
@@ -181,7 +181,7 @@ async function findBestNext(
 
   // Encontrar el mejor candidato viable
   return findBestCandidate(scoredCandidates)
-}
+} */
 
 /**
  * Algoritmo Greedy: construir ruta optimizada
@@ -189,7 +189,7 @@ async function findBestNext(
 async function buildOptimizedRoute(
   appointments: OptimizableAppointment[],
   userLocation: { lat: number; lng: number },
-  config: OptimizerConfig
+  _config: OptimizerConfig
 ): Promise<RouteNode[]> {
   console.log('🟢 Building OPTIMIZED route using Geographic Clustering...')
   

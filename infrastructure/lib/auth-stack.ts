@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
@@ -115,11 +116,11 @@ export class AuthStack extends cdk.Stack {
       memorySize: 256,
     });
 
-    // Auth Handler Lambda - usando directorio de deployment completo
+    // Auth Handler Lambda - usando directorio dist con node_modules incluido
     const authHandler = new lambda.Function(this, 'AuthHandlerFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
-      code: lambda.Code.fromAsset('../lambdas/auth-handler/deployment'),
+      code: lambda.Code.fromAsset('../lambdas/auth-handler/dist'),
       environment: commonEnvironment,
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,

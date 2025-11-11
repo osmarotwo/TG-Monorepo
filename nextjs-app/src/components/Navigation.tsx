@@ -17,7 +17,17 @@ export default function Navigation() {
     { label: 'Locations', href: '/locations', icon: '📍' },
   ]
 
-  const isActive = (href: string) => pathname === href
+  const isActive = (href: string) => {
+    // Normalizar rutas removiendo trailing slash
+    const normalizedPathname = pathname.endsWith('/') && pathname !== '/' 
+      ? pathname.slice(0, -1) 
+      : pathname
+    const normalizedHref = href.endsWith('/') && href !== '/' 
+      ? href.slice(0, -1) 
+      : href
+    
+    return normalizedPathname === normalizedHref
+  }
 
   return (
     <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
@@ -29,21 +39,25 @@ export default function Navigation() {
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="hidden md:flex space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${
-                  isActive(item.href)
-                    ? 'border-[#13a4ec] text-[#13a4ec]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <span className="mr-2">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
+          <nav className="hidden md:flex space-x-2">
+            {navItems.map((item) => {
+              const active = isActive(item.href)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    active
+                      ? 'bg-[#13a4ec] text-white shadow-md'
+                      : 'text-gray-600 hover:text-[#13a4ec] hover:bg-[#f6f7f8]'
+                  }`}
+                  style={active ? { backgroundColor: '#13a4ec', color: 'white' } : {}}
+                >
+                  <span className="mr-2">{item.icon}</span>
+                  {item.label}
+                </Link>
+              )
+            })}
           </nav>
 
           {/* User Menu */}
@@ -72,20 +86,26 @@ export default function Navigation() {
         {/* Mobile Navigation */}
         <nav className="md:hidden border-t border-gray-200">
           <div className="flex justify-around py-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex flex-col items-center px-3 py-2 text-xs font-medium rounded-lg ${
-                  isActive(item.href)
-                    ? 'text-[#13a4ec] bg-blue-50'
-                    : 'text-gray-500'
-                }`}
-              >
-                <span className="text-lg mb-1">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const active = isActive(item.href)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-col items-center px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
+                    active
+                      ? 'text-[#13a4ec] bg-[#13a4ec]/10 scale-105'
+                      : 'text-gray-500 hover:text-[#13a4ec]'
+                  }`}
+                  style={active ? { color: '#13a4ec', backgroundColor: 'rgba(19, 164, 236, 0.1)' } : {}}
+                >
+                  <span className={`text-lg mb-1 transition-transform ${active ? 'scale-110' : ''}`}>
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </Link>
+              )
+            })}
           </div>
         </nav>
       </div>

@@ -4,12 +4,15 @@
   "description": "Lambda handler for Clyok dashboard data (appointments, locations, businesses, KPIs)",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run clean && tsc && npm run bundle",
+    "bundle": "node build.js",
     "watch": "tsc -w",
     "clean": "rm -rf dist",
     "seed": "node dist/seed/seed-data.js",
     "seed:optimizable": "node dist/seed/seed-optimizable-route.js",
-    "seed:availability": "node dist/seed/seed-availability.js"
+    "seed:availability": "node dist/seed/seed-availability.js",
+    "fix:appointments": "node dist/seed/fix-appointments-locationIds.js",
+    "fix:locations": "node dist/seed/fix-locations-structure.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.600.0",
@@ -20,6 +23,7 @@
     "@types/aws-lambda": "^8.10.138",
     "@types/node": "^20.14.0",
     "@types/uuid": "^9.0.8",
+    "esbuild": "^0.27.0",
     "typescript": "^5.4.5"
   }
 }

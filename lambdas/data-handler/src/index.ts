@@ -1,5 +1,7 @@
+// Force CDK redeploy: appointment validation 2025-11-13T19:30:00
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getAppointments, getAppointmentById, updateAppointment } from './handlers/appointments';
+import { createAppointment, validateAppointmentSlot } from './handlers/createAppointment';
 import { getLocations, getLocationById } from './handlers/locations';
 import { getBusinesses, getBusinessById } from './handlers/businesses';
 import { getKpisByLocation } from './handlers/kpis';
@@ -13,6 +15,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
   const method = event.httpMethod;
   const path = event.path;
+
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Max-Age': '86400'
+      },
+      body: ''
+    };
+  }
 
   try {
     // Route to appropriate handler based on path and method
@@ -55,6 +71,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     // POST routes
     if (method === 'POST') {
+      if (path === '/api/appointments') {
+        return await createAppointment(event);
+      }
+      if (path === '/api/appointments/validate') {
+        return await validateAppointmentSlot(event);
+      }
       if (path === '/api/availability/check-multiple') {
         return await checkMultipleAvailability(event);
       }

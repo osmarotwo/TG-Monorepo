@@ -21,9 +21,12 @@ export async function getAppointments(event: APIGatewayProxyEvent): Promise<APIG
       };
     }
 
+    // Usar zona horaria de Colombia (UTC-5) para determinar "hoy"
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0]; // "2025-10-22"
-    const currentTimeStr = now.toTimeString().split(' ')[0].substring(0, 5); // "14:30"
+    const colombiaOffset = -5 * 60; // UTC-5 en minutos
+    const colombiaTime = new Date(now.getTime() + (colombiaOffset - now.getTimezoneOffset()) * 60000);
+    const todayStr = colombiaTime.toISOString().split('T')[0]; // "2025-11-13"
+    const currentTimeStr = colombiaTime.toTimeString().split(' ')[0].substring(0, 5); // "20:30"
 
     // Query directo en la tabla principal usando PK = USER#{userId}
     const items = await queryItems({

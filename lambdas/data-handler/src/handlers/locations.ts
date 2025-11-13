@@ -19,13 +19,13 @@ export async function getLocations(event: APIGatewayProxyEvent): Promise<APIGate
       };
     }
 
-    // Query usando GSI1 (BUSINESS#{businessId})
+    // Query por PK (BUSINESS#{businessId}) con SK comenzando con LOCATION#
     const items = await queryItems({
       tableName: LOCATIONS_TABLE,
-      indexName: 'GSI1',
-      keyConditionExpression: 'GSI1PK = :businessId',
+      keyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
       expressionAttributeValues: {
-        ':businessId': `BUSINESS#${businessId}`,
+        ':pk': `BUSINESS#${businessId}`,
+        ':sk': 'LOCATION#',
       },
     });
 

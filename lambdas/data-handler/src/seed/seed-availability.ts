@@ -2,10 +2,12 @@
  * Seed de datos de disponibilidad para pruebas
  * 
  * Crea:
- * - Horarios de operación para 5 ubicaciones
+ * - Horarios de operación para 5 ubicaciones (LOC001-LOC005)
  * - 6 tipos de servicios con duraciones
  * - 6 especialistas con sus agendas
- * - Slots disponibles para mañana (22/10/2025)
+ * - Slots disponibles para 12-15 noviembre 2025
+ * - Horario: 8:00 AM - 8:00 PM (slots cada 15 minutos)
+ * - ~80% disponibles, ~15% reservados, ~5% ocupados
  */
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
@@ -21,80 +23,80 @@ const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1
 const docClient = DynamoDBDocumentClient.from(client);
 const AVAILABILITY_TABLE = process.env.AVAILABILITY_TABLE || 'Availability';
 
-// IDs de las ubicaciones existentes (de seed-optimizable-route.ts)
+// IDs de las ubicaciones existentes (alineados con la tabla Locations real)
 const LOCATION_IDS = [
-  'loc-chapinero-001',
-  'loc-chia-001',
-  'loc-kennedy-001',
-  'loc-usaquen-001',
-  'loc-suba-001'
+  'LOC-CENTRO-ZIP',   // Salón de Belleza Centro
+  'LOC-SUR-ZIP',      // Sede Sur
+  'LOC-NORTE-ZIP',    // Sede Norte
+  'LOC-OESTE-ZIP',    // Sede Oeste
+  'LOC-ESTE-ZIP',     // Sede Este
 ];
 
 const LOCATION_NAMES = [
-  'Barbería Chapinero',
-  'Salón Chía Premium',
-  'Estética Kennedy',
-  'Hair Studio Usaquén',
-  'Peluquería Suba'
+  'Salón de Belleza Centro',
+  'Sede Sur',
+  'Sede Norte',
+  'Sede Oeste',
+  'Sede Este'
 ];
 
 // Días de la semana
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-// Tipos de servicios
+// Tipos de servicios (alineados con /nextjs-app/src/data/services.ts)
 const SERVICES: Omit<ServiceDuration, 'PK' | 'SK' | 'createdAt' | 'updatedAt'>[] = [
   {
-    serviceType: 'haircut',
+    serviceType: 'Corte de Cabello',
     displayName: 'Corte de Cabello',
     durationMinutes: 60,
     description: 'Corte personalizado con lavado',
     basePrice: 35000
   },
   {
-    serviceType: 'keratin',
-    displayName: 'Keratina',
-    durationMinutes: 90,
-    description: 'Tratamiento de keratina completo',
-    basePrice: 180000
-  },
-  {
-    serviceType: 'coloring',
+    serviceType: 'Tinte',
     displayName: 'Tinte',
-    durationMinutes: 120,
-    description: 'Coloración completa con retoque de raíces',
+    durationMinutes: 90,
+    description: 'Coloración completa',
     basePrice: 85000
   },
   {
-    serviceType: 'beard',
-    displayName: 'Barba',
-    durationMinutes: 30,
-    description: 'Arreglo y diseño de barba',
+    serviceType: 'Peinado',
+    displayName: 'Peinado',
+    durationMinutes: 45,
+    description: 'Peinado para evento',
+    basePrice: 45000
+  },
+  {
+    serviceType: 'Manicure',
+    displayName: 'Manicure',
+    durationMinutes: 45,
+    description: 'Manicure clásico',
     basePrice: 25000
   },
   {
-    serviceType: 'highlights',
-    displayName: 'Mechas',
-    durationMinutes: 90,
-    description: 'Mechas estilo balayage',
-    basePrice: 95000
+    serviceType: 'Pedicure',
+    displayName: 'Pedicure',
+    durationMinutes: 60,
+    description: 'Pedicure completo',
+    basePrice: 30000
   },
   {
-    serviceType: 'treatment',
-    displayName: 'Tratamiento Capilar',
-    durationMinutes: 45,
-    description: 'Hidratación profunda',
-    basePrice: 45000
+    serviceType: 'Masaje Facial',
+    displayName: 'Masaje Facial',
+    durationMinutes: 30,
+    description: 'Masaje facial relajante',
+    basePrice: 40000
   }
 ];
 
 // Especialistas
 const SPECIALISTS = [
-  { id: 'spec-001', name: 'Carlos Martínez', locations: ['loc-chapinero-001', 'loc-usaquen-001'] },
-  { id: 'spec-002', name: 'Ana López', locations: ['loc-chia-001', 'loc-suba-001'] },
-  { id: 'spec-003', name: 'Juan Rodríguez', locations: ['loc-kennedy-001'] },
-  { id: 'spec-004', name: 'María García', locations: ['loc-chapinero-001', 'loc-chia-001'] },
-  { id: 'spec-005', name: 'Pedro Sánchez', locations: ['loc-usaquen-001', 'loc-suba-001'] },
-  { id: 'spec-006', name: 'Laura Torres', locations: ['loc-kennedy-001', 'loc-chapinero-001'] }
+  { id: 'spec-001', name: 'Carlos Martínez', locations: ['LOC001', 'LOC003'] },
+  { id: 'spec-002', name: 'Ana López', locations: ['LOC002', 'LOC004'] },
+  { id: 'spec-003', name: 'Juan Rodríguez', locations: ['LOC005'] },
+  { id: 'spec-004', name: 'María García', locations: ['LOC001', 'LOC002'] },
+  { id: 'spec-005', name: 'Pedro Sánchez', locations: ['LOC003', 'LOC004'] },
+  { id: 'spec-006', name: 'Laura Torres', locations: ['LOC005', 'LOC001'] }
 ];
 
 /**
@@ -195,32 +197,36 @@ async function seedServiceDurations(): Promise<void> {
 }
 
 /**
- * Crea agendas de especialistas para mañana (22/10/2025)
+ * Crea agendas de especialistas para los próximos 4 días
  */
 async function seedSpecialistSchedules(): Promise<void> {
   console.log('👨‍💼 Creando agendas de especialistas...');
   
   const items: SpecialistSchedule[] = [];
   const now = new Date().toISOString();
-  const tomorrow = '2025-10-22'; // Mañana
   
-  for (const specialist of SPECIALISTS) {
-    for (const locationId of specialist.locations) {
-      items.push({
-        PK: `SPECIALIST#${specialist.id}`,
-        SK: `DATE#${tomorrow}#LOCATION#${locationId}`,
-        GSI1PK: `DATE#${tomorrow}#LOCATION#${locationId}`, // Para consultar por ubicación y fecha
-        GSI1SK: `SPECIALIST#${specialist.id}`,
-        GSI2PK: `SPECIALIST#${specialist.id}`, // Para consultar por especialista
-        GSI2SK: `DATE#${tomorrow}`,
-        specialistId: specialist.id,
-        specialistName: specialist.name,
-        locationId,
-        date: tomorrow,
-        availability: generateAvailabilitySlots(),
-        createdAt: now,
-        updatedAt: now
-      } as any);
+  // Crear disponibilidad para los próximos 4 días (12-15 de noviembre de 2025)
+  const dates = ['2025-11-12', '2025-11-13', '2025-11-14', '2025-11-15'];
+  
+  for (const date of dates) {
+    for (const specialist of SPECIALISTS) {
+      for (const locationId of specialist.locations) {
+        items.push({
+          PK: `SPECIALIST#${specialist.id}`,
+          SK: `DATE#${date}#LOCATION#${locationId}`,
+          GSI1PK: `DATE#${date}#LOCATION#${locationId}`, // Para consultar por ubicación y fecha
+          GSI1SK: `SPECIALIST#${specialist.id}`,
+          GSI2PK: `SPECIALIST#${specialist.id}`, // Para consultar por especialista
+          GSI2SK: `DATE#${date}`,
+          specialistId: specialist.id,
+          specialistName: specialist.name,
+          locationId,
+          date,
+          availability: generateAvailabilitySlots(),
+          createdAt: now,
+          updatedAt: now
+        } as any);
+      }
     }
   }
   
@@ -236,7 +242,7 @@ async function seedSpecialistSchedules(): Promise<void> {
     }));
   }
   
-  console.log(`✅ Creadas ${items.length} agendas de especialistas para ${tomorrow}`);
+  console.log(`✅ Creadas ${items.length} agendas de especialistas para ${dates.join(', ')}`);
 }
 
 /**
@@ -252,10 +258,12 @@ async function main() {
     
     console.log('\n✨ Seed completado exitosamente!\n');
     console.log('📊 Resumen:');
-    console.log(`   - ${LOCATION_IDS.length} ubicaciones con horarios`);
+    console.log(`   - ${LOCATION_IDS.length} ubicaciones con horarios (LOC001-LOC005)`);
     console.log(`   - ${SERVICES.length} tipos de servicios`);
     console.log(`   - ${SPECIALISTS.length} especialistas`);
-    console.log(`   - Slots disponibles para: 2025-10-22\n`);
+    console.log(`   - Slots disponibles para: 12-15 noviembre 2025`);
+    console.log(`   - Horario: 8:00 AM - 8:00 PM (slots cada 15 min)`);
+    console.log(`   - ~80% slots disponibles, ~15% reservados, ~5% ocupados\n`);
     
   } catch (error) {
     console.error('❌ Error en seed:', error);

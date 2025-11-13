@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([])
   const [appointmentLocations, setAppointmentLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
+  const [showPastAppointments, setShowPastAppointments] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [optimizationAttempted, setOptimizationAttempted] = useState(false) // Prevenir loop infinito
 
@@ -113,6 +114,38 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, user, router])
 
+  // Recargar citas cuando cambie el toggle
+  useEffect(() => {
+    if (user) {
+      loadAppointments()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPastAppointments])
+
+  // Helper para determinar si una cita ya pasó
+  const isAppointmentPast = (appointment: AppointmentWithDetails): boolean => {
+    if (!appointment.date || !appointment.time) return false
+    
+    // Obtener hora actual en Colombia (UTC-5)
+    const now = new Date()
+    const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }))
+    const todayStr = colombiaTime.toISOString().split('T')[0]
+    const currentTimeStr = `${colombiaTime.getHours().toString().padStart(2, '0')}:${colombiaTime.getMinutes().toString().padStart(2, '0')}`
+    
+    console.log('🕐 Verificando cita:', { 
+      date: appointment.date, 
+      time: appointment.time, 
+      todayStr, 
+      currentTimeStr,
+      isPastDate: appointment.date < todayStr,
+      isSameDatePastTime: appointment.date === todayStr && appointment.time < currentTimeStr
+    })
+    
+    if (appointment.date < todayStr) return true // Fecha pasada
+    if (appointment.date === todayStr && appointment.time < currentTimeStr) return true // Hoy pero hora pasada
+    return false
+  }
+
   const loadAppointments = async () => {
     try {
       setLoading(true)
@@ -122,7 +155,9 @@ export default function DashboardPage() {
         return
       }
       
-      const data = await fetchUpcomingAppointments(user.userId, 10)
+      // Si showPastAppointments es true, traer todas las citas (upcoming=false)
+      // Si showPastAppointments es false, solo próximas (upcoming=true)
+      const data = await fetchUpcomingAppointments(user.userId, 20, !showPastAppointments)
       
       // Enriquecer citas con información de location y business
       const enrichedAppointments = await Promise.all(
@@ -250,7 +285,20 @@ export default function DashboardPage() {
 
           {/* Upcoming Appointments */}
           <div className="mb-12">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Upcoming Appointments</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">
+                {showPastAppointments ? 'All Appointments' : 'Upcoming Appointments'}
+              </h2>
+              
+              {/* Toggle para mostrar citas pasadas */}
+              <button
+                onClick={() => setShowPastAppointments(!showPastAppointments)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+              >
+                <span>{showPastAppointments ? '📅' : '🕐'}</span>
+                <span>{showPastAppointments ? 'Show Upcoming Only' : 'Show Past Appointments'}</span>
+              </button>
+            </div>
             
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -265,9 +313,13 @@ export default function DashboardPage() {
             ) : appointments.length === 0 ? (
               <div className="bg-white rounded-xl p-12 text-center">
                 <div className="text-6xl mb-4">📅</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No upcoming appointments</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {showPastAppointments ? 'No appointments found' : 'No upcoming appointments'}
+                </h3>
                 <p className="text-gray-600 mb-6">
-                  Book your first appointment to get started!
+                  {showPastAppointments 
+                    ? 'You haven\'t created any appointments yet.' 
+                    : 'Book your first appointment to get started!'}
                 </p>
                 <button
                   onClick={() => router.push('/appointments')}
@@ -279,6 +331,8 @@ export default function DashboardPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {appointments.slice(0, 4).map((appointment: AppointmentWithDetails) => {
+                  const isPast = isAppointmentPast(appointment)
+                  
                   const industryEmojis = {
                     beauty: '💅',
                     restaurant: '🍽️',
@@ -298,8 +352,19 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={appointment.appointmentId}
-                      className="bg-white rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer"
+                      className={`rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer relative ${
+                        isPast 
+                          ? 'bg-gray-50 border-2 border-gray-200 opacity-75' 
+                          : 'bg-white'
+                      }`}
                     >
+                      {/* Badge de "Pasada" */}
+                      {isPast && (
+                        <div className="absolute top-3 right-3 px-3 py-1 bg-gray-500 text-white text-xs font-semibold rounded-full">
+                          ✓ Completed
+                        </div>
+                      )}
+                      
                       <div className="flex items-start gap-4">
                         {/* Business Logo */}
                         {appointment.business?.logoUrl ? (
@@ -324,11 +389,11 @@ export default function DashboardPage() {
                             </div>
                           )}
                           
-                          <div className="text-sm text-[#13a4ec] font-medium mb-1">
-                            Next Appointment
+                          <div className={`text-sm font-medium mb-1 ${isPast ? 'text-gray-500' : 'text-[#13a4ec]'}`}>
+                            {isPast ? 'Past Appointment' : 'Next Appointment'}
                           </div>
                           
-                          <h3 className="text-lg font-bold text-gray-900 mb-1">
+                          <h3 className={`text-lg font-bold mb-1 ${isPast ? 'text-gray-600' : 'text-gray-900'}`}>
                             {appointment.serviceType}
                           </h3>
                           
@@ -346,7 +411,7 @@ export default function DashboardPage() {
                           
                           {/* Date & Time */}
                           <p className="text-sm text-gray-600 mb-1">
-                            {new Date(appointment.startTime).toLocaleDateString()} • {new Date(appointment.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(appointment.startTime).toLocaleDateString()} • {new Date(`2000-01-01T${appointment.time}`).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true })}
                           </p>
                           
                           {/* Duración estimada */}

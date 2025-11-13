@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import MapSection from '@/components/dashboard/MapSection'
+import CreateAppointmentModal from '@/components/CreateAppointmentModal'
 import { fetchBusinessesByOwner } from '@/services/api/businesses'
 import { fetchLocationsByBusiness, type Location as LocationType } from '@/services/api/locations'
 import { ToastContainer, useToast } from '@/components/Toast'
@@ -29,6 +30,8 @@ export default function AppointmentsPage() {
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null)
   const [locations, setLocations] = useState<LocationType[]>([])
   const [loading, setLoading] = useState(true)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(null)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -81,6 +84,16 @@ export default function AppointmentsPage() {
   const handleBackToBusinesses = () => {
     setSelectedBusiness(null)
     setLocations([])
+    setSelectedLocation(null)
+  }
+
+  const handleLocationClick = (location: LocationType) => {
+    setSelectedLocation(location)
+    setIsModalOpen(true)
+  }
+
+  const handleModalSuccess = () => {
+    toast.success('Cita creada exitosamente')
   }
 
   const filteredBusinesses = allBusinesses.filter(business => {
@@ -230,11 +243,7 @@ export default function AppointmentsPage() {
                 {locations.map((location) => (
                   <button
                     key={location.locationId}
-                    onClick={() => {
-                      console.log('Selected location:', location)
-                      // TODO: Navegar a página de selección de servicio/horario
-                      toast.info('Booking flow coming soon!')
-                    }}
+                    onClick={() => handleLocationClick(location)}
                     className="bg-white rounded-xl p-6 text-left hover:shadow-lg transition-shadow"
                   >
                     <div className="flex items-start gap-3 mb-3">
@@ -261,6 +270,20 @@ export default function AppointmentsPage() {
             </>
           )}
         </main>
+        
+        {/* Modal */}
+        {selectedLocation && selectedBusiness && (
+          <CreateAppointmentModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={handleModalSuccess}
+            businessId={selectedBusiness.businessId}
+            businessName={selectedBusiness.name}
+            locationId={selectedLocation.locationId}
+            locationName={selectedLocation.name}
+          />
+        )}
+        
         <ToastContainer toasts={toast.toasts} onClose={toast.closeToast} />
       </div>
     </>

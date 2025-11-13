@@ -19,6 +19,7 @@ import {
 const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
 const docClient = DynamoDBDocumentClient.from(client);
 const AVAILABILITY_TABLE = process.env.AVAILABILITY_TABLE || 'Availability';
+const APPOINTMENTS_TABLE = process.env.APPOINTMENTS_TABLE || 'Appointments';
 
 // CORS headers para incluir en todas las respuestas
 const CORS_HEADERS = {
@@ -80,8 +81,43 @@ export async function getAvailableSlots(event: any) {
         body: JSON.stringify({ availableSlots: [] })
       };
     }
-    
-    // 3. Encontrar slots consecutivos disponibles
+
+    // 3. Consultar citas ya agendadas para esta ubicación y fecha
+    const appointmentsResult = await docClient.send(new QueryCommand({
+      TableName: APPOINTMENTS_TABLE,
+      IndexName: 'GSI2',
+      KeyConditionExpression: 'GSI2PK = :pk AND begins_with(GSI2SK, :sk)',
+      ExpressionAttributeValues: {
+        ':pk': `LOCATION#${locationId}`,
+        ':sk': `DATE#${date}#`
+      }
+    }));
+
+    // Crear mapa de horarios ocupados: { "09:00": true, "09:15": true, ... }
+    const bookedTimes = new Set<string>();
+    if (appointmentsResult.Items && appointmentsResult.Items.length > 0) {
+      for (const apt of appointmentsResult.Items) {
+        const appointment = apt as any;
+        // Calcular todos los slots de 15 min que ocupa esta cita
+        const startTime = appointment.time; // "09:00"
+        const duration = appointment.duration || 60;
+        const slotsOccupied = Math.ceil(duration / 15);
+        
+        // Convertir startTime a minutos desde medianoche
+        const [hours, minutes] = startTime.split(':').map(Number);
+        let currentMinutes = hours * 60 + minutes;
+        
+        // Marcar todos los slots ocupados
+        for (let i = 0; i < slotsOccupied; i++) {
+          const slotHours = Math.floor(currentMinutes / 60).toString().padStart(2, '0');
+          const slotMins = (currentMinutes % 60).toString().padStart(2, '0');
+          bookedTimes.add(`${slotHours}:${slotMins}`);
+          currentMinutes += 15;
+        }
+      }
+    }
+
+    // 4. Encontrar slots consecutivos disponibles (excluyendo ocupados)
     const availableSlots: AvailableSlot[] = [];
     const slotsNeeded = Math.ceil(durationMinutes / 15);
     
@@ -93,9 +129,11 @@ export async function getAvailableSlots(event: any) {
         const startTime = times[i];
         let allAvailable = true;
         
-        // Verificar que todos los slots consecutivos estén disponibles
+        // Verificar que todos los slots consecutivos estén disponibles Y no ocupados
         for (let j = 0; j < slotsNeeded; j++) {
-          if (schedule.availability[times[i + j]] !== 'available') {
+          const currentTime = times[i + j];
+          // Verificar availability Y que no esté en citas agendadas
+          if (schedule.availability[currentTime] !== 'available' || bookedTimes.has(currentTime)) {
             allAvailable = false;
             break;
           }

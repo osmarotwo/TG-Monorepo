@@ -150,6 +150,19 @@ export async function getAvailableSlots(event: any) {
       }
     }
     
+    // 5. Filtrar slots que ya pasaron si la fecha es hoy
+    const now = new Date();
+    const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    const todayStr = colombiaTime.toISOString().split('T')[0];
+    const currentTimeStr = `${colombiaTime.getHours().toString().padStart(2, '0')}:${colombiaTime.getMinutes().toString().padStart(2, '0')}`;
+    
+    let filteredSlots = availableSlots;
+    if (date === todayStr) {
+      // Si es hoy, filtrar horarios que ya pasaron
+      filteredSlots = availableSlots.filter(slot => slot.time >= currentTimeStr);
+      console.log(`🕐 Filtrado de horarios pasados: ${availableSlots.length} → ${filteredSlots.length} slots (hora actual: ${currentTimeStr})`);
+    }
+    
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
@@ -158,7 +171,7 @@ export async function getAvailableSlots(event: any) {
         date,
         serviceType,
         durationMinutes,
-        availableSlots
+        availableSlots: filteredSlots
       })
     };
     

@@ -1,4 +1,4 @@
-// Force CDK redeploy: appointment validation 2025-11-13T19:30:00
+// Force CDK redeploy: filter past time slots 2025-11-13T19:53:00
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getAppointments, getAppointmentById, updateAppointment } from './handlers/appointments';
 import { createAppointment, validateAppointmentSlot } from './handlers/createAppointment';

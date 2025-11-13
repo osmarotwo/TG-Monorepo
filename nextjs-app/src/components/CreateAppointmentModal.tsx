@@ -58,6 +58,19 @@ export default function CreateAppointmentModal({
     }
   }, [isOpen, user])
 
+  // Auto-fill today's date when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const today = new Date()
+      const colombiaTime = new Date(today.toLocaleString('en-US', { timeZone: 'America/Bogota' }))
+      const todayStr = colombiaTime.toISOString().split('T')[0] // YYYY-MM-DD
+      setFormData(prev => ({
+        ...prev,
+        date: todayStr
+      }))
+    }
+  }, [isOpen])
+
   // Load services when modal opens
   useEffect(() => {
     if (isOpen && businessId) {

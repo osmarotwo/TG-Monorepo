@@ -45,17 +45,43 @@ export function useRouteOptimizationWithRescheduling(
     }
 
     // Verificar que todas las citas tengan ubicación con coordenadas
-    const appointmentsWithLocation = appointments.filter(apt => 
-      apt.location && 
-      typeof apt.location.latitude === 'number' && 
-      typeof apt.location.longitude === 'number'
-    );
+    // Soporta tanto citas de negocio (location) como personales (latitude/longitude directos)
+    const appointmentsWithLocation = appointments.filter(apt => {
+      // Citas de negocio: tienen location object
+      if (apt.location && 
+          typeof apt.location.latitude === 'number' && 
+          typeof apt.location.longitude === 'number') {
+        return true;
+      }
+      
+      // Citas personales: tienen latitude/longitude directos
+      if (apt.type === 'personal' && 
+          typeof apt.latitude === 'number' && 
+          typeof apt.longitude === 'number') {
+        return true;
+      }
+      
+      return false;
+    });
 
     if (appointmentsWithLocation.length < 2) {
       console.error('⚠️ No hay suficientes citas con coordenadas válidas');
       setError(new Error('Se necesitan coordenadas de ubicación para optimizar'));
       return;
     }
+    
+    // Filtrar solo citas flexibles para optimización
+    // Las citas personales siempre tienen isFlexible=false
+    const flexibleAppointments = appointmentsWithLocation.filter(apt => 
+      apt.isFlexible !== false
+    );
+    
+    console.log('📋 Filtrado de citas:', {
+      total: appointments.length,
+      withLocation: appointmentsWithLocation.length,
+      flexible: flexibleAppointments.length,
+      personal: appointmentsWithLocation.filter(apt => apt.type === 'personal').length
+    });
 
     try {
       setIsOptimizing(true);
@@ -85,12 +111,14 @@ export function useRouteOptimizationWithRescheduling(
         
         console.log('🔍 DEBUG - Processing appointment:', {
           id: apt.appointmentId,
+          type: apt.type,
           hasStartTime: !!apt.startTime,
           hasEndTime: !!apt.endTime,
           date: apt.date,
           time: apt.time,
           serviceName: apt.serviceName,
-          estimatedDuration: apt.estimatedDuration
+          estimatedDuration: apt.estimatedDuration,
+          isFlexible: apt.isFlexible
         });
         
         if (!startTime && apt.date && apt.time) {
@@ -116,20 +144,38 @@ export function useRouteOptimizationWithRescheduling(
           });
         }
         
+        // Obtener coordenadas según el tipo de cita
+        const getLocation = () => {
+          if (apt.type === 'personal') {
+            // Cita personal: usar latitude/longitude directos
+            return {
+              lat: apt.latitude!,
+              lng: apt.longitude!,
+              address: apt.address || 'Personal appointment'
+            };
+          } else {
+            // Cita de negocio: usar location object
+            return {
+              lat: apt.location!.latitude,
+              lng: apt.location!.longitude,
+              address: apt.location!.address
+            };
+          }
+        };
+        
         return {
           id: apt.appointmentId,
-          locationId: apt.locationId,
-          locationName: apt.locationName || apt.location?.name || '',
-          clientName: apt.customerName,
-          serviceType: apt.serviceType,
+          locationId: apt.locationId || 'personal',
+          locationName: apt.type === 'personal' 
+            ? (apt.title || 'Personal Appointment')
+            : (apt.locationName || apt.location?.name || ''),
+          clientName: apt.customerName || 'Personal',
+          serviceType: apt.type === 'personal' ? (apt.title || 'Personal') : (apt.serviceType || 'Service'),
           startTime: startTime,
           endTime: endTime,
-          estimatedDuration: apt.estimatedDuration, // Pasar duración real
-          location: {
-            lat: apt.location!.latitude,
-            lng: apt.location!.longitude,
-            address: apt.location!.address
-          }
+          estimatedDuration: apt.estimatedDuration || 60, // Pasar duración real o default 60min
+          isFlexible: apt.isFlexible !== false, // Citas personales son NO flexibles por defecto
+          location: getLocation()
         };
       });
 

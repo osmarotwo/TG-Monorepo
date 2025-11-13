@@ -65,6 +65,8 @@ export async function createAppointment(event: APIGatewayProxyEvent): Promise<AP
       SK: `APPOINTMENT#${appointmentId}`,
       appointmentId,
       userId,
+      type: 'business', // Cita de negocio
+      isFlexible: true, // Las citas de negocio SÍ se pueden reagendar
       businessId,
       locationId,
       customerName,

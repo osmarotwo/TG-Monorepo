@@ -24,10 +24,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  
   return (
     <html lang="en">
       <head>
         <script src="https://accounts.google.com/gsi/client" async defer></script>
+        {googleMapsApiKey && (
+          <script
+            src={`https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places,marker&loading=async`}
+            async
+            defer
+          ></script>
+        )}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

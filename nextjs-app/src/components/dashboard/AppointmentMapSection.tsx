@@ -49,19 +49,68 @@ export default function AppointmentMapSection({
   const [travelTimesData, setTravelTimesData] = useState<AppointmentWithLocation[]>([])
   const [timeConflicts, setTimeConflicts] = useState<TimeConflict[]>([])
   
+  // Selector de fecha - por defecto hoy
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const today = new Date()
+    return today.toISOString().split('T')[0] // YYYY-MM-DD
+  })
+  
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<(google.maps.Marker | google.maps.marker.AdvancedMarkerElement)[]>([])
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null)
   const isInitializingRef = useRef(false)
 
+  // Filtrar citas por la fecha seleccionada
+  const filteredAppointments = React.useMemo(() => {
+    const filtered = appointments.filter(apt => {
+      const aptDate = apt.date || apt.startTime?.split('T')[0]
+      console.log('🔍 Filtering appointment:', {
+        id: apt.appointmentId,
+        type: apt.type,
+        title: apt.title,
+        aptDate,
+        selectedDate,
+        matches: aptDate === selectedDate
+      })
+      return aptDate === selectedDate
+    })
+    console.log('📅 Filtered appointments for', selectedDate, ':', filtered.length, 'of', appointments.length)
+    return filtered
+  }, [appointments, selectedDate])
+
   // Combinar appointments con locations - usar ref para evitar re-renders
   const appointmentsWithDetails = React.useMemo(() => {
-    return appointments.map((apt) => ({
-      ...apt,
-      location: locations.find((loc) => loc.locationId === apt.locationId),
-    }))
-  }, [appointments, locations])
+    return filteredAppointments.map((apt) => {
+      // Citas personales tienen coordenadas directas
+      if (apt.type === 'personal' && apt.latitude && apt.longitude) {
+        return {
+          ...apt,
+          location: {
+            locationId: 'personal',
+            name: apt.title || 'Personal Appointment',
+            address: apt.address || '',
+            city: '',
+            latitude: apt.latitude,
+            longitude: apt.longitude,
+            businessId: '',
+            capacity: 0,
+            status: 'active' as const,
+            resources: [],
+            specialists: [],
+            createdAt: '',
+            updatedAt: ''
+          }
+        }
+      }
+      
+      // Citas de negocio tienen location
+      return {
+        ...apt,
+        location: locations.find((loc) => loc.locationId === apt.locationId),
+      }
+    })
+  }, [filteredAppointments, locations])
 
   // Obtener ubicación del usuario - SOLO UNA VEZ
   useEffect(() => {
@@ -93,6 +142,13 @@ export default function AppointmentMapSection({
       mounted = false
     }
   }, []) // Solo ejecutar una vez al montar
+
+  // Reset route calculation when date changes
+  useEffect(() => {
+    setHasCalculatedRoutes(false)
+    setTravelTimesData([])
+    setTimeConflicts([])
+  }, [selectedDate])
 
   // Load Google Maps Script
   useEffect(() => {
@@ -176,7 +232,22 @@ export default function AppointmentMapSection({
     try {
       // Calculate center
       const validLocations = appointmentsWithDetails.filter((apt) => apt.location)
+      
+      console.log('🗺️ Creating map with appointments:', {
+        total: appointmentsWithDetails.length,
+        withLocation: validLocations.length,
+        details: appointmentsWithDetails.map(apt => ({
+          id: apt.appointmentId,
+          type: apt.type,
+          title: apt.title,
+          hasLocation: !!apt.location,
+          locationName: apt.location?.name,
+          coords: apt.location ? `${apt.location.latitude}, ${apt.location.longitude}` : 'none'
+        }))
+      })
+      
       if (validLocations.length === 0) {
+        console.warn('⚠️ No valid locations found for map')
         isInitializingRef.current = false
         return
       }
@@ -253,9 +324,13 @@ export default function AppointmentMapSection({
         })
       }
 
-      // Add appointment markers (red) with numbers - usando AdvancedMarkerElement
+      // Add appointment markers (red for business, purple for personal) with numbers - usando AdvancedMarkerElement
       validLocations.forEach((apt, index) => {
         if (!apt.location) return
+
+        const isPersonal = apt.type === 'personal'
+        const markerColor = isPersonal ? '#8B5CF6' : '#DC2626' // Purple for personal, red for business
+        const serviceOrTitle = apt.type === 'personal' ? apt.title : apt.serviceType
 
         // Crear elemento HTML personalizado para cada marcador
         const pin = document.createElement('div')
@@ -264,7 +339,7 @@ export default function AppointmentMapSection({
           <div style="
             width: 48px;
             height: 48px;
-            background-color: #DC2626;
+            background-color: ${markerColor};
             border: 4px solid white;
             border-radius: 50%;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -277,7 +352,7 @@ export default function AppointmentMapSection({
             cursor: pointer;
             transition: transform 0.2s;
           " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-            ${index + 1}
+            ${isPersonal ? '📝' : (index + 1)}
           </div>
         `
 
@@ -285,18 +360,18 @@ export default function AppointmentMapSection({
           map,
           position: { lat: apt.location.latitude, lng: apt.location.longitude },
           content: pin,
-          title: `${apt.serviceType} - ${apt.location.name}`,
+          title: `${serviceOrTitle} - ${apt.location.name}`,
         })
 
         markersRef.current.push(marker)
 
         // InfoWindow content
-        const date = new Date(apt.startTime)
-        const timeStr = date.toLocaleTimeString('es-CO', {
+        const date = apt.startTime ? new Date(apt.startTime) : new Date()
+        const timeStr = apt.time || date.toLocaleTimeString('es-CO', {
           hour: '2-digit',
           minute: '2-digit',
         })
-        const dateStr = date.toLocaleDateString('es-CO', {
+        const dateStr = apt.date || date.toLocaleDateString('es-CO', {
           month: 'short',
           day: 'numeric',
         })
@@ -306,8 +381,13 @@ export default function AppointmentMapSection({
             <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #DC2626;">
               ${index + 1}. ${apt.location.name}
             </div>
+            ${apt.type === 'personal' ? `
+              <div style="display: inline-block; background-color: #8B5CF6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-bottom: 8px;">
+                📝 Personal
+              </div>
+            ` : ''}
             <div style="margin-bottom: 4px; color: #1F2937;">
-              <strong style="color: #374151;">Servicio:</strong> ${apt.serviceType}
+              <strong style="color: #374151;">${apt.type === 'personal' ? 'Evento' : 'Servicio'}:</strong> ${serviceOrTitle}
             </div>
             <div style="margin-bottom: 4px; color: #1F2937;">
               <strong style="color: #374151;">Fecha:</strong> ${dateStr} ${timeStr}
@@ -554,6 +634,37 @@ export default function AppointmentMapSection({
 
   return (
     <div className="space-y-4">
+      {/* Date Selector */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+        <div className="flex items-center gap-4">
+          <label htmlFor="route-date" className="text-sm font-medium text-gray-700 whitespace-nowrap">
+            📅 View routes for:
+          </label>
+          <input
+            type="date"
+            id="route-date"
+            value={selectedDate}
+            onChange={(e) => {
+              setSelectedDate(e.target.value)
+              setHasCalculatedRoutes(false) // Reset para recalcular rutas
+            }}
+            className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13a4ec] text-gray-900"
+          />
+          <div className="text-sm text-gray-600">
+            {filteredAppointments.length} {filteredAppointments.length === 1 ? 'appointment' : 'appointments'}
+          </div>
+        </div>
+      </div>
+
+      {/* No appointments message */}
+      {filteredAppointments.length === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
+          <div className="text-4xl mb-2">📅</div>
+          <p className="text-blue-800 font-medium">No appointments scheduled for this date</p>
+          <p className="text-blue-600 text-sm mt-1">Select a different date or create a new appointment</p>
+        </div>
+      )}
+
       {/* Map */}
       <div ref={mapRef} className={`bg-gray-100 rounded-xl ${height} w-full`}></div>
 
@@ -610,13 +721,25 @@ export default function AppointmentMapSection({
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <div className="font-semibold text-gray-900">{apt.location.name}</div>
+                      {apt.type === 'personal' && (
+                        <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full font-bold">
+                          📝 Personal
+                        </span>
+                      )}
                       {isConflicted && (
                         <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full font-bold">
                           ⚠️ No alcanzable
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600">{apt.serviceType}</div>
+                    <div className="text-sm text-gray-600">
+                      {apt.type === 'personal' ? apt.title : apt.serviceType}
+                    </div>
+                    {/* Mostrar fecha y hora */}
+                    <div className="text-xs text-gray-500 mt-1">
+                      📅 {apt.date} • ⏰ {apt.time || apt.startTime?.substring(11, 16)}
+                      {apt.estimatedDuration && ` • ${apt.estimatedDuration} min`}
+                    </div>
                     {index === 0 && apt.travelTimeFromUser && (
                       <div className="text-sm text-[#13a4ec] font-medium mt-1">
                         📍 Desde tu ubicación: {apt.travelTimeFromUser} ({apt.distanceFromUser})

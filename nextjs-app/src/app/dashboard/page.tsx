@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import AppointmentMapSection from '@/components/dashboard/AppointmentMapSection'
 import RouteOptimizationCard from '@/components/dashboard/RouteOptimizationCard'
+import CreatePersonalAppointmentModal from '@/components/CreatePersonalAppointmentModal'
 import { fetchUpcomingAppointments, type Appointment as AppointmentType } from '@/services/api/appointments'
 import { fetchLocationById, type Location } from '@/services/api/locations'
 import { fetchBusinessById, type Business } from '@/services/api/businesses'
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const [appointmentLocations, setAppointmentLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [showPastAppointments, setShowPastAppointments] = useState(false)
+  const [showPersonalAppointmentModal, setShowPersonalAppointmentModal] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [optimizationAttempted, setOptimizationAttempted] = useState(false) // Prevenir loop infinito
 
@@ -163,6 +165,16 @@ export default function DashboardPage() {
       const enrichedAppointments = await Promise.all(
         data.map(async (apt) => {
           try {
+            // Las citas personales no tienen location/business asociado
+            if (apt.type === 'personal') {
+              return {
+                ...apt,
+                location: undefined,
+                business: undefined,
+              }
+            }
+            
+            // Citas de negocio: cargar location y business
             const location = await fetchLocationById(apt.locationId)
             const business = location ? await fetchBusinessById(apt.businessId) : null
             return {
@@ -290,14 +302,25 @@ export default function DashboardPage() {
                 {showPastAppointments ? 'All Appointments' : 'Upcoming Appointments'}
               </h2>
               
-              {/* Toggle para mostrar citas pasadas */}
-              <button
-                onClick={() => setShowPastAppointments(!showPastAppointments)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
-              >
-                <span>{showPastAppointments ? '📅' : '🕐'}</span>
-                <span>{showPastAppointments ? 'Show Upcoming Only' : 'Show Past Appointments'}</span>
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Botón para crear cita personal */}
+                <button
+                  onClick={() => setShowPersonalAppointmentModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#13a4ec] hover:bg-[#0f8fcd] text-white transition-colors text-sm font-medium shadow-sm"
+                >
+                  <span>📝</span>
+                  <span>Add Personal Appointment</span>
+                </button>
+
+                {/* Toggle para mostrar citas pasadas */}
+                <button
+                  onClick={() => setShowPastAppointments(!showPastAppointments)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                >
+                  <span>{showPastAppointments ? '📅' : '🕐'}</span>
+                  <span>{showPastAppointments ? 'Show Upcoming Only' : 'Show Past Appointments'}</span>
+                </button>
+              </div>
             </div>
             
             {loading ? (
@@ -332,6 +355,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {appointments.slice(0, 4).map((appointment: AppointmentWithDetails) => {
                   const isPast = isAppointmentPast(appointment)
+                  const isPersonal = appointment.type === 'personal'
                   
                   const industryEmojis = {
                     beauty: '💅',
@@ -355,6 +379,8 @@ export default function DashboardPage() {
                       className={`rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer relative ${
                         isPast 
                           ? 'bg-gray-50 border-2 border-gray-200 opacity-75' 
+                          : isPersonal
+                          ? 'bg-purple-50 border-2 border-purple-200'
                           : 'bg-white'
                       }`}
                     >
@@ -365,9 +391,20 @@ export default function DashboardPage() {
                         </div>
                       )}
                       
+                      {/* Badge de "Personal" */}
+                      {!isPast && isPersonal && (
+                        <div className="absolute top-3 right-3 px-3 py-1 bg-purple-500 text-white text-xs font-semibold rounded-full">
+                          📝 Personal
+                        </div>
+                      )}
+                      
                       <div className="flex items-start gap-4">
-                        {/* Business Logo */}
-                        {appointment.business?.logoUrl ? (
+                        {/* Business Logo o ícono personal */}
+                        {isPersonal ? (
+                          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center text-2xl flex-shrink-0">
+                            📝
+                          </div>
+                        ) : appointment.business?.logoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={appointment.business.logoUrl}
@@ -382,31 +419,38 @@ export default function DashboardPage() {
                         
                         <div className="flex-1">
                           {/* Category Badge */}
-                          {appointment.business?.industry && (
+                          {!isPersonal && appointment.business?.industry && (
                             <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-[#13a4ec] text-xs font-medium rounded-full mb-2">
                               {industryEmojis[appointment.business.industry]}
                               <span>{industryLabels[appointment.business.industry]}</span>
                             </div>
                           )}
                           
-                          <div className={`text-sm font-medium mb-1 ${isPast ? 'text-gray-500' : 'text-[#13a4ec]'}`}>
-                            {isPast ? 'Past Appointment' : 'Next Appointment'}
+                          <div className={`text-sm font-medium mb-1 ${isPast ? 'text-gray-500' : isPersonal ? 'text-purple-600' : 'text-[#13a4ec]'}`}>
+                            {isPast ? 'Past Appointment' : isPersonal ? 'Personal Appointment' : 'Next Appointment'}
                           </div>
                           
                           <h3 className={`text-lg font-bold mb-1 ${isPast ? 'text-gray-600' : 'text-gray-900'}`}>
-                            {appointment.serviceType}
+                            {isPersonal ? appointment.title : appointment.serviceType}
                           </h3>
                           
-                          {/* Business Name */}
-                          {appointment.business?.name && (
+                          {/* Business Name (solo para citas de negocio) */}
+                          {!isPersonal && appointment.business?.name && (
                             <p className="text-sm font-semibold text-gray-700 mb-1">
                               {appointment.business.name}
                             </p>
                           )}
                           
+                          {/* Descripción (solo para citas personales) */}
+                          {isPersonal && appointment.description && (
+                            <p className="text-sm text-gray-600 mb-1">
+                              {appointment.description}
+                            </p>
+                          )}
+                          
                           {/* Location */}
                           <p className="text-sm text-gray-600 mb-1">
-                            📍 {appointment.location?.name || appointment.locationName || 'Location'}
+                            📍 {isPersonal ? appointment.address : (appointment.location?.name || appointment.locationName || 'Location')}
                           </p>
                           
                           {/* Date & Time */}
@@ -471,6 +515,16 @@ export default function DashboardPage() {
         </main>
         <ToastContainer toasts={toast.toasts} onClose={toast.closeToast} />
       </div>
+
+      {/* Personal Appointment Modal */}
+      <CreatePersonalAppointmentModal
+        isOpen={showPersonalAppointmentModal}
+        onClose={() => setShowPersonalAppointmentModal(false)}
+        onSuccess={() => {
+          loadAppointments()
+          toast.success('✅ Personal appointment created successfully!')
+        }}
+      />
     </>
   )
 }

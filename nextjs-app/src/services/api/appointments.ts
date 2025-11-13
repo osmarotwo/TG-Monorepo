@@ -29,6 +29,14 @@ export interface Appointment {
   date?: string; // YYYY-MM-DD
   time?: string; // HH:MM
   serviceName?: string; // Nombre del servicio
+  // Campos para citas personales
+  type?: 'business' | 'personal'; // Tipo de cita
+  isFlexible?: boolean; // Si se puede reprogramar automáticamente
+  title?: string; // Título de cita personal
+  description?: string; // Descripción de cita personal
+  address?: string; // Dirección para citas personales
+  latitude?: number; // Coordenada para citas personales
+  longitude?: number; // Coordenada para citas personales
 }
 
 export interface AppointmentsResponse {

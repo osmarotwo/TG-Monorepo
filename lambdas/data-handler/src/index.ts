@@ -1,7 +1,8 @@
-// Force CDK redeploy: filter past time slots 2025-11-13T19:53:00
+// Force CDK redeploy: debug conflict detection 2025-11-13T20:45:00
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getAppointments, getAppointmentById, updateAppointment } from './handlers/appointments';
 import { createAppointment, validateAppointmentSlot } from './handlers/createAppointment';
+import { createPersonalAppointment } from './handlers/createPersonalAppointment';
 import { getLocations, getLocationById } from './handlers/locations';
 import { getBusinesses, getBusinessById } from './handlers/businesses';
 import { getKpisByLocation } from './handlers/kpis';
@@ -73,6 +74,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (method === 'POST') {
       if (path === '/api/appointments') {
         return await createAppointment(event);
+      }
+      if (path === '/api/appointments/personal') {
+        return await createPersonalAppointment(event);
       }
       if (path === '/api/appointments/validate') {
         return await validateAppointmentSlot(event);

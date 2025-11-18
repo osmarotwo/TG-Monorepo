@@ -39,6 +39,49 @@ export default function CreatePersonalAppointmentModal({
   const [mapMarker, setMapMarker] = useState<any>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isGoogleMapsReady, setIsGoogleMapsReady] = useState(false)
+
+  // Check if Google Maps is fully loaded
+  const checkGoogleMapsReady = useCallback(() => {
+    if (typeof window === 'undefined') return false
+    
+    const google = (window as any).google
+    return !!(
+      google &&
+      google.maps &&
+      google.maps.places &&
+      google.maps.places.AutocompleteService &&
+      google.maps.Geocoder &&
+      google.maps.marker &&
+      google.maps.marker.AdvancedMarkerElement
+    )
+  }, [])
+
+  // Wait for Google Maps to load
+  useEffect(() => {
+    if (isOpen) {
+      const checkInterval = setInterval(() => {
+        if (checkGoogleMapsReady()) {
+          setIsGoogleMapsReady(true)
+          clearInterval(checkInterval)
+          console.log('✅ Google Maps API completamente cargada')
+        }
+      }, 100)
+
+      // Timeout after 10 seconds
+      const timeout = setTimeout(() => {
+        clearInterval(checkInterval)
+        if (!checkGoogleMapsReady()) {
+          console.error('❌ Timeout esperando Google Maps API')
+        }
+      }, 10000)
+
+      return () => {
+        clearInterval(checkInterval)
+        clearTimeout(timeout)
+      }
+    }
+  }, [isOpen, checkGoogleMapsReady])
 
   // Auto-fill today's date when modal opens
   useEffect(() => {
@@ -73,12 +116,13 @@ export default function CreatePersonalAppointmentModal({
       setMapInstance(null)
       setMapMarker(null)
       setErrors({})
+      setIsGoogleMapsReady(false)
     }
   }, [isOpen])
 
   // Initialize map when map picker is shown
   useEffect(() => {
-    if (showMapPicker && typeof window !== 'undefined' && (window as any).google) {
+    if (showMapPicker && isGoogleMapsReady) {
       const mapContainer = document.getElementById('map-picker-container')
       if (!mapContainer || mapInstance) return
 
@@ -171,7 +215,7 @@ export default function CreatePersonalAppointmentModal({
         setMapMarker(marker)
       }
     }
-  }, [showMapPicker, coordinates])
+  }, [showMapPicker, coordinates, isGoogleMapsReady])
 
   // Initialize Google Places Autocomplete Service
   const getAddressSuggestions = useCallback(async (input: string) => {
@@ -181,42 +225,39 @@ export default function CreatePersonalAppointmentModal({
       return
     }
 
+    if (!isGoogleMapsReady) {
+      console.warn('⚠️ Google Maps API aún no está lista')
+      return
+    }
+
     setIsLoadingSuggestions(true)
 
     try {
-      // Use Google Maps JavaScript API (loaded via script tag)
-      if (typeof window !== 'undefined' && (window as any).google) {
-        const autocompleteService = new (window as any).google.maps.places.AutocompleteService()
-        
-        autocompleteService.getPlacePredictions(
-          {
-            input: input,
-            language: locale === 'es' ? 'es' : 'en',
-          },
-          (predictions: any[], status: string) => {
-            if (status === 'OK' && predictions) {
-              setAddressSuggestions(predictions.slice(0, 5))
-              setShowSuggestions(true)
-            } else {
-              setAddressSuggestions([])
-              setShowSuggestions(false)
-            }
-            setIsLoadingSuggestions(false)
+      const autocompleteService = new (window as any).google.maps.places.AutocompleteService()
+      
+      autocompleteService.getPlacePredictions(
+        {
+          input: input,
+          language: locale === 'es' ? 'es' : 'en',
+        },
+        (predictions: any[], status: string) => {
+          if (status === 'OK' && predictions) {
+            setAddressSuggestions(predictions.slice(0, 5))
+            setShowSuggestions(true)
+          } else {
+            setAddressSuggestions([])
+            setShowSuggestions(false)
           }
-        )
-      } else {
-        console.warn('⚠️ Google Maps API not loaded yet')
-        setAddressSuggestions([])
-        setShowSuggestions(false)
-        setIsLoadingSuggestions(false)
-      }
+          setIsLoadingSuggestions(false)
+        }
+      )
     } catch (error) {
       console.error('❌ Error fetching address suggestions:', error)
       setAddressSuggestions([])
       setShowSuggestions(false)
       setIsLoadingSuggestions(false)
     }
-  }, [locale])
+  }, [locale, isGoogleMapsReady])
 
   // Debounced address suggestions
   useEffect(() => {
@@ -241,47 +282,46 @@ export default function CreatePersonalAppointmentModal({
       return
     }
 
+    if (!isGoogleMapsReady) {
+      console.warn('⚠️ Google Maps API aún no está lista')
+      setGeocodingError(locale === 'es' 
+        ? 'Cargando servicio de mapas...' 
+        : 'Loading maps service...')
+      return
+    }
+
     setIsGeocodingAddress(true)
     setGeocodingError(null)
 
     try {
-      if (typeof window !== 'undefined' && (window as any).google) {
-        const geocoder = new (window as any).google.maps.Geocoder()
-        
-        geocoder.geocode({ address: address }, (results: any[], status: string) => {
-          if (status === 'OK' && results && results.length > 0) {
-            const location = results[0].geometry.location
-            const lat = typeof location.lat === 'function' ? location.lat() : location.lat
-            const lng = typeof location.lng === 'function' ? location.lng() : location.lng
-            
-            // Validate coordinates are valid numbers
-            if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
-              setCoordinates({ lat, lng })
-              console.log('✅ Geocoding exitoso:', { address, lat, lng })
-            } else {
-              setGeocodingError(locale === 'es' 
-                ? 'No se pudo obtener coordenadas válidas.' 
-                : 'Could not get valid coordinates.')
-              setCoordinates(null)
-              console.warn('⚠️ Coordenadas inválidas:', { lat, lng })
-            }
+      const geocoder = new (window as any).google.maps.Geocoder()
+      
+      geocoder.geocode({ address: address }, (results: any[], status: string) => {
+        if (status === 'OK' && results && results.length > 0) {
+          const location = results[0].geometry.location
+          const lat = typeof location.lat === 'function' ? location.lat() : location.lat
+          const lng = typeof location.lng === 'function' ? location.lng() : location.lng
+          
+          // Validate coordinates are valid numbers
+          if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+            setCoordinates({ lat, lng })
+            console.log('✅ Geocoding exitoso:', { address, lat, lng })
           } else {
             setGeocodingError(locale === 'es' 
-              ? 'No se pudo encontrar la ubicación. Verifica la dirección.' 
-              : 'Location not found. Please check the address.')
+              ? 'No se pudo obtener coordenadas válidas.' 
+              : 'Could not get valid coordinates.')
             setCoordinates(null)
-            console.warn('⚠️ Geocoding falló:', status)
+            console.warn('⚠️ Coordenadas inválidas:', { lat, lng })
           }
-          setIsGeocodingAddress(false)
-        })
-      } else {
-        console.warn('⚠️ Google Maps API not loaded')
-        setGeocodingError(locale === 'es' 
-          ? 'Cargando servicio de mapas...' 
-          : 'Loading maps service...')
-        setCoordinates(null)
+        } else {
+          setGeocodingError(locale === 'es' 
+            ? 'No se pudo encontrar la ubicación. Verifica la dirección.' 
+            : 'Location not found. Please check the address.')
+          setCoordinates(null)
+          console.warn('⚠️ Geocoding falló:', status)
+        }
         setIsGeocodingAddress(false)
-      }
+      })
     } catch (error) {
       console.error('❌ Error en geocoding:', error)
       setGeocodingError(locale === 'es' 
@@ -290,7 +330,7 @@ export default function CreatePersonalAppointmentModal({
       setCoordinates(null)
       setIsGeocodingAddress(false)
     }
-  }, [locale])
+  }, [locale, isGoogleMapsReady])
 
   // Select a suggestion from the dropdown
   const handleSelectSuggestion = (suggestion: any) => {
@@ -597,12 +637,27 @@ export default function CreatePersonalAppointmentModal({
 
             {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
             
+            {/* Google Maps Loading Indicator */}
+            {!isGoogleMapsReady && isOpen && (
+              <div className="mt-2 flex items-start gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13a4ec] mt-0.5"></div>
+                <p className="text-sm text-blue-800">
+                  {locale === 'es' ? 'Cargando servicio de mapas...' : 'Loading maps service...'}
+                </p>
+              </div>
+            )}
+            
             {/* Toggle Map Picker */}
             <div className="mt-2">
               <button
                 type="button"
                 onClick={() => setShowMapPicker(!showMapPicker)}
-                className="flex items-center gap-2 text-sm text-[#13a4ec] hover:text-[#0f8fcd] font-medium transition-colors"
+                disabled={!isGoogleMapsReady}
+                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                  isGoogleMapsReady 
+                    ? 'text-[#13a4ec] hover:text-[#0f8fcd]' 
+                    : 'text-gray-400 cursor-not-allowed'
+                }`}
               >
                 <span>{showMapPicker ? '🗺️' : '📍'}</span>
                 <span>

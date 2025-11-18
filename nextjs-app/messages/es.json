@@ -21,7 +21,10 @@
     "dashboard": "Panel",
     "profile": "Perfil",
     "settings": "Configuraciones",
-    "logout": "Cerrar Sesión"
+    "logout": "Cerrar Sesión",
+    "services": "Servicios",
+    "appointments": "Citas",
+    "locations": "Ubicaciones"
   },
   "auth": {
     "title": "¡Bienvenido!",
@@ -167,7 +170,8 @@
   },
   "dashboard": {
     "title": "Panel de Control",
-    "welcome": "Bienvenido",
+    "welcome": "Bienvenido de vuelta",
+    "welcomeMessage": "Aquí tienes un resumen de tus próximas citas y opciones cercanas.",
     "overview": "Resumen de la Cuenta",
     "statistics": "Estadísticas",
     "recentActivity": "Actividad Reciente",
@@ -181,7 +185,29 @@
     "provider": "Proveedor",
     "sessionInfo": "Información de Sesión",
     "createdAt": "Cuenta creada",
-    "lastLogin": "Último acceso"
+    "lastLogin": "Último acceso",
+    "upcomingAppointments": "Próximas Citas",
+    "allAppointments": "Todas las Citas",
+    "addPersonalAppointment": "Agregar Cita Personal",
+    "showPastAppointments": "Mostrar Citas Pasadas",
+    "showUpcomingOnly": "Mostrar Solo Próximas",
+    "noAppointments": "Sin citas próximas",
+    "noAppointmentsFound": "No se encontraron citas",
+    "noAppointmentsMessage": "¡Agenda tu primera cita para comenzar!",
+    "noAppointmentsCreated": "Aún no has creado ninguna cita.",
+    "bookNewAppointment": "Agendar Nueva Cita",
+    "nextAppointment": "Próxima Cita",
+    "appointmentLocationsRoutes": "Ubicaciones y Rutas de Citas",
+    "viewAppointmentsOnMap": "Ver tus próximas citas en el mapa con tiempos de viaje y rutas",
+    "bookNewAppointmentCard": "Agendar Nueva Cita",
+    "findAndBookServices": "Encuentra y agenda servicios cerca de ti",
+    "exploreServices": "Explorar Servicios",
+    "discoverLocationsNearYou": "Descubre ubicaciones cerca de ti",
+    "optimizationCalculationError": "Error al calcular la optimización de rutas",
+    "retryOptimization": "Reintentar",
+    "optimizationApplied": "¡Optimización aplicada! Citas actualizadas en la base de datos.",
+    "optimizationApplyError": "Error al aplicar optimización. Por favor intenta de nuevo.",
+    "personalAppointmentCreated": "¡Cita personal creada exitosamente!"
   },
   "language": {
     "selectLanguage": "Seleccionar Idioma",

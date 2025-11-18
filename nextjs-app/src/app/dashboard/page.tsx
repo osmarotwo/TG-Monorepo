@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLocale } from '@/contexts/LocaleContext'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import AppointmentMapSection from '@/components/dashboard/AppointmentMapSection'
@@ -20,6 +21,7 @@ interface AppointmentWithDetails extends AppointmentType {
 
 export default function DashboardPage() {
   const { user, status } = useAuth()
+  const { t } = useLocale()
   const router = useRouter()
   const toast = useToast()
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([])
@@ -220,10 +222,10 @@ export default function DashboardPage() {
           {/* Welcome Section */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back, {user?.firstName}!
+              {t('dashboard.welcome', 'dashboard')}, {user?.firstName}!
             </h1>
             <p className="text-gray-600 mt-2">
-              Here&apos;s a snapshot of your upcoming appointments and nearby options.
+              {t('dashboard.welcomeMessage', 'dashboard')}
             </p>
           </div>
 
@@ -234,7 +236,7 @@ export default function DashboardPage() {
                 <span className="text-2xl mr-3">⚠️</span>
                 <div className="flex-1">
                   <h3 className="font-semibold text-yellow-900 mb-1">
-                    Optimización no disponible temporalmente
+                    {t('dashboard.optimizationCalculationError', 'dashboard')}
                   </h3>
                   <p className="text-sm text-yellow-800">
                     No pudimos verificar disponibilidad de horarios. Intenta más tarde.
@@ -252,7 +254,7 @@ export default function DashboardPage() {
                   }}
                   className="ml-4 text-sm text-yellow-900 hover:text-yellow-700 font-medium"
                 >
-                  Reintentar
+                  {t('dashboard.retryOptimization', 'dashboard')}
                 </button>
               </div>
             </div>
@@ -283,11 +285,11 @@ export default function DashboardPage() {
                       })
                       setAppointments(enrichedReordered as AppointmentWithDetails[])
                       dismissOptimization() // Ocultar tarjeta de optimización
-                      toast.success('✅ Optimización aplicada! Citas actualizadas en la base de datos.')
+                      toast.success(t('dashboard.optimizationApplied', 'dashboard'))
                     }
                   } catch (error) {
                     console.error('❌ Error aplicando optimización:', error)
-                    toast.error('❌ Error al aplicar optimización. Por favor intenta de nuevo.')
+                    toast.error(t('dashboard.optimizationApplyError', 'dashboard'))
                   }
                 }}
                 onDismiss={dismissOptimization}
@@ -299,7 +301,7 @@ export default function DashboardPage() {
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">
-                {showPastAppointments ? 'All Appointments' : 'Upcoming Appointments'}
+                {showPastAppointments ? t('dashboard.allAppointments', 'dashboard') : t('dashboard.upcomingAppointments', 'dashboard')}
               </h2>
               
               <div className="flex items-center gap-3">
@@ -309,7 +311,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#13a4ec] hover:bg-[#0f8fcd] text-white transition-colors text-sm font-medium shadow-sm"
                 >
                   <span>📝</span>
-                  <span>Add Personal Appointment</span>
+                  <span>{t('dashboard.addPersonalAppointment', 'dashboard')}</span>
                 </button>
 
                 {/* Toggle para mostrar citas pasadas */}
@@ -318,7 +320,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
                 >
                   <span>{showPastAppointments ? '📅' : '🕐'}</span>
-                  <span>{showPastAppointments ? 'Show Upcoming Only' : 'Show Past Appointments'}</span>
+                  <span>{showPastAppointments ? t('dashboard.showUpcomingOnly', 'dashboard') : t('dashboard.showPastAppointments', 'dashboard')}</span>
                 </button>
               </div>
             </div>
@@ -337,18 +339,18 @@ export default function DashboardPage() {
               <div className="bg-white rounded-xl p-12 text-center">
                 <div className="text-6xl mb-4">📅</div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  {showPastAppointments ? 'No appointments found' : 'No upcoming appointments'}
+                  {showPastAppointments ? t('dashboard.noAppointmentsFound', 'dashboard') : t('dashboard.noAppointments', 'dashboard')}
                 </h3>
                 <p className="text-gray-600 mb-6">
                   {showPastAppointments 
-                    ? 'You haven\'t created any appointments yet.' 
-                    : 'Book your first appointment to get started!'}
+                    ? t('dashboard.noAppointmentsCreated', 'dashboard')
+                    : t('dashboard.noAppointmentsMessage', 'dashboard')}
                 </p>
                 <button
                   onClick={() => router.push('/appointments')}
                   className="bg-[#13a4ec] hover:bg-[#0f8fcd] text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
-                  Book New Appointment
+                  {t('dashboard.bookNewAppointment', 'dashboard')}
                 </button>
               </div>
             ) : (
@@ -458,10 +460,10 @@ export default function DashboardPage() {
                             {new Date(appointment.startTime).toLocaleDateString()} • {new Date(`2000-01-01T${appointment.time}`).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true })}
                           </p>
                           
-                          {/* Duración estimada */}
-                          {appointment.estimatedDuration && (
+                          {/* Duración */}
+                          {(appointment.duration || appointment.estimatedDuration) && (
                             <p className="text-sm text-gray-600 mb-3">
-                              ⏱️ Duración: {appointment.estimatedDuration} min
+                              ⏱️ {appointment.duration || appointment.estimatedDuration} min
                             </p>
                           )}
                           
@@ -477,12 +479,12 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Map Section - Ubicaciones de próximas citas */}
+                    {/* Map Section - Ubicaciones de próximas citas */}
           {!loading && appointmentLocations.length > 0 && appointments.length > 0 && (
             <div className="mb-12">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">📍 Appointment Locations & Routes</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">📍 {t('dashboard.appointmentLocationsRoutes', 'dashboard')}</h2>
               <p className="text-gray-600 mb-6">
-                View your upcoming appointments on the map with travel times and routes
+                {t('dashboard.viewAppointmentsOnMap', 'dashboard')}
               </p>
               <AppointmentMapSection 
                 appointments={appointments} 
@@ -496,20 +498,28 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <button
               onClick={() => router.push('/appointments')}
-              className="bg-[#13a4ec] hover:bg-[#0f8fcd] text-white p-8 rounded-xl text-left transition-colors"
+              className="bg-white/50 backdrop-blur-sm hover:bg-white border border-gray-100 rounded-2xl p-8 text-left transition-all hover:shadow-lg group"
             >
-              <div className="text-4xl mb-3">📅</div>
-              <h3 className="text-xl font-bold mb-2">Book New Appointment</h3>
-              <p className="text-blue-100">Find and book services near you</p>
+              <div className="text-4xl mb-4">📅</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {t('dashboard.bookNewAppointmentCard', 'dashboard')}
+              </h3>
+              <p className="text-gray-600">
+                {t('dashboard.findAndBookServices', 'dashboard')}
+              </p>
             </button>
 
             <button
-              onClick={() => router.push('/locations')}
-              className="bg-white hover:shadow-md p-8 rounded-xl text-left transition-shadow border-2 border-gray-200"
+              onClick={() => router.push('/services')}
+              className="bg-white/50 backdrop-blur-sm hover:bg-white border border-gray-100 rounded-2xl p-8 text-left transition-all hover:shadow-lg group"
             >
-              <div className="text-4xl mb-3">📍</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Explore Services</h3>
-              <p className="text-gray-600">Discover locations near you</p>
+              <div className="text-4xl mb-4">📍</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {t('dashboard.exploreServices', 'dashboard')}
+              </h3>
+              <p className="text-gray-600">
+                {t('dashboard.discoverLocationsNearYou', 'dashboard')}
+              </p>
             </button>
           </div>
         </main>
@@ -522,7 +532,7 @@ export default function DashboardPage() {
         onClose={() => setShowPersonalAppointmentModal(false)}
         onSuccess={() => {
           loadAppointments()
-          toast.success('✅ Personal appointment created successfully!')
+          toast.success(`✅ ${t('dashboard.personalAppointmentCreated', 'dashboard')}`)
         }}
       />
     </>

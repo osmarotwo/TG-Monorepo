@@ -40,18 +40,25 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_DATA_API_URL || 'https://v0igzegm95
 
 /**
  * Obtiene slots disponibles para una ubicación en una fecha
+ * Excluye horarios donde el usuario ya tiene citas
  */
 export async function getAvailableSlots(
   locationId: string,
   date: string,
   serviceType?: string,
-  duration?: number
+  duration?: number,
+  userId?: string
 ): Promise<AvailableSlot[]> {
   const params = new URLSearchParams();
   if (serviceType) params.append('serviceType', serviceType);
   if (duration) params.append('duration', duration.toString());
+  if (userId) params.append('userId', userId);
   
   const url = `${API_BASE_URL}/api/availability/${locationId}/${date}${params.toString() ? '?' + params.toString() : ''}`;
+  
+  // DEBUG: Log para verificar que userId se está enviando
+  console.log('🔍 getAvailableSlots called with:', { locationId, date, serviceType, duration, userId });
+  console.log('🌐 Request URL:', url);
   
   const response = await fetch(url);
   if (!response.ok) {

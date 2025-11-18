@@ -4,17 +4,19 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Logo } from '@/components/Logo'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLocale } from '@/contexts/LocaleContext'
 import LanguageSelector from '@/components/LanguageSelector'
 
 export default function Navigation() {
   const pathname = usePathname()
   const { user } = useAuth()
+  const { t } = useLocale()
 
   const navItems = [
-    { label: 'Home', href: '/dashboard', icon: '🏠' },
-    { label: 'Services', href: '/services', icon: '✨' },
-    { label: 'Appointments', href: '/appointments', icon: '📅' },
-    { label: 'Locations', href: '/locations', icon: '📍' },
+    { label: t('navigation.home', 'navigation'), href: '/dashboard', icon: '🏠' },
+    { label: t('navigation.services', 'navigation'), href: '/services', icon: '✨' },
+    { label: t('navigation.appointments', 'navigation'), href: '/appointments', icon: '📅' },
+    { label: t('navigation.locations', 'navigation'), href: '/locations', icon: '📍' },
   ]
 
   const isActive = (href: string) => {

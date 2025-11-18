@@ -110,7 +110,8 @@ export default function CreateAppointmentModal({
         locationId,
         formData.date,
         selectedService.name,
-        selectedService.defaultDuration
+        selectedService.defaultDuration,
+        user?.userId // Pasar el userId para excluir horarios donde el usuario ya tiene citas
       )
       setAvailableSlots(slots)
     } catch (error) {

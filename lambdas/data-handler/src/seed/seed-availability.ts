@@ -23,21 +23,21 @@ const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1
 const docClient = DynamoDBDocumentClient.from(client);
 const AVAILABILITY_TABLE = process.env.AVAILABILITY_TABLE || 'Availability';
 
-// IDs de las ubicaciones existentes (alineados con la tabla Locations real)
+// IDs de las ubicaciones existentes (Salones Aurora que son los más usados)
 const LOCATION_IDS = [
-  'LOC-CENTRO-ZIP',   // Salón de Belleza Centro
-  'LOC-SUR-ZIP',      // Sede Sur
-  'LOC-NORTE-ZIP',    // Sede Norte
-  'LOC-OESTE-ZIP',    // Sede Oeste
-  'LOC-ESTE-ZIP',     // Sede Este
+  'LOC001',  // Salón Aurora - Chapinero
+  'LOC002',  // Salón Aurora - Chía
+  'LOC003',  // Salón Aurora - Usaquén
+  'LOC004',  // Salón Aurora - Suba
+  'LOC005',  // Salón Aurora - Kennedy
 ];
 
 const LOCATION_NAMES = [
-  'Salón de Belleza Centro',
-  'Sede Sur',
-  'Sede Norte',
-  'Sede Oeste',
-  'Sede Este'
+  'Salón Aurora - Chapinero',
+  'Salón Aurora - Chía',
+  'Salón Aurora - Usaquén',
+  'Salón Aurora - Suba',
+  'Salón Aurora - Kennedy'
 ];
 
 // Días de la semana
@@ -205,8 +205,8 @@ async function seedSpecialistSchedules(): Promise<void> {
   const items: SpecialistSchedule[] = [];
   const now = new Date().toISOString();
   
-  // Crear disponibilidad para los próximos 4 días (12-15 de noviembre de 2025)
-  const dates = ['2025-11-12', '2025-11-13', '2025-11-14', '2025-11-15'];
+  // Crear disponibilidad para los próximos 6 días (18-23 de noviembre de 2025)
+  const dates = ['2025-11-18', '2025-11-19', '2025-11-20', '2025-11-21', '2025-11-22', '2025-11-23'];
   
   for (const date of dates) {
     for (const specialist of SPECIALISTS) {
@@ -261,7 +261,7 @@ async function main() {
     console.log(`   - ${LOCATION_IDS.length} ubicaciones con horarios (LOC001-LOC005)`);
     console.log(`   - ${SERVICES.length} tipos de servicios`);
     console.log(`   - ${SPECIALISTS.length} especialistas`);
-    console.log(`   - Slots disponibles para: 12-15 noviembre 2025`);
+    console.log(`   - Slots disponibles para: 18-23 noviembre 2025`);
     console.log(`   - Horario: 8:00 AM - 8:00 PM (slots cada 15 min)`);
     console.log(`   - ~80% slots disponibles, ~15% reservados, ~5% ocupados\n`);
     

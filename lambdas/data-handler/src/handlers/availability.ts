@@ -30,14 +30,15 @@ const CORS_HEADERS = {
 };
 
 /**
- * GET /api/availability/:locationId/:date?serviceType=haircut&duration=60
+ * GET /api/availability/:locationId/:date?serviceType=haircut&duration=60&userId=user123
  * 
  * Obtiene slots disponibles para una ubicación en una fecha específica
+ * Excluye horarios donde el usuario ya tiene citas (personales o de negocio)
  */
 export async function getAvailableSlots(event: any) {
   try {
     const { locationId, date } = event.pathParameters;
-    const { serviceType, duration } = event.queryStringParameters || {};
+    const { serviceType, duration, userId } = event.queryStringParameters || {};
     
     if (!locationId || !date) {
       return {
@@ -46,6 +47,8 @@ export async function getAvailableSlots(event: any) {
         body: JSON.stringify({ error: 'locationId y date son requeridos' })
       };
     }
+    
+    console.log(`🔍 getAvailableSlots - Location: ${locationId}, Date: ${date}, User: ${userId || 'not provided'}`);
     
     // 1. Obtener duración del servicio si se especifica tipo
     let durationMinutes = duration ? parseInt(duration) : 60;
@@ -93,8 +96,26 @@ export async function getAvailableSlots(event: any) {
       }
     }));
 
-    // Crear mapa de horarios ocupados: { "09:00": true, "09:15": true, ... }
+    // 4. Si hay userId, consultar TODAS las citas del usuario en esta fecha (incluye personales)
+    let userAppointmentsOnDate: any[] = [];
+    if (userId) {
+      const userApptsResult = await docClient.send(new QueryCommand({
+        TableName: APPOINTMENTS_TABLE,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': `USER#${userId}`,
+          ':sk': `APPOINTMENT#${date}`
+        }
+      }));
+      
+      userAppointmentsOnDate = userApptsResult.Items || [];
+      console.log(`👤 Usuario ${userId} tiene ${userAppointmentsOnDate.length} citas el ${date}`);
+    }
+
+    // 5. Crear mapa de horarios ocupados: { "09:00": true, "09:15": true, ... }
     const bookedTimes = new Set<string>();
+    
+    // 5a. Marcar slots ocupados en esta ubicación por otros usuarios
     if (appointmentsResult.Items && appointmentsResult.Items.length > 0) {
       for (const apt of appointmentsResult.Items) {
         const appointment = apt as any;
@@ -116,8 +137,41 @@ export async function getAvailableSlots(event: any) {
         }
       }
     }
+    
+    // 5b. Marcar slots donde el usuario ya tiene citas (personales o de negocio)
+    if (userAppointmentsOnDate.length > 0) {
+      for (const apt of userAppointmentsOnDate) {
+        // Las citas personales tienen startTime/endTime, las de negocio tienen time
+        let startTimeStr = apt.time || apt.startTime;
+        
+        // Si startTime es ISO string (citas personales), convertir a HH:MM
+        if (startTimeStr && startTimeStr.includes('T')) {
+          // Las citas personales guardan la hora en formato ISO pero YA en hora local (no UTC)
+          // Ejemplo: "2025-11-18T15:00:00" significa 3:00 PM hora local
+          const parts = startTimeStr.split('T')[1].split(':');
+          startTimeStr = `${parts[0]}:${parts[1]}`;
+        }
+        
+        const duration = apt.duration || 60;
+        const slotsOccupied = Math.ceil(duration / 15);
+        
+        // Convertir a minutos
+        const [hours, minutes] = startTimeStr.split(':').map(Number);
+        let currentMinutes = hours * 60 + minutes;
+        
+        // Marcar todos los slots ocupados por esta cita del usuario
+        for (let i = 0; i < slotsOccupied; i++) {
+          const slotHours = Math.floor(currentMinutes / 60).toString().padStart(2, '0');
+          const slotMins = (currentMinutes % 60).toString().padStart(2, '0');
+          const timeSlot = `${slotHours}:${slotMins}`;
+          bookedTimes.add(timeSlot);
+          console.log(`  🚫 Bloqueando ${timeSlot} (cita del usuario: ${apt.title || 'cita de negocio'})`);
+          currentMinutes += 15;
+        }
+      }
+    }
 
-    // 4. Encontrar slots consecutivos disponibles (excluyendo ocupados)
+    // 6. Encontrar slots consecutivos disponibles (excluyendo ocupados)
     const availableSlots: AvailableSlot[] = [];
     const slotsNeeded = Math.ceil(durationMinutes / 15);
     

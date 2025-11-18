@@ -165,7 +165,7 @@ export async function createPersonalAppointment(event: APIGatewayProxyEvent): Pr
     // Crear item para DynamoDB
     const appointment = {
       PK: `USER#${userId}`,
-      SK: `APPOINTMENT#${appointmentId}`,
+      SK: `APPOINTMENT#${date}#${appointmentId}`, // Incluir fecha en SK para queries eficientes
       appointmentId,
       userId,
       type: 'personal', // Nuevo campo

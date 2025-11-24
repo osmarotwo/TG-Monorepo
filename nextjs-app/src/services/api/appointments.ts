@@ -279,6 +279,50 @@ export async function deleteAppointment(appointmentId: string, appointmentType?:
   console.log('✅ Appointment deleted successfully');
 }
 
+/**
+ * Update personal appointment
+ */
+export async function updatePersonalAppointment(
+  appointmentId: string,
+  userId: string,
+  data: {
+    title: string;
+    description?: string;
+    address?: string;
+    startTime: string;
+    endTime: string;
+  }
+): Promise<Appointment> {
+  try {
+    const token = getAuthToken();
+    const response = await fetch(
+      `${API_BASE_URL}/api/appointments/personal/${appointmentId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId,
+          ...data
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Failed to update appointment: ${errorData.error || response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    return responseData.appointment;
+  } catch (error) {
+    console.error('Error updating personal appointment:', error);
+    throw error;
+  }
+}
+
 function getAuthToken(): string {
   if (typeof window === 'undefined') return '';
   

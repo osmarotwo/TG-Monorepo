@@ -29,6 +29,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [showPastAppointments, setShowPastAppointments] = useState(false)
   const [showPersonalAppointmentModal, setShowPersonalAppointmentModal] = useState(false)
+  const [editingPersonalAppointment, setEditingPersonalAppointment] = useState<AppointmentWithDetails | null>(null)
+  const [showEditPersonalModal, setShowEditPersonalModal] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [optimizationAttempted, setOptimizationAttempted] = useState(false) // Prevenir loop infinito
   const [selectedDate, setSelectedDate] = useState<string>('all') // Estado compartido para filtro de fecha
@@ -232,6 +234,57 @@ export default function DashboardPage() {
       toast.error('Error al cargar las citas')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleEditPersonalAppointment = (appointment: AppointmentWithDetails) => {
+    setEditingPersonalAppointment(appointment)
+    setShowEditPersonalModal(true)
+  }
+
+  const handleSaveEditPersonalAppointment = async (data: { date: string; time: string; title: string; description?: string; address?: string }) => {
+    if (!editingPersonalAppointment) return
+
+    try {
+      // Calcular startTime y endTime
+      const startTime = new Date(`${data.date}T${data.time}`)
+      const duration = editingPersonalAppointment.duration || editingPersonalAppointment.estimatedDuration || 60
+      const endTime = new Date(startTime.getTime() + duration * 60000)
+
+      const { updatePersonalAppointment } = await import('@/services/api/appointments')
+      await updatePersonalAppointment(
+        editingPersonalAppointment.appointmentId,
+        editingPersonalAppointment.userId,
+        {
+          title: data.title,
+          description: data.description,
+          address: data.address,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString()
+        }
+      )
+
+      toast.success('Cita personal actualizada exitosamente')
+      setShowEditPersonalModal(false)
+      setEditingPersonalAppointment(null)
+      loadAppointments() // Recargar lista
+    } catch (error) {
+      console.error('Error updating personal appointment:', error)
+      toast.error('Error al actualizar la cita')
+    }
+  }
+
+  const handleDeletePersonalAppointment = async (appointment: AppointmentWithDetails) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta cita personal?')) return
+
+    try {
+      const { deleteAppointment } = await import('@/services/api/appointments')
+      await deleteAppointment(appointment.appointmentId, appointment.type)
+      toast.success('Cita eliminada exitosamente')
+      loadAppointments() // Recargar lista
+    } catch (error) {
+      console.error('Error deleting appointment:', error)
+      toast.error('Error al eliminar la cita')
     }
   }
 
@@ -459,9 +512,29 @@ export default function DashboardPage() {
                             </p>
                           )}
                           
-                          <button className="text-sm text-[#13a4ec] font-medium hover:text-[#0f8fcd]">
-                            View Details
-                          </button>
+                          <div className="flex items-center gap-3 mt-2">
+                            {isPersonal && (
+                              <>
+                                <button 
+                                  onClick={() => handleEditPersonalAppointment(appointment)}
+                                  className="text-sm text-[#13a4ec] font-medium hover:text-[#0f8fcd]"
+                                >
+                                  ✏️ Editar
+                                </button>
+                                <button 
+                                  onClick={() => handleDeletePersonalAppointment(appointment)}
+                                  className="text-sm text-red-600 font-medium hover:text-red-800"
+                                >
+                                  🗑️ Eliminar
+                                </button>
+                              </>
+                            )}
+                            {!isPersonal && (
+                              <button className="text-sm text-[#13a4ec] font-medium hover:text-[#0f8fcd]">
+                                Ver Detalles
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -553,6 +626,166 @@ export default function DashboardPage() {
           toast.success(`✅ ${t('dashboard.personalAppointmentCreated', 'dashboard')}`)
         }}
       />
+
+      {/* Edit Personal Appointment Modal */}
+      {editingPersonalAppointment && (
+        <EditPersonalAppointmentModal
+          appointment={editingPersonalAppointment}
+          isOpen={showEditPersonalModal}
+          onClose={() => {
+            setShowEditPersonalModal(false)
+            setEditingPersonalAppointment(null)
+          }}
+          onSave={handleSaveEditPersonalAppointment}
+        />
+      )}
     </>
+  )
+}
+
+// Modal de edición de cita personal
+interface EditPersonalAppointmentModalProps {
+  appointment: AppointmentWithDetails
+  isOpen: boolean
+  onClose: () => void
+  onSave: (data: { date: string; time: string; title: string; description?: string; address?: string }) => Promise<void>
+}
+
+function EditPersonalAppointmentModal({ appointment, isOpen, onClose, onSave }: EditPersonalAppointmentModalProps) {
+  const [title, setTitle] = useState(appointment.title || '')
+  const [date, setDate] = useState(appointment.date || '')
+  const [time, setTime] = useState(appointment.time || '')
+  const [description, setDescription] = useState(appointment.description || '')
+  const [address, setAddress] = useState(appointment.address || '')
+  const [saving, setSaving] = useState(false)
+
+  if (!isOpen) return null
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await onSave({ date, time, title, description, address })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Editar Cita Personal</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Formulario */}
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 mb-6">
+            {/* Título */}
+            <div>
+              <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 mb-1">
+                Título <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="edit-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900"
+                required
+              />
+            </div>
+
+            {/* Fecha */}
+            <div>
+              <label htmlFor="edit-date" className="block text-sm font-medium text-gray-700 mb-1">
+                Fecha <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                id="edit-date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900"
+                required
+              />
+            </div>
+
+            {/* Hora */}
+            <div>
+              <label htmlFor="edit-time" className="block text-sm font-medium text-gray-700 mb-1">
+                Hora <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="time"
+                id="edit-time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900"
+                required
+              />
+            </div>
+
+            {/* Descripción */}
+            <div>
+              <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-1">
+                Descripción (opcional)
+              </label>
+              <textarea
+                id="edit-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent resize-none text-gray-900 placeholder:text-gray-400"
+                placeholder="Agrega una descripción..."
+              />
+            </div>
+
+            {/* Dirección */}
+            <div>
+              <label htmlFor="edit-address" className="block text-sm font-medium text-gray-700 mb-1">
+                Dirección (opcional)
+              </label>
+              <input
+                type="text"
+                id="edit-address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                placeholder="Ej: Calle 123 #45-67"
+              />
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              disabled={saving}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-3 bg-[#13a4ec] hover:bg-[#0f8fcd] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={saving}
+            >
+              {saving ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }

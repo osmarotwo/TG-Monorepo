@@ -26,6 +26,9 @@ export interface RescheduledAppointment {
   businessName?: string; // Nombre del comercio
   status: 'proposed' | 'approved' | 'rejected';
   reason?: string;
+  type?: 'personal' | 'business'; // Tipo de cita
+  isFlexible?: boolean; // Si se puede reprogramar
+  hasTimeChange?: boolean; // Si el horario cambió
 }
 
 export interface AvailabilityConflict {

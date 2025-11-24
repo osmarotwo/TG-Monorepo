@@ -31,8 +31,20 @@ export default function DashboardPage() {
   const [showPersonalAppointmentModal, setShowPersonalAppointmentModal] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [optimizationAttempted, setOptimizationAttempted] = useState(false) // Prevenir loop infinito
+  const [selectedDate, setSelectedDate] = useState<string>('all') // Estado compartido para filtro de fecha
 
-  // Hook de optimización de rutas con reprogramación
+  // Filtrar citas por fecha seleccionada
+  const filteredAppointments = React.useMemo(() => {
+    if (selectedDate === 'all') {
+      return appointments;
+    }
+    return appointments.filter(apt => {
+      const aptDate = apt.date || apt.startTime?.split('T')[0];
+      return aptDate === selectedDate;
+    });
+  }, [appointments, selectedDate]);
+
+  // Hook de optimización de rutas con reprogramación - USAR CITAS FILTRADAS
   const {
     optimizationResult,
     isOptimizing,
@@ -42,26 +54,36 @@ export default function DashboardPage() {
     optimize,
     applyOptimization,
     reset: dismissOptimization,
-  } = useRouteOptimizationWithRescheduling(appointments, userLocation || { lat: 5.0214, lng: -73.9919 })
+  } = useRouteOptimizationWithRescheduling(filteredAppointments, userLocation || { lat: 5.0214, lng: -73.9919 })
 
   console.log('📊 Dashboard optimization state:', {
     hasOptimization: hasSignificantImprovement,
     isOptimizing,
     optimizationResult: !!optimizationResult,
     appointmentsCount: appointments.length,
+    filteredCount: filteredAppointments.length,
+    selectedDate,
     locationsCount: appointmentLocations.length,
     hasUserLocation: !!userLocation,
     rescheduledCount: rescheduledAppointments.length
   })
 
-  // Trigger optimization when appointments are loaded (solo una vez)
+  // Trigger optimization when filtered appointments change or date changes
   useEffect(() => {
-    if (appointments.length >= 2 && !isOptimizing && !optimizationResult && !optimizationAttempted) {
-      console.log('🔄 Auto-triggering optimization...');
-      setOptimizationAttempted(true); // Marcar como intentado
+    // Limpiar resultado de optimización anterior cuando cambia la fecha
+    console.log('📅 Fecha cambiada a:', selectedDate, '- Limpiando optimización anterior');
+    dismissOptimization();
+    setOptimizationAttempted(false);
+  }, [selectedDate, dismissOptimization]);
+
+  useEffect(() => {
+    if (filteredAppointments.length >= 2 && !isOptimizing && !optimizationResult && !optimizationAttempted) {
+      console.log('🔄 Auto-triggering optimization for date:', selectedDate);
+      console.log('📊 Citas filtradas para optimizar:', filteredAppointments.length);
+      setOptimizationAttempted(true);
       optimize();
     }
-  }, [appointments, isOptimizing, optimizationResult, optimizationAttempted, optimize]);
+  }, [filteredAppointments, isOptimizing, optimizationResult, optimizationAttempted, optimize, selectedDate]);
 
   // Obtener ubicación del usuario
   useEffect(() => {
@@ -130,24 +152,24 @@ export default function DashboardPage() {
   const isAppointmentPast = (appointment: AppointmentWithDetails): boolean => {
     if (!appointment.date || !appointment.time) return false
     
-    // Obtener hora actual en Colombia (UTC-5)
-    const now = new Date()
-    const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }))
-    const todayStr = colombiaTime.toISOString().split('T')[0]
-    const currentTimeStr = `${colombiaTime.getHours().toString().padStart(2, '0')}:${colombiaTime.getMinutes().toString().padStart(2, '0')}`
+    // Crear timestamp de la cita
+    const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
+    
+    // Obtener timestamp actual
+    const now = new Date();
+    
+    // Comparar timestamps
+    const isPast = appointmentDateTime.getTime() < now.getTime();
     
     console.log('🕐 Verificando cita:', { 
       date: appointment.date, 
-      time: appointment.time, 
-      todayStr, 
-      currentTimeStr,
-      isPastDate: appointment.date < todayStr,
-      isSameDatePastTime: appointment.date === todayStr && appointment.time < currentTimeStr
-    })
+      time: appointment.time,
+      appointmentDateTime: appointmentDateTime.toISOString(),
+      now: now.toISOString(),
+      isPast
+    });
     
-    if (appointment.date < todayStr) return true // Fecha pasada
-    if (appointment.date === todayStr && appointment.time < currentTimeStr) return true // Hoy pero hora pasada
-    return false
+    return isPast;
   }
 
   const loadAppointments = async () => {
@@ -191,10 +213,17 @@ export default function DashboardPage() {
         })
       )
       
-      setAppointments(enrichedAppointments)
+      // Ordenar citas por fecha y hora (más próximas primero)
+      const sortedAppointments = enrichedAppointments.sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
+        const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      setAppointments(sortedAppointments)
       
       // Guardar ubicaciones para el mapa
-      const locations = enrichedAppointments
+      const locations = sortedAppointments
         .map((apt: AppointmentWithDetails) => apt.location)
         .filter((loc): loc is Location => loc !== undefined)
       setAppointmentLocations(locations)
@@ -257,43 +286,6 @@ export default function DashboardPage() {
                   {t('dashboard.retryOptimization', 'dashboard')}
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* Route Optimization Card - Solo mostrar si hay mejora */}
-          {hasSignificantImprovement && optimizationResult && !optimizationError && (
-            <div className="mb-8">
-              <RouteOptimizationCard
-                optimizationResult={optimizationResult}
-                rescheduledAppointments={rescheduledAppointments}
-                isOptimizing={isOptimizing}
-                userLocation={userLocation || undefined}
-                onApply={async () => {
-                  try {
-                    const reorderedAppointments = await applyOptimization()
-                    if (reorderedAppointments.length > 0) {
-                      // Actualizar el estado con las citas reordenadas
-                      const enrichedReordered = reorderedAppointments.map((apt: AppointmentType) => {
-                        const original = appointments.find(a => a.appointmentId === apt.appointmentId)
-                        return {
-                          ...(original || apt),
-                          startTime: apt.startTime,
-                          endTime: apt.endTime,
-                          date: apt.date,
-                          time: apt.time,
-                        }
-                      })
-                      setAppointments(enrichedReordered as AppointmentWithDetails[])
-                      dismissOptimization() // Ocultar tarjeta de optimización
-                      toast.success(t('dashboard.optimizationApplied', 'dashboard'))
-                    }
-                  } catch (error) {
-                    console.error('❌ Error aplicando optimización:', error)
-                    toast.error(t('dashboard.optimizationApplyError', 'dashboard'))
-                  }
-                }}
-                onDismiss={dismissOptimization}
-              />
             </div>
           )}
 
@@ -479,7 +471,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-                    {/* Map Section - Ubicaciones de próximas citas */}
+          {/* Map Section - Ubicaciones de próximas citas */}
           {!loading && appointmentLocations.length > 0 && appointments.length > 0 && (
             <div className="mb-12">
               <h2 className="text-xl font-bold text-gray-900 mb-4">📍 {t('dashboard.appointmentLocationsRoutes', 'dashboard')}</h2>
@@ -490,12 +482,51 @@ export default function DashboardPage() {
                 appointments={appointments} 
                 locations={appointmentLocations}
                 height="h-[500px]"
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+              />
+            </div>
+          )}
+
+          {/* Route Optimization Card - Justo debajo del mapa */}
+          {hasSignificantImprovement && optimizationResult && !optimizationError && (
+            <div className="mb-12">
+              <RouteOptimizationCard
+                optimizationResult={optimizationResult}
+                rescheduledAppointments={rescheduledAppointments}
+                isOptimizing={isOptimizing}
+                userLocation={userLocation || undefined}
+                onApply={async () => {
+                  try {
+                    const reorderedAppointments = await applyOptimization()
+                    if (reorderedAppointments.length > 0) {
+                      // Actualizar el estado con las citas reordenadas
+                      const enrichedReordered = reorderedAppointments.map((apt: AppointmentType) => {
+                        const original = appointments.find(a => a.appointmentId === apt.appointmentId)
+                        return {
+                          ...(original || apt),
+                          startTime: apt.startTime,
+                          endTime: apt.endTime,
+                          date: apt.date,
+                          time: apt.time,
+                        }
+                      })
+                      setAppointments(enrichedReordered as AppointmentWithDetails[])
+                      dismissOptimization() // Ocultar tarjeta de optimización
+                      toast.success(t('dashboard.optimizationApplied', 'dashboard'))
+                    }
+                  } catch (error) {
+                    console.error('❌ Error aplicando optimización:', error)
+                    toast.error(t('dashboard.optimizationApplyError', 'dashboard'))
+                  }
+                }}
+                onDismiss={dismissOptimization}
               />
             </div>
           )}
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <button
               onClick={() => router.push('/appointments')}
               className="bg-white/50 backdrop-blur-sm hover:bg-white border border-gray-100 rounded-2xl p-8 text-left transition-all hover:shadow-lg group"
@@ -506,19 +537,6 @@ export default function DashboardPage() {
               </h3>
               <p className="text-gray-600">
                 {t('dashboard.findAndBookServices', 'dashboard')}
-              </p>
-            </button>
-
-            <button
-              onClick={() => router.push('/services')}
-              className="bg-white/50 backdrop-blur-sm hover:bg-white border border-gray-100 rounded-2xl p-8 text-left transition-all hover:shadow-lg group"
-            >
-              <div className="text-4xl mb-4">📍</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                {t('dashboard.exploreServices', 'dashboard')}
-              </h3>
-              <p className="text-gray-600">
-                {t('dashboard.discoverLocationsNearYou', 'dashboard')}
               </p>
             </button>
           </div>

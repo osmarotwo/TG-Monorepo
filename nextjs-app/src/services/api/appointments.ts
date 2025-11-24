@@ -247,6 +247,32 @@ export async function validateAppointmentSlot(
 /**
  * Helper: Get auth token from localStorage or sessionStorage
  */
+/**
+ * Delete an appointment
+ */
+export async function deleteAppointment(appointmentId: string, appointmentType?: string): Promise<void> {
+  const token = getAuthToken();
+  
+  console.log('🗑️ Deleting appointment:', appointmentId, 'Type:', appointmentType);
+  
+  // Todas las citas (personales y de negocio) se eliminan a través del data-handler
+  const response = await fetch(`${API_BASE_URL}/api/appointments/${appointmentId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ Delete failed:', response.status, errorText);
+    throw new Error(`Failed to delete appointment: ${response.status}`);
+  }
+  
+  console.log('✅ Appointment deleted successfully');
+}
+
 function getAuthToken(): string {
   if (typeof window === 'undefined') return '';
   

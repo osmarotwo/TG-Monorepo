@@ -8,6 +8,7 @@ import MapSection from '@/components/dashboard/MapSection'
 import CreateAppointmentModal from '@/components/CreateAppointmentModal'
 import { fetchBusinessesByOwner } from '@/services/api/businesses'
 import { fetchLocationsByBusiness, type Location as LocationType } from '@/services/api/locations'
+import { fetchUpcomingAppointments, type Appointment, deleteAppointment } from '@/services/api/appointments'
 import { ToastContainer, useToast } from '@/components/Toast'
 
 type Industry = 'all' | 'beauty' | 'fitness' | 'health' | 'food'
@@ -32,6 +33,14 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(null)
+  
+  // Estado para citas programadas
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [loadingAppointments, setLoadingAppointments] = useState(false)
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('all')
+  const [showScheduledAppointments, setShowScheduledAppointments] = useState(true)
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -48,6 +57,7 @@ export default function AppointmentsPage() {
     
     if (user) {
       loadBusinesses()
+      loadAppointments()
     }
   }, [status, user, router])
 
@@ -63,6 +73,75 @@ export default function AppointmentsPage() {
       toast.error('Error al cargar los comercios')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadAppointments = async () => {
+    if (!user?.userId) return
+    
+    try {
+      setLoadingAppointments(true)
+      const data = await fetchUpcomingAppointments(user.userId, 50, true) // Obtener próximas citas
+      // Ordenar por fecha y hora
+      const sorted = data.sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time || '00:00'}`)
+        const dateB = new Date(`${b.date}T${b.time || '00:00'}`)
+        return dateA.getTime() - dateB.getTime()
+      })
+      setAppointments(sorted)
+    } catch (error) {
+      console.error('Error loading appointments:', error)
+      toast.error('Error al cargar las citas')
+    } finally {
+      setLoadingAppointments(false)
+    }
+  }
+
+  const handleDeleteAppointment = async (appointment: Appointment) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta cita?')) return
+    
+    try {
+      await deleteAppointment(appointment.appointmentId, appointment.type)
+      toast.success('Cita eliminada exitosamente')
+      loadAppointments() // Recargar lista
+    } catch (error) {
+      console.error('Error deleting appointment:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Error al eliminar la cita'
+      toast.error(errorMessage)
+    }
+  }
+
+  const handleEditAppointment = (appointment: Appointment) => {
+    setEditingAppointment(appointment)
+    setShowEditModal(true)
+  }
+
+  const handleSaveEdit = async (updatedData: { date: string; time: string; notes?: string }) => {
+    if (!editingAppointment) return
+
+    try {
+      // Construir startTime y endTime
+      const startTime = new Date(`${updatedData.date}T${updatedData.time}`)
+      const endTime = new Date(startTime.getTime() + (editingAppointment.estimatedDuration || 60) * 60000)
+
+      const updatePayload = {
+        appointmentId: editingAppointment.appointmentId,
+        newStartTime: startTime.toISOString(),
+        newEndTime: endTime.toISOString(),
+        notes: updatedData.notes
+      }
+
+      // Importar y usar la función de actualización
+      const { updateAppointmentTimes } = await import('@/services/api/appointments')
+      await updateAppointmentTimes(updatePayload)
+
+      toast.success('Cita actualizada exitosamente')
+      setShowEditModal(false)
+      setEditingAppointment(null)
+      loadAppointments() // Recargar lista
+    } catch (error) {
+      console.error('Error updating appointment:', error)
+      toast.error('Error al actualizar la cita')
     }
   }
 
@@ -128,13 +207,217 @@ export default function AppointmentsPage() {
             <>
               {/* Header */}
               <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Book an Appointment</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Gestión de Citas</h1>
                 <p className="text-gray-600 mt-2">
-                  Choose a business and location to get started
+                  Administra tus citas programadas o reserva una nueva
                 </p>
               </div>
 
-              {/* Industry Filters */}
+              {/* Toggle: Citas Programadas / Reservar Nueva Cita */}
+              <div className="mb-8">
+                <div className="inline-flex rounded-lg bg-white p-1 shadow-sm border border-gray-200">
+                  <button
+                    onClick={() => setShowScheduledAppointments(true)}
+                    className={`px-6 py-2 rounded-md font-medium transition-all ${
+                      showScheduledAppointments
+                        ? 'bg-[#13a4ec] text-white shadow-md'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    📋 Citas Programadas
+                  </button>
+                  <button
+                    onClick={() => setShowScheduledAppointments(false)}
+                    className={`px-6 py-2 rounded-md font-medium transition-all ${
+                      !showScheduledAppointments
+                        ? 'bg-[#13a4ec] text-white shadow-md'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    ➕ Reservar Nueva Cita
+                  </button>
+                </div>
+              </div>
+
+              {/* Sección: Citas Programadas */}
+              {showScheduledAppointments && (
+                <div className="mb-12">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Header con filtro de fecha */}
+                    <div className="p-6 border-b border-gray-200">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <h2 className="text-xl font-bold text-gray-900">Mis Citas Programadas</h2>
+                        <div className="flex items-center gap-3">
+                          <label htmlFor="date-filter" className="text-sm font-medium text-gray-700">
+                            Filtrar por fecha:
+                          </label>
+                          <select
+                            id="date-filter"
+                            value={selectedDateFilter}
+                            onChange={(e) => setSelectedDateFilter(e.target.value)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900 bg-white"
+                          >
+                            <option value="all">Todas las fechas</option>
+                            {Array.from(new Set(appointments.map(apt => apt.date).filter(Boolean)))
+                              .sort()
+                              .map(date => {
+                                const dateObj = new Date(date + 'T00:00:00')
+                                const formatted = dateObj.toLocaleDateString('es-CO', {
+                                  weekday: 'short',
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })
+                                return (
+                                  <option key={date} value={date}>{formatted}</option>
+                                )
+                              })}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tabla de citas */}
+                    <div className="overflow-x-auto">
+                      {loadingAppointments ? (
+                        <div className="p-12 text-center">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#13a4ec] mx-auto"></div>
+                          <p className="mt-4 text-gray-600">Cargando citas...</p>
+                        </div>
+                      ) : appointments.filter(apt => selectedDateFilter === 'all' || apt.date === selectedDateFilter).length === 0 ? (
+                        <div className="p-12 text-center">
+                          <div className="text-6xl mb-4">📅</div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">No hay citas programadas</h3>
+                          <p className="text-gray-600 mb-6">Reserva tu primera cita para comenzar</p>
+                          <button
+                            onClick={() => setShowScheduledAppointments(false)}
+                            className="bg-[#13a4ec] hover:bg-[#0f8fcd] text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                          >
+                            Reservar Cita
+                          </button>
+                        </div>
+                      ) : (
+                        <table className="w-full">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Tipo
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Servicio/Evento
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Ubicación
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Fecha y Hora
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Duración
+                              </th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Acciones
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {appointments
+                              .filter(apt => selectedDateFilter === 'all' || apt.date === selectedDateFilter)
+                              .map((appointment) => {
+                                const isPersonal = appointment.type === 'personal'
+                                const dateObj = new Date(`${appointment.date}T${appointment.time || '00:00'}`)
+                                const formattedDate = dateObj.toLocaleDateString('es-CO', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })
+                                const formattedTime = appointment.time || dateObj.toLocaleTimeString('es-CO', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+
+                                return (
+                                  <tr key={appointment.appointmentId} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      {isPersonal ? (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                          📝 Personal
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                          🏢 Negocio
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {isPersonal ? appointment.title : appointment.serviceType}
+                                      </div>
+                                      {!isPersonal && appointment.customerName && (
+                                        <div className="text-sm text-gray-500">
+                                          Cliente: {appointment.customerName}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                      <div className="text-sm text-gray-900">
+                                        {isPersonal 
+                                          ? (appointment.address || 'N/A')
+                                          : (appointment.locationName || 'N/A')
+                                        }
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      <div className="text-sm text-gray-900">{formattedDate}</div>
+                                      <div className="text-sm text-gray-500">{formattedTime}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                      {appointment.duration || appointment.estimatedDuration || 'N/A'} min
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <button
+                                          onClick={() => handleEditAppointment(appointment)}
+                                          className="text-[#13a4ec] hover:text-[#0f8fcd] font-medium transition-colors"
+                                          title="Editar cita"
+                                        >
+                                          ✏️ Editar
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteAppointment(appointment)}
+                                          className="text-red-600 hover:text-red-800 font-medium transition-colors"
+                                          title="Eliminar cita"
+                                        >
+                                          🗑️ Eliminar
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Sección: Reservar Nueva Cita */}
+              {!showScheduledAppointments && (
+                <>
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Reservar Nueva Cita</h2>
+                    <p className="text-gray-600">
+                      Selecciona un comercio y ubicación para agendar tu cita
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Industry Filters - Solo mostrar si está en modo reservar */}
+              {!showScheduledAppointments && (
+              <>
               <div className="mb-8">
                 <div className="flex flex-wrap gap-3">
                   {industryFilters.map((filter) => (
@@ -205,6 +488,8 @@ export default function AppointmentsPage() {
                     </button>
                   ))}
                 </div>
+              )}
+              </>
               )}
             </>
           )}
@@ -283,9 +568,165 @@ export default function AppointmentsPage() {
             locationName={selectedLocation.name}
           />
         )}
+
+        {/* Modal de Edición */}
+        {showEditModal && editingAppointment && (
+          <EditAppointmentModal
+            appointment={editingAppointment}
+            isOpen={showEditModal}
+            onClose={() => {
+              setShowEditModal(false)
+              setEditingAppointment(null)
+            }}
+            onSave={handleSaveEdit}
+          />
+        )}
         
         <ToastContainer toasts={toast.toasts} onClose={toast.closeToast} />
       </div>
     </>
+  )
+}
+
+// Modal de Edición de Cita
+interface EditAppointmentModalProps {
+  appointment: Appointment
+  isOpen: boolean
+  onClose: () => void
+  onSave: (data: { date: string; time: string; notes?: string }) => Promise<void>
+}
+
+function EditAppointmentModal({ appointment, isOpen, onClose, onSave }: EditAppointmentModalProps) {
+  const [date, setDate] = useState(appointment.date || '')
+  const [time, setTime] = useState(appointment.time || '')
+  const [notes, setNotes] = useState(appointment.notes || '')
+  const [saving, setSaving] = useState(false)
+
+  if (!isOpen) return null
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await onSave({ date, time, notes })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const isPersonal = appointment.type === 'personal'
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Editar Cita</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Información de la cita */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            {isPersonal ? (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                📝 Personal
+              </span>
+            ) : (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                🏢 Negocio
+              </span>
+            )}
+          </div>
+          <h3 className="font-bold text-gray-900">
+            {isPersonal ? appointment.title : appointment.serviceType}
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            {isPersonal ? appointment.address : appointment.locationName}
+          </p>
+          {!isPersonal && appointment.customerName && (
+            <p className="text-sm text-gray-500 mt-1">
+              Cliente: {appointment.customerName}
+            </p>
+          )}
+        </div>
+
+        {/* Formulario */}
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 mb-6">
+            {/* Fecha */}
+            <div>
+              <label htmlFor="edit-date" className="block text-sm font-medium text-gray-700 mb-1">
+                Fecha
+              </label>
+              <input
+                type="date"
+                id="edit-date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                required
+              />
+            </div>
+
+            {/* Hora */}
+            <div>
+              <label htmlFor="edit-time" className="block text-sm font-medium text-gray-700 mb-1">
+                Hora
+              </label>
+              <input
+                type="time"
+                id="edit-time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                required
+              />
+            </div>
+
+            {/* Notas */}
+            <div>
+              <label htmlFor="edit-notes" className="block text-sm font-medium text-gray-700 mb-1">
+                Notas (opcional)
+              </label>
+              <textarea
+                id="edit-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent resize-none"
+                placeholder="Agrega notas adicionales..."
+              />
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              disabled={saving}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-3 bg-[#13a4ec] hover:bg-[#0f8fcd] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={saving}
+            >
+              {saving ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }

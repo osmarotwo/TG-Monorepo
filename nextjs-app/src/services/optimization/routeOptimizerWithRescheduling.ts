@@ -24,6 +24,8 @@ export interface Appointment {
     lng: number;
     address: string;
   };
+  type?: 'personal' | 'business';
+  isFlexible?: boolean;
 }
 
 export interface OptimizationResult {
@@ -232,6 +234,36 @@ export async function buildOptimizedRouteWithRescheduling(
   console.log(`   Citas: ${appointments.length}`);
   console.log(`   Ubicación inicial: Zipaquirá (${userLocation.lat}, ${userLocation.lng})`);
   
+  // Debug: Verificar que las citas tienen el campo type
+  console.log('🔍 Tipos recibidos en optimizador:', appointments.map(apt => ({
+    id: apt.id,
+    type: apt.type,
+    serviceType: apt.serviceType,
+    isFlexible: apt.isFlexible
+  })));
+  
+  // 0. Separar citas flexibles (modificables) de no flexibles (personales)
+  const flexibleAppointments = appointments.filter(apt => apt.isFlexible !== false);
+  const nonFlexibleAppointments = appointments.filter(apt => apt.isFlexible === false);
+  
+  console.log(`📌 Citas flexibles: ${flexibleAppointments.length}, No flexibles: ${nonFlexibleAppointments.length}`);
+  
+  // Si no hay citas flexibles, no hay nada que optimizar
+  if (flexibleAppointments.length === 0) {
+    console.log('⚠️ No hay citas flexibles para optimizar');
+    return {
+      originalRoute: appointments,
+      optimizedRoute: appointments,
+      originalMetrics: calculateRouteMetrics(appointments, userLocation),
+      optimizedMetrics: calculateRouteMetrics(appointments, userLocation),
+      distanceReduction: 0,
+      timeReduction: 0,
+      distanceReductionPercentage: 0,
+      timeReductionPercentage: 0,
+      rescheduledAppointments: []
+    };
+  }
+  
   // 1. Calcular métricas de la ruta original
   const originalMetrics = calculateRouteMetrics(appointments, userLocation);
   console.log('📊 Ruta original:', {
@@ -239,13 +271,13 @@ export async function buildOptimizedRouteWithRescheduling(
     tiempo: `${originalMetrics.totalTime.toFixed(0)} min`
   });
   
-  // 2. Resolver TSP para encontrar orden geográfico óptimo
-  const optimizedRoute = solveTSP(appointments, userLocation);
-  console.log('🗺️ Ruta geográficamente óptima calculada');
+  // 2. Resolver TSP solo para citas flexibles
+  const optimizedRoute = solveTSP(flexibleAppointments, userLocation);
+  console.log('🗺️ Ruta geográficamente óptima calculada (solo flexibles)');
   
   // 3. Calcular horarios propuestos basados en la ruta óptima
-  // Los appointments ya vienen con startTime construido desde el hook
-  const firstAppointment = appointments[0];
+  // Solo para citas flexibles
+  const firstAppointment = flexibleAppointments[0];
   
   if (!firstAppointment.startTime) {
     console.error('❌ First appointment missing startTime:', firstAppointment);
@@ -364,7 +396,9 @@ export async function buildOptimizedRouteWithRescheduling(
         specialistName: appointmentWithExtras.specialistName || '',
         status: 'proposed' as const,
         reason: conflict.reason,
-        businessName: appointmentWithExtras.businessName || appointmentWithExtras.business?.name || 'Salón de Belleza Premium'
+        businessName: appointmentWithExtras.businessName || appointmentWithExtras.business?.name || 'Salón de Belleza Premium',
+        type: originalAppointment.type,
+        isFlexible: originalAppointment.isFlexible
       };
       
       return rescheduled;
@@ -372,41 +406,87 @@ export async function buildOptimizedRouteWithRescheduling(
     .filter((r): r is RescheduledAppointment => r !== null);
   
   // Combinar disponibles + conflicts que requieren reprogramación
-  const rescheduledAppointments = [
+  const allAppointmentsInRoute = [
     ...available.map(a => {
       const originalAppointment = appointments.find(app => app.id === a.appointmentId);
-      const appointmentWithExtras = originalAppointment as Appointment & {
-        businessName?: string;
-        business?: { name?: string };
-      };
+      console.log(`🔄 Mapeando cita disponible:`, {
+        id: a.appointmentId,
+        originalType: originalAppointment?.type,
+        originalServiceType: originalAppointment?.serviceType
+      });
+      
       return {
         ...a,
+        id: a.appointmentId,
         clientName: originalAppointment?.clientName || '',
         locationName: originalAppointment?.locationName || '',
         durationMinutes: originalAppointment?.estimatedDuration || SERVICE_DURATION_MINUTES,
-        businessName: appointmentWithExtras?.businessName || appointmentWithExtras?.business?.name || 'Salón de Belleza Premium'
+        businessName: originalAppointment?.businessName || 'Salón de Belleza Premium',
+        type: originalAppointment?.type,
+        isFlexible: originalAppointment?.isFlexible
       };
     }),
     ...conflictsAsRescheduled
-  ].filter(a => {
-    // Solo incluir si el horario propuesto es DIFERENTE al original
+  ];
+  
+  console.log(`📊 AllAppointmentsInRoute types:`, allAppointmentsInRoute.map(a => ({
+    id: a.appointmentId,
+    type: a.type,
+    serviceType: a.serviceType
+  })));
+  
+  // Agregar citas no flexibles (personales) sin modificar
+  const nonFlexibleAsRescheduled = nonFlexibleAppointments.map(apt => ({
+    appointmentId: apt.id,
+    clientName: apt.clientName || '',
+    serviceType: apt.serviceType || '',
+    locationId: apt.locationId || 'personal',
+    locationName: apt.locationName || '',
+    originalStartTime: apt.startTime,
+    originalEndTime: apt.endTime,
+    proposedStartTime: apt.startTime, // Sin cambio
+    proposedEndTime: apt.endTime, // Sin cambio
+    timeDifferenceMinutes: 0,
+    durationMinutes: apt.estimatedDuration || 60,
+    specialistId: '',
+    specialistName: '',
+    status: 'confirmed' as const,
+    reason: '',
+    businessName: '',
+    type: apt.type,
+    isFlexible: false,
+    hasTimeChange: false // Explícitamente marcar como sin cambios
+  } as RescheduledAppointment));
+  
+  console.log(`📌 Citas no flexibles agregadas sin modificar: ${nonFlexibleAsRescheduled.length}`);
+  
+  // Separar citas modificadas y no modificadas
+  const rescheduledAppointments = [...allAppointmentsInRoute.map(a => {
     const originalStart = new Date(a.originalStartTime).getTime();
     const proposedStart = new Date(a.proposedStartTime).getTime();
     const diff = Math.abs(originalStart - proposedStart);
-    const shouldInclude = diff > 60000; // Diferencia > 1 minuto
+    const hasChanged = diff > 60000; // Diferencia > 1 minuto
     
-    if (shouldInclude) {
+    if (hasChanged) {
       console.log(`📝 Cita con cambio de horario: ${a.appointmentId}`, {
         original: a.originalStartTime,
         proposed: a.proposedStartTime,
         diffMinutes: Math.round(diff / 60000)
       });
+    } else {
+      console.log(`✅ Cita sin cambios (incluida en ruta): ${a.appointmentId}`, {
+        type: a.type,
+        time: a.originalStartTime
+      });
     }
     
-    return shouldInclude;
-  });
+    return {
+      ...a,
+      hasTimeChange: hasChanged
+    };
+  }), ...nonFlexibleAsRescheduled];
   
-  console.log(`📋 Total citas que requieren reprogramación: ${rescheduledAppointments.length}`);
+  console.log(`📋 Total citas en ruta optimizada: ${rescheduledAppointments.length} (${allAppointmentsInRoute.length} flexibles + ${nonFlexibleAsRescheduled.length} no flexibles)`);
   
   return {
     originalRoute: appointments,

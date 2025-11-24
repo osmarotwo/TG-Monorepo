@@ -1,6 +1,6 @@
 // Force CDK redeploy: debug conflict detection 2025-11-13T20:45:00
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { getAppointments, getAppointmentById, updateAppointment } from './handlers/appointments';
+import { getAppointments, getAppointmentById, updateAppointment, deleteAppointment } from './handlers/appointments';
 import { createAppointment, validateAppointmentSlot } from './handlers/createAppointment';
 import { createPersonalAppointment } from './handlers/createPersonalAppointment';
 import { getLocations, getLocationById } from './handlers/locations';
@@ -94,6 +94,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       if (path.match(/^\/api\/appointments\/[^/]+$/)) {
         // PUT /api/appointments/:appointmentId
         return await updateAppointment(event);
+      }
+    }
+
+    // DELETE routes
+    if (method === 'DELETE') {
+      if (path.match(/^\/api\/appointments\/[^/]+$/)) {
+        // DELETE /api/appointments/:appointmentId
+        return await deleteAppointment(event);
       }
     }
 

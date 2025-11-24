@@ -14,9 +14,7 @@ export default function Navigation() {
 
   const navItems = [
     { label: t('navigation.home', 'navigation'), href: '/dashboard', icon: '🏠' },
-    { label: t('navigation.services', 'navigation'), href: '/services', icon: '✨' },
     { label: t('navigation.appointments', 'navigation'), href: '/appointments', icon: '📅' },
-    { label: t('navigation.locations', 'navigation'), href: '/locations', icon: '📍' },
   ]
 
   const isActive = (href: string) => {

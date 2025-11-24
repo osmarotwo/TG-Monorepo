@@ -16,10 +16,36 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
   if (rescheduledAppointments.length === 0) {
     return null;
   }
+  
+  // Debug: Verificar que el campo type está llegando
+  console.log('🔍 Tipos de citas en tabla:', rescheduledAppointments.map(apt => ({
+    id: apt.id,
+    type: apt.type,
+    serviceType: apt.serviceType,
+    locationName: apt.locationName
+  })));
+  
+  // Separar citas modificadas y no modificadas
+  const modifiedAppointments = rescheduledAppointments.filter(apt => apt.hasTimeChange !== false);
+  const unchangedAppointments = rescheduledAppointments.filter(apt => apt.hasTimeChange === false);
 
   const formatTime = (isoString: string): string => {
     const date = new Date(isoString);
     return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDate = (isoString: string): string => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('es-CO', { 
+      day: '2-digit', 
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  // Determinar si es cita personal basado en el campo type
+  const isPersonalAppointment = (appointment: RescheduledAppointment): boolean => {
+    return appointment.type === 'personal';
   };
 
   const formatTimeDifference = (minutes: number): string => {
@@ -56,11 +82,21 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
         <div className="flex items-center gap-2">
           <span className="text-xl">📅</span>
           <h4 className="font-bold text-gray-900">
-            Cambios de Horario Propuestos
+            Ruta Optimizada - Citas Incluidas
           </h4>
         </div>
         <p className="text-sm text-gray-600 mt-1">
-          Los siguientes horarios fueron ajustados para optimizar la ruta
+          {modifiedAppointments.length > 0 && (
+            <span className="font-semibold text-yellow-700">
+              {modifiedAppointments.length} cita{modifiedAppointments.length !== 1 ? 's' : ''} con cambio de horario
+            </span>
+          )}
+          {modifiedAppointments.length > 0 && unchangedAppointments.length > 0 && <span> • </span>}
+          {unchangedAppointments.length > 0 && (
+            <span>
+              {unchangedAppointments.length} cita{unchangedAppointments.length !== 1 ? 's' : ''} sin modificar
+            </span>
+          )}
         </p>
       </div>
 
@@ -69,9 +105,11 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">Comercio</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">Sede</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">Servicio</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Fecha</th>
+              <th className="px-4 py-3 text-center font-semibold text-gray-700">Tipo</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Título/Comercio</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Ubicación</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Detalle</th>
               <th className="px-4 py-3 text-center font-semibold text-gray-700">Duración</th>
               <th className="px-4 py-3 text-center font-semibold text-gray-700">Horario Original</th>
               <th className="px-4 py-3 text-center font-semibold text-gray-700">
@@ -81,27 +119,66 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
               </th>
               <th className="px-4 py-3 text-center font-semibold text-gray-700">Horario Propuesto</th>
               <th className="px-4 py-3 text-center font-semibold text-gray-700">Diferencia</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">Especialista</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {rescheduledAppointments.map((appointment) => (
-              <tr key={appointment.appointmentId} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-gray-900 font-medium">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs">🏪</span>
-                    <span>{appointment.businessName || 'Salón de Belleza Premium'}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-gray-700">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs">📍</span>
-                    <span>{appointment.locationName}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-gray-700">
-                  {appointment.serviceType}
-                </td>
+            {rescheduledAppointments.map((appointment) => {
+              const isPersonal = isPersonalAppointment(appointment);
+              const isUnchanged = appointment.hasTimeChange === false;
+              const isNonFlexible = appointment.isFlexible === false || isPersonal;
+              
+              return (
+                <tr 
+                  key={appointment.appointmentId} 
+                  className={`hover:bg-gray-50 transition-colors ${isUnchanged ? 'bg-gray-50' : ''}`}
+                >
+                  {/* Fecha */}
+                  <td className="px-4 py-3 text-gray-900 font-medium">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs">📅</span>
+                      <span className="text-sm">{formatDate(appointment.originalStartTime)}</span>
+                    </div>
+                  </td>
+                  
+                  {/* Tipo */}
+                  <td className="px-4 py-3 text-center">
+                    {isPersonal ? (
+                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold">
+                        <span>📝</span>
+                        <span>Personal</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                        <span>🏢</span>
+                        <span>Negocio</span>
+                      </div>
+                    )}
+                  </td>
+                  
+                  {/* Título/Comercio */}
+                  <td className="px-4 py-3 text-gray-900 font-medium">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs">{isPersonal ? '📋' : '🏪'}</span>
+                      <span>{isPersonal ? appointment.serviceType : (appointment.businessName || 'Salón de Belleza Premium')}</span>
+                    </div>
+                  </td>
+                  
+                  {/* Ubicación */}
+                  <td className="px-4 py-3 text-gray-700">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs">📍</span>
+                      <span className="text-sm">{appointment.locationName}</span>
+                    </div>
+                  </td>
+                  
+                  {/* Detalle */}
+                  <td className="px-4 py-3 text-gray-700 text-sm">
+                    {isPersonal ? (
+                      <span className="text-gray-600 italic">Cita personal</span>
+                    ) : (
+                      <span>{appointment.serviceType}</span>
+                    )}
+                  </td>
                 <td className="px-4 py-3 text-center">
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded">
                     <span className="text-xs">⏱️</span>
@@ -115,27 +192,40 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
                   </div>
                 </td>
                 <td className="px-4 py-3 text-center">
-                  <span className="text-blue-500 text-lg">→</span>
+                  {isUnchanged ? (
+                    <span className="text-gray-400 text-lg">—</span>
+                  ) : (
+                    <span className="text-blue-500 text-lg">→</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-center">
-                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded">
-                    <span className="text-xs">✓</span>
-                    <span className="font-mono">{formatTime(appointment.proposedStartTime)}</span>
-                  </div>
+                  {isUnchanged ? (
+                    <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                      <span className="text-xs">{isNonFlexible ? '🔒' : '='}</span>
+                      <span className="font-mono">{formatTime(appointment.originalStartTime)}</span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded">
+                      <span className="text-xs">✓</span>
+                      <span className="font-mono">{formatTime(appointment.proposedStartTime)}</span>
+                    </div>
+                  )}
                 </td>
-                <td className="px-4 py-3 text-center">
-                  <span className={`font-semibold ${getTimeDifferenceColor(appointment.timeDifferenceMinutes)}`}>
-                    {formatTimeDifference(appointment.timeDifferenceMinutes)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-700">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs">👤</span>
-                    <span>{appointment.specialistName}</span>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  {/* Diferencia de tiempo */}
+                  <td className="px-4 py-3 text-center">
+                    {isUnchanged ? (
+                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                        <span>{isNonFlexible ? '🔒 No modificable' : 'Sin cambios'}</span>
+                      </div>
+                    ) : (
+                      <span className={`font-semibold ${getTimeDifferenceColor(appointment.timeDifferenceMinutes)}`}>
+                        {formatTimeDifference(appointment.timeDifferenceMinutes)}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

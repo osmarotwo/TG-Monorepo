@@ -207,3 +207,99 @@ export async function updateAppointment(event: APIGatewayProxyEvent): Promise<AP
     };
   }
 }
+
+/**
+ * DELETE /api/appointments/:appointmentId
+ * Elimina una cita
+ */
+export async function deleteAppointment(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const appointmentId = event.pathParameters?.id;
+
+    if (!appointmentId) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'appointmentId is required' }),
+      };
+    }
+
+    console.log('🗑️ Deleting appointment:', appointmentId);
+
+    // Buscar la cita usando Scan (ya que no tenemos userId en el path)
+    const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+    const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+    
+    const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+    const docClient = DynamoDBDocumentClient.from(client);
+    
+    // Scan buscando el appointmentId
+    const scanResult = await docClient.send(
+      new ScanCommand({
+        TableName: APPOINTMENTS_TABLE,
+        FilterExpression: 'appointmentId = :aid',
+        ExpressionAttributeValues: {
+          ':aid': appointmentId
+        }
+      })
+    );
+    
+    let appointment = null;
+    if (scanResult.Items && scanResult.Items.length > 0) {
+      appointment = scanResult.Items[0];
+      console.log('✅ Found appointment:', {
+        PK: appointment.PK,
+        SK: appointment.SK,
+        type: appointment.type
+      });
+    }
+
+    if (!appointment) {
+      return {
+        statusCode: 404,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Appointment not found' }),
+      };
+    }
+
+    // Eliminar el item usando las claves PK y SK que encontramos
+    const { DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+    
+    console.log('🗑️ Deleting appointment with keys:', {
+      PK: appointment.PK,
+      SK: appointment.SK,
+      type: appointment.type
+    });
+    
+    await docClient.send(
+      new DeleteCommand({
+        TableName: APPOINTMENTS_TABLE,
+        Key: {
+          PK: appointment.PK,
+          SK: appointment.SK,
+        },
+      })
+    );
+
+    console.log('✅ Appointment deleted successfully');
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ 
+        success: true,
+        message: 'Appointment deleted successfully'
+      }),
+    };
+  } catch (error) {
+    console.error('❌ Error deleting appointment:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }),
+    };
+  }
+}

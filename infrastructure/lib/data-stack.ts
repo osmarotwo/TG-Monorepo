@@ -197,6 +197,7 @@ export class DataStack extends cdk.Stack {
     const appointmentByIdResource = appointmentsResource.addResource('{id}');
     appointmentByIdResource.addMethod('GET', dataIntegration); // GET /api/appointments/{id}
     appointmentByIdResource.addMethod('PUT', dataIntegration); // PUT /api/appointments/{id}
+    appointmentByIdResource.addMethod('DELETE', dataIntegration); // DELETE /api/appointments/{id}
 
     // Locations routes
     const locationsResource = apiResource.addResource('locations');

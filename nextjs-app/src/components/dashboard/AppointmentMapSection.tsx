@@ -16,6 +16,8 @@ interface AppointmentMapSectionProps {
   appointments: Appointment[]
   locations: Location[]
   height?: string
+  selectedDate?: string
+  onDateChange?: (date: string) => void
 }
 
 interface AppointmentWithLocation extends Appointment {
@@ -41,6 +43,8 @@ export default function AppointmentMapSection({
   appointments,
   locations,
   height = 'h-96',
+  selectedDate: selectedDateProp,
+  onDateChange,
 }: AppointmentMapSectionProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -49,11 +53,9 @@ export default function AppointmentMapSection({
   const [travelTimesData, setTravelTimesData] = useState<AppointmentWithLocation[]>([])
   const [timeConflicts, setTimeConflicts] = useState<TimeConflict[]>([])
   
-  // Selector de fecha - por defecto hoy
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const today = new Date()
-    return today.toISOString().split('T')[0] // YYYY-MM-DD
-  })
+  // Usar estado del padre si existe, sino usar estado local
+  const selectedDate = selectedDateProp || 'all';
+  const setSelectedDate = onDateChange || (() => {});
   
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
@@ -63,19 +65,57 @@ export default function AppointmentMapSection({
 
   // Filtrar citas por la fecha seleccionada
   const filteredAppointments = React.useMemo(() => {
+    console.log('🔍 AppointmentMapSection - Filtrando citas:', {
+      totalAppointments: appointments.length,
+      selectedDate,
+      appointmentsData: appointments.map(a => ({
+        id: a.appointmentId,
+        type: a.type,
+        date: a.date,
+        startTime: a.startTime,
+        hasLocation: !!(a.location || (a.latitude && a.longitude))
+      }))
+    })
+    
+    // Si selectedDate es 'all', mostrar todas las citas
+    if (selectedDate === 'all') {
+      console.log('📅 Mostrando TODAS las citas:', appointments.length)
+      return appointments
+    }
+    
     const filtered = appointments.filter(apt => {
       const aptDate = apt.date || apt.startTime?.split('T')[0]
-      console.log('🔍 Filtering appointment:', {
-        id: apt.appointmentId,
-        type: apt.type,
-        title: apt.title,
-        aptDate,
-        selectedDate,
-        matches: aptDate === selectedDate
-      })
-      return aptDate === selectedDate
+      const matches = aptDate === selectedDate
+      
+      // Log detallado para cada cita
+      if (!matches) {
+        console.log(`❌ Cita NO coincide - aptDate: "${aptDate}" vs selectedDate: "${selectedDate}"`, {
+          id: apt.appointmentId,
+          type: apt.type,
+          date: apt.date,
+          startTime: apt.startTime,
+          calculated_aptDate: aptDate,
+          selectedDate: selectedDate,
+          comparison: `"${aptDate}" === "${selectedDate}" = ${aptDate === selectedDate}`
+        })
+      } else {
+        console.log(`✅ Cita coincide:`, {
+          id: apt.appointmentId,
+          aptDate,
+          type: apt.type,
+          title: apt.title || apt.serviceType
+        })
+      }
+      
+      return matches
     })
-    console.log('📅 Filtered appointments for', selectedDate, ':', filtered.length, 'of', appointments.length)
+    
+    console.log('📅 Resultado del filtro:', {
+      selectedDate,
+      filtered: filtered.length,
+      total: appointments.length
+    })
+    
     return filtered
   }, [appointments, selectedDate])
 
@@ -206,6 +246,137 @@ export default function AppointmentMapSection({
     
     document.head.appendChild(script)
   }, [])
+
+  // Update markers when filtered appointments change
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isLoaded) return;
+    
+    console.log('🔄 Actualizando marcadores para fecha:', selectedDate);
+    console.log('📍 Citas filtradas:', filteredAppointments.length);
+    
+    // Clear existing markers
+    markersRef.current.forEach((marker) => {
+      if ('setMap' in marker && typeof marker.setMap === 'function') {
+        marker.setMap(null);
+      } else if ('map' in marker) {
+        (marker as google.maps.marker.AdvancedMarkerElement).map = null;
+      }
+    });
+    markersRef.current = [];
+    
+    // Clear existing routes
+    if (directionsRendererRef.current) {
+      directionsRendererRef.current.setMap(null);
+      directionsRendererRef.current = null;
+    }
+    
+    // Reset routes calculation flag
+    setHasCalculatedRoutes(false);
+    
+    // Re-add user marker if exists
+    if (userLocation) {
+      const userPin = document.createElement('div');
+      userPin.className = 'user-location-marker';
+      userPin.innerHTML = `
+        <div style="
+          width: 24px;
+          height: 24px;
+          background-color: #4285F4;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          cursor: pointer;
+        "></div>
+      `;
+
+      const userMarker = new google.maps.marker.AdvancedMarkerElement({
+        map: mapInstanceRef.current,
+        position: userLocation,
+        content: userPin,
+        title: 'Tu ubicación',
+      });
+      
+      markersRef.current.push(userMarker);
+    }
+    
+    // Add markers for filtered appointments
+    const validLocations = appointmentsWithDetails.filter((apt) => apt.location);
+    
+    validLocations.forEach((apt, index) => {
+      const position = {
+        lat: apt.location!.latitude,
+        lng: apt.location!.longitude,
+      };
+
+      const pinElement = document.createElement('div');
+      pinElement.className = 'custom-pin';
+      
+      const bgColor = apt.type === 'personal' ? '#8B5CF6' : '#DC2626';
+      
+      pinElement.innerHTML = `
+        <div style="
+          width: 40px;
+          height: 40px;
+          background-color: ${bgColor};
+          border: 3px solid white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          color: white;
+          font-size: 16px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+          cursor: pointer;
+        ">
+          ${index + 1}
+        </div>
+      `;
+
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        map: mapInstanceRef.current,
+        position: position,
+        content: pinElement,
+        title: apt.location!.name,
+      });
+
+      markersRef.current.push(marker);
+
+      // InfoWindow
+      const serviceOrTitle = apt.type === 'personal' ? (apt.title || 'Cita Personal') : (apt.serviceType || 'Servicio');
+      const date = apt.startTime ? new Date(apt.startTime) : new Date();
+      const timeStr = apt.time || date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = apt.date || date.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+
+      const infoContent = `
+        <div style="padding: 12px; max-width: 250px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: ${bgColor};">
+            ${index + 1}. ${apt.location!.name}
+          </div>
+          ${apt.type === 'personal' ? `
+            <div style="display: inline-block; background-color: #8B5CF6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-bottom: 8px;">
+              📝 Personal
+            </div>
+          ` : ''}
+          <div style="margin-bottom: 4px; color: #1F2937;">
+            <strong style="color: #374151;">${apt.type === 'personal' ? 'Evento' : 'Servicio'}:</strong> ${serviceOrTitle}
+          </div>
+          <div style="margin-bottom: 4px; color: #1F2937;">
+            <strong style="color: #374151;">Fecha:</strong> ${dateStr} ${timeStr}
+          </div>
+          <div style="color: #4B5563; font-size: 13px; margin-top: 8px;">
+            📍 ${apt.location!.address}
+          </div>
+        </div>
+      `;
+
+      const infoWindow = new google.maps.InfoWindow({ content: infoContent });
+      marker.addListener('click', () => {
+        infoWindow.open({ anchor: marker, map: mapInstanceRef.current });
+      });
+    });
+    
+  }, [selectedDate, filteredAppointments, appointmentsWithDetails, isLoaded, userLocation]);
 
   // Calculate routes when userLocation becomes available
   useEffect(() => {
@@ -638,23 +809,46 @@ export default function AppointmentMapSection({
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
         <div className="flex items-center gap-4">
           <label htmlFor="route-date" className="text-sm font-medium text-gray-700 whitespace-nowrap">
-            📅 View routes for:
+            📅 Ver rutas para:
           </label>
-          <input
-            type="date"
+          <select
             id="route-date"
             value={selectedDate}
             onChange={(e) => {
               setSelectedDate(e.target.value)
               setHasCalculatedRoutes(false) // Reset para recalcular rutas
             }}
-            className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#13a4ec] text-gray-900"
-          />
-          <div className="text-sm text-gray-600">
-            {filteredAppointments.length} {filteredAppointments.length === 1 ? 'appointment' : 'appointments'}
-          </div>
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900 bg-white"
+          >
+            <option value="all">📆 Todas las citas</option>
+            {/* Generar opciones dinámicas basadas en las fechas de las citas */}
+            {Array.from(new Set(appointments.map(apt => apt.date || apt.startTime?.split('T')[0]).filter(Boolean)))
+              .sort()
+              .map(date => {
+                const dateObj = new Date(date + 'T00:00:00')
+                const formatted = dateObj.toLocaleDateString('es-CO', { 
+                  weekday: 'short',
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                })
+                return (
+                  <option key={date} value={date}>
+                    {formatted}
+                  </option>
+                )
+              })}
+          </select>
+          <span className="text-sm text-gray-600 whitespace-nowrap">
+            {selectedDate === 'all' 
+              ? `${filteredAppointments.length} citas`
+              : `${filteredAppointments.length} cita${filteredAppointments.length !== 1 ? 's' : ''}`
+            }
+          </span>
         </div>
       </div>
+
+
 
       {/* No appointments message */}
       {filteredAppointments.length === 0 && (

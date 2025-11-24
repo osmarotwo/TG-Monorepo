@@ -175,6 +175,7 @@ export function useRouteOptimizationWithRescheduling(
           endTime: endTime,
           estimatedDuration: apt.estimatedDuration || 60, // Pasar duración real o default 60min
           isFlexible: apt.isFlexible !== false, // Citas personales son NO flexibles por defecto
+          type: apt.type, // AGREGAR: Pasar el tipo de cita
           location: getLocation()
         };
       });

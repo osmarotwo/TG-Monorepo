@@ -45,7 +45,7 @@ export default function GoogleCallback() {
           console.log('🔵 Redirect URI para intercambio:', redirectUri);
           
           const authApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://ectre1y1fg.execute-api.us-east-1.amazonaws.com/prod';
-          const response = await fetch(`${authApiUrl}/google-exchange`, {
+          const response = await fetch(`${authApiUrl}/auth/google-exchange`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code, redirectUri }),

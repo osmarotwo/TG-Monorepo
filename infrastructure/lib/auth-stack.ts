@@ -255,6 +255,10 @@ export class AuthStack extends cdk.Stack {
     const googleResource = authResource.addResource('google');
     googleResource.addMethod('POST', authIntegration);
 
+    // Google OAuth code exchange endpoint
+    const googleExchangeResource = authResource.addResource('google-exchange');
+    googleExchangeResource.addMethod('POST', authIntegration);
+
     // Alternative route for Google OAuth (for backward compatibility)
     const googleAuthResource = authResource.addResource('google-auth');
     googleAuthResource.addMethod('POST', authIntegration);

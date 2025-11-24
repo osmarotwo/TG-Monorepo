@@ -6,6 +6,7 @@ import { createAppointment, CreateAppointmentData, validateAppointmentSlot } fro
 import { fetchServicesByBusiness, type Service } from '@/services/api/services'
 import { getAvailableSlots, type AvailableSlot } from '@/services/api/availabilityService'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatPrice } from '@/utils/formatPrice'
 
 interface CreateAppointmentModalProps {
   isOpen: boolean
@@ -90,10 +91,13 @@ export default function CreateAppointmentModal({
   const loadServices = async () => {
     try {
       setLoadingServices(true)
+      console.log('🔄 Loading services for business:', businessId)
       const businessServices = await fetchServicesByBusiness(businessId)
+      console.log('✅ Services loaded:', businessServices.length, 'services')
+      console.log('📋 Services:', businessServices)
       setServices(businessServices)
     } catch (error) {
-      console.error('Error loading services:', error)
+      console.error('❌ Error loading services:', error)
       setErrors({ services: 'Error al cargar servicios' })
     } finally {
       setLoadingServices(false)
@@ -103,8 +107,18 @@ export default function CreateAppointmentModal({
   const loadAvailableSlots = async () => {
     try {
       setLoadingSlots(true)
+      console.log('🔄 Loading available slots...')
+      console.log('📍 Location:', locationId)
+      console.log('📅 Date:', formData.date)
+      console.log('🎯 Service ID:', formData.serviceId)
+      
       const selectedService = services.find(s => s.serviceId === formData.serviceId)
-      if (!selectedService) return
+      if (!selectedService) {
+        console.log('⚠️ No service selected or service not found')
+        return
+      }
+      
+      console.log('✅ Selected service:', selectedService.name, '- Duration:', selectedService.defaultDuration)
       
       const slots = await getAvailableSlots(
         locationId,
@@ -113,9 +127,12 @@ export default function CreateAppointmentModal({
         selectedService.defaultDuration,
         user?.userId // Pasar el userId para excluir horarios donde el usuario ya tiene citas
       )
+      
+      console.log('✅ Available slots loaded:', slots.length, 'slots')
+      console.log('🕐 Slots:', slots)
       setAvailableSlots(slots)
     } catch (error) {
-      console.error('Error loading available slots:', error)
+      console.error('❌ Error loading available slots:', error)
       setAvailableSlots([])
       setErrors(prev => ({ ...prev, timeSlot: 'Error al cargar horarios disponibles' }))
     } finally {
@@ -230,6 +247,7 @@ export default function CreateAppointmentModal({
         locationId: locationId,
         customerName: formData.customerName,
         serviceType: serviceType || '',
+        serviceId: formData.serviceId, // Incluir serviceId para obtener precio
         date: formData.date,
         time: formData.timeSlot,
         duration: duration,
@@ -349,7 +367,7 @@ export default function CreateAppointmentModal({
               </option>
               {services.map((service) => (
                 <option key={service.serviceId} value={service.serviceId} className="text-gray-900">
-                  {locale === 'es' ? service.name : service.nameEn} ({service.defaultDuration} min)
+                  {locale === 'es' ? service.name : service.nameEn} • {service.defaultDuration} min • {formatPrice(service.basePrice, service.currency)}
                 </option>
               ))}
             </select>
@@ -432,6 +450,30 @@ export default function CreateAppointmentModal({
               disabled={isSubmitting}
             />
           </div>
+
+          {/* Price Summary */}
+          {formData.serviceId && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">
+                    {locale === 'es' ? 'Precio del servicio' : 'Service price'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {services.find(s => s.serviceId === formData.serviceId)?.name}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-[#13a4ec]">
+                    {formatPrice(
+                      services.find(s => s.serviceId === formData.serviceId)?.basePrice || 0,
+                      services.find(s => s.serviceId === formData.serviceId)?.currency || 'COP'
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Error Message */}
           {errors.submit && (

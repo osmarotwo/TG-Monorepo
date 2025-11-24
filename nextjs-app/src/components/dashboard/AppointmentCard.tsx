@@ -1,5 +1,6 @@
 import React from 'react';
 import { Appointment } from '@/services/api/appointments';
+import { formatPrice } from '@/utils/formatPrice';
 
 interface AppointmentCardProps {
   appointment: Appointment;
@@ -86,6 +87,15 @@ export default function AppointmentCard({ appointment, onViewDetails }: Appointm
           <p className="text-xs text-gray-500">
             📍 {appointment.locationName}
           </p>
+        )}
+        
+        {appointment.servicePrice && appointment.serviceCurrency && (
+          <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+            <span className="text-xs font-medium text-gray-600">Precio:</span>
+            <span className="text-sm font-bold text-[#13a4ec]">
+              {formatPrice(appointment.servicePrice, appointment.serviceCurrency)}
+            </span>
+          </div>
         )}
         
         <button

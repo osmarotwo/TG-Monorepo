@@ -12,8 +12,8 @@ export interface Service {
   category: string
   defaultDuration: number // en minutos
   description?: string
-  basePrice?: number
-  currency?: string
+  basePrice: number
+  currency: string
 }
 
 // Servicios por negocio

@@ -29,6 +29,8 @@ export interface Appointment {
   date?: string; // YYYY-MM-DD
   time?: string; // HH:MM
   serviceName?: string; // Nombre del servicio
+  servicePrice?: number; // Precio del servicio
+  serviceCurrency?: string; // Moneda del precio
   // Campos para citas personales
   type?: 'business' | 'personal'; // Tipo de cita
   isFlexible?: boolean; // Si se puede reprogramar automáticamente
@@ -158,6 +160,7 @@ export interface CreateAppointmentData {
   locationId: string;
   customerName: string;
   serviceType: string;
+  serviceId?: string; // ID del servicio para obtener el precio
   date: string; // YYYY-MM-DD
   time: string; // HH:MM
   duration: number; // minutes

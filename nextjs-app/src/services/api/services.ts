@@ -5,6 +5,7 @@
  */
 
 import { getServicesByBusiness as getLocalServices, type Service } from '@/data/services'
+import { formatPrice } from '@/utils/formatPrice'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_DATA_API_URL || 'https://v0igzegm95.execute-api.us-east-1.amazonaws.com/prod';
 

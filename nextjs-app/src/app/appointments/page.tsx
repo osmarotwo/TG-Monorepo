@@ -10,6 +10,7 @@ import { fetchBusinessesByOwner } from '@/services/api/businesses'
 import { fetchLocationsByBusiness, type Location as LocationType } from '@/services/api/locations'
 import { fetchUpcomingAppointments, type Appointment, deleteAppointment } from '@/services/api/appointments'
 import { ToastContainer, useToast } from '@/components/Toast'
+import { formatPrice } from '@/utils/formatPrice'
 
 type Industry = 'all' | 'beauty' | 'fitness' | 'health' | 'food'
 
@@ -313,6 +314,9 @@ export default function AppointmentsPage() {
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Duración
                               </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Precio
+                              </th>
                               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Acciones
                               </th>
@@ -371,6 +375,15 @@ export default function AppointmentsPage() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                       {appointment.duration || appointment.estimatedDuration || 'N/A'} min
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      {appointment.servicePrice && appointment.serviceCurrency ? (
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-50 text-[#13a4ec] border border-blue-200">
+                                          {formatPrice(appointment.servicePrice, appointment.serviceCurrency)}
+                                        </span>
+                                      ) : (
+                                        <span className="text-sm text-gray-400">N/A</span>
+                                      )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                       <div className="flex items-center justify-end gap-2">

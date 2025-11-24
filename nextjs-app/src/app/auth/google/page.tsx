@@ -14,6 +14,8 @@ export default function GoogleCallback() {
 
   useEffect(() => {
     const handleGoogleAuth = async () => {
+      console.log('🔵 Iniciando handleGoogleAuth, hasProcessed:', hasProcessed.current);
+      
       // Prevenir ejecución múltiple (React Strict Mode ejecuta efectos dos veces)
       if (hasProcessed.current) {
         console.log('⏭️ Ya procesado, saltando...');
@@ -26,7 +28,10 @@ export default function GoogleCallback() {
       const error = urlParams.get('error');
       const state = urlParams.get('state');
 
+      console.log('🔵 Parámetros de URL:', { code: code?.slice(0, 20) + '...', error, state });
+
       if (error) {
+        console.error('❌ Error en URL params:', error);
         alert(`${t('authorizationError', 'callback')} ${error}`);
         router.replace('/');
         return;
@@ -34,27 +39,40 @@ export default function GoogleCallback() {
 
       if (code && state === 'google_auth') {
         try {
+          console.log('🔵 Intercambiando código por token...');
           // Llama a tu backend para intercambiar el código por el idToken de Google
           const redirectUri = window.location.origin + '/auth/google';
+          console.log('🔵 Redirect URI para intercambio:', redirectUri);
+          
           const response = await fetch('/api/auth/google', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code, redirectUri }),
           });
+          
+          console.log('🔵 Respuesta del backend:', response.status, response.statusText);
           const data = await response.json();
+          console.log('🔵 Data recibida:', data);
+          
           if (!response.ok || !data.idToken) {
+            console.error('❌ Error al obtener idToken:', data.error);
             throw new Error(data.error || 'No se pudo obtener el idToken de Google');
           }
+          
+          console.log('✅ idToken obtenido, autenticando con contexto...');
           // Autentica globalmente usando el contexto
           await authenticateWithGoogle({ idToken: data.idToken });
+          console.log('✅ Autenticación completada');
           
           // La redirección se hará en el siguiente useEffect cuando el user se actualice
           
-        } catch (err) {
-          alert(t('authorizationError', 'callback'));
+        } catch (err: any) {
+          console.error('❌ Error en handleGoogleAuth:', err);
+          alert(t('authorizationError', 'callback') + ': ' + err.message);
           router.replace('/');
         }
       } else {
+        console.error('❌ Código o state inválidos');
         alert(t('error', 'callback'));
         router.replace('/');
       }

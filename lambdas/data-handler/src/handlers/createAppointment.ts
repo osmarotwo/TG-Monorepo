@@ -1,8 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
-import { putItem, queryItems } from '../utils/dynamodb';
+import { putItem, queryItems, getItem } from '../utils/dynamodb';
 
 const APPOINTMENTS_TABLE = process.env.APPOINTMENTS_TABLE || 'Appointments';
+const SERVICES_TABLE = process.env.SERVICES_TABLE || 'Services';
 
 // CORS headers
 const CORS_HEADERS = {
@@ -33,6 +34,7 @@ export async function createAppointment(event: APIGatewayProxyEvent): Promise<AP
       locationId,
       customerName,
       serviceType,
+      serviceId,
       date,
       time,
       duration,
@@ -59,6 +61,27 @@ export async function createAppointment(event: APIGatewayProxyEvent): Promise<AP
     const appointmentId = uuidv4();
     const now = new Date().toISOString();
 
+    // Obtener precio del servicio si serviceId fue proporcionado
+    let servicePrice: number | undefined;
+    let serviceCurrency: string | undefined;
+    
+    if (serviceId) {
+      try {
+        const service = await getItem(SERVICES_TABLE, {
+          PK: `BUSINESS#${businessId}`,
+          SK: `SERVICE#${serviceId}`
+        });
+        
+        if (service) {
+          servicePrice = service.basePrice;
+          serviceCurrency = service.currency;
+        }
+      } catch (error) {
+        console.warn('Could not fetch service price:', error);
+        // Continuar sin el precio si hay error
+      }
+    }
+
     // Crear item para DynamoDB
     const appointment = {
       PK: `USER#${userId}`,
@@ -71,6 +94,8 @@ export async function createAppointment(event: APIGatewayProxyEvent): Promise<AP
       locationId,
       customerName,
       serviceType,
+      serviceName: serviceType, // Alias para compatibilidad
+      serviceId: serviceId || undefined,
       date,
       time,
       duration: duration || estimatedDuration,
@@ -78,6 +103,9 @@ export async function createAppointment(event: APIGatewayProxyEvent): Promise<AP
       endTime: endTime || calculateEndTime(date, time, duration || estimatedDuration),
       status,
       notes: notes || '',
+      // Incluir precio y moneda si están disponibles
+      ...(servicePrice !== undefined && { servicePrice }),
+      ...(serviceCurrency && { serviceCurrency }),
       createdAt: now,
       updatedAt: now,
       // GSI fields para consultas por business y location

@@ -44,7 +44,7 @@ export default function GoogleCallback() {
           const redirectUri = window.location.origin + '/auth/google';
           console.log('🔵 Redirect URI para intercambio:', redirectUri);
           
-          const response = await fetch('/api/auth/google', {
+          const response = await fetch('/api/auth/google-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code, redirectUri }),

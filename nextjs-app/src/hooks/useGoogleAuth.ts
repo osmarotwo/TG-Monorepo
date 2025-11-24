@@ -108,6 +108,7 @@ export const useGoogleAuth = () => {
     console.log('Iniciando Google Auth - Redirección directa')
     console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
     console.log('Origin:', window.location.origin)
+    console.log('Redirect URI:', window.location.origin + '/auth/google')
     
     if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
       alert('Google Client ID no configurado. Verifica las variables de entorno.')
@@ -118,16 +119,18 @@ export const useGoogleAuth = () => {
       // Método simple y confiable: redirección directa
       console.log('Usando redirección directa a Google')
       
+      const redirectUri = window.location.origin + '/auth/google'
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)}&` +
         `response_type=code&` +
         `scope=${encodeURIComponent('openid email profile')}&` +
-        `redirect_uri=${encodeURIComponent(window.location.origin + '/auth/google')}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `state=google_auth&` +
         `access_type=offline&` +
         `prompt=select_account`
       
-      console.log('Redirigiendo a Google OAuth:', authUrl)
+      console.log('URL completa de OAuth:', authUrl)
+      console.log('Redirect URI usado:', redirectUri)
       
       // Confirmar con el usuario antes de redirigir
       const proceed = confirm(`Te vamos a redirigir a Google para completar tu registro.

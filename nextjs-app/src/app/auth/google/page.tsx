@@ -35,10 +35,11 @@ export default function GoogleCallback() {
       if (code && state === 'google_auth') {
         try {
           // Llama a tu backend para intercambiar el código por el idToken de Google
+          const redirectUri = window.location.origin + '/auth/google';
           const response = await fetch('/api/auth/google', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code }),
+            body: JSON.stringify({ code, redirectUri }),
           });
           const data = await response.json();
           if (!response.ok || !data.idToken) {

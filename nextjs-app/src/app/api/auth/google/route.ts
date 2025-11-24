@@ -4,17 +4,21 @@ import { NextResponse } from 'next/server';
 // Cargar variables de entorno
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_REDIRECT_URI = process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/google';
 
 export async function POST(req: NextRequest) {
   try {
+    const { code, redirectUri } = await req.json();
+    
+    // Usar el redirectUri enviado por el frontend, o construir uno basado en el origin del request
+    const GOOGLE_REDIRECT_URI = redirectUri || `${req.headers.get('origin') || 'http://localhost:3000'}/auth/google`;
+    
     // Log de variables de entorno (sin exponer secretos completos)
     console.log('[Google OAuth] Entorno:', {
       GOOGLE_CLIENT_ID: GOOGLE_CLIENT_ID?.slice(0, 8) + '...' || 'undefined',
       GOOGLE_CLIENT_SECRET: GOOGLE_CLIENT_SECRET ? '***' + GOOGLE_CLIENT_SECRET.slice(-4) : 'undefined',
-      GOOGLE_REDIRECT_URI
+      GOOGLE_REDIRECT_URI,
+      origin: req.headers.get('origin')
     });
-    const { code } = await req.json();
     console.log('[Google OAuth] Código recibido:', code);
     if (!code) {
       console.error('[Google OAuth] No se recibió el código de Google.');

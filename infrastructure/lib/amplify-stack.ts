@@ -63,9 +63,18 @@ export class AmplifyStack extends cdk.Stack {
         iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess-Amplify'),
       ],
     });
+    
+    // Grant read access to SSM parameters
+    amplifyRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['ssm:GetParameter', 'ssm:GetParameters'],
+      resources: [
+        `arn:aws:ssm:${this.region}:${this.account}:parameter/google/oauth/*`,
+      ],
+    }));
 
     // ====================
-    // Get GitHub Token from SSM
+    // Get Secrets from SSM and Context
     // ====================
     
     const githubToken = ssm.StringParameter.fromStringParameterName(
@@ -73,6 +82,15 @@ export class AmplifyStack extends cdk.Stack {
       'GitHubToken',
       githubTokenParameterName
     );
+    
+    // Get Google OAuth credentials from CDK context (passed at deployment time)
+    // These are NOT hardcoded - they're set via environment variables at deployment
+    const googleClientId = this.node.tryGetContext('googleClientId') || '';
+    const googleClientSecret = this.node.tryGetContext('googleClientSecret') || '';
+    
+    if (!googleClientId || !googleClientSecret) {
+      throw new Error('Google OAuth credentials must be provided via CDK context: -c googleClientId=xxx -c googleClientSecret=xxx');
+    }
 
     // ====================
     // Amplify App
@@ -97,15 +115,19 @@ export class AmplifyStack extends cdk.Stack {
         },
         {
           name: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
-          value: this.node.tryGetContext('googleMapsApiKey') || '',
+          value: this.node.tryGetContext('googleMapsApiKey') || 'AIzaSyDxbPP0UtZWlM4O50lXSq4FUayoRwy5JLg',
         },
         {
           name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
-          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
+          value: googleClientId,
+        },
+        {
+          name: 'GOOGLE_CLIENT_SECRET',
+          value: googleClientSecret,
         },
         {
           name: 'NEXT_PUBLIC_GOOGLE_REDIRECT_URI',
-          value: 'https://feature-frontend-user.d3npwupb455k1n.amplifyapp.com/auth/google',
+          value: 'https://feature-frontend-user.dgcndz0zrpvos.amplifyapp.com/auth/google',
         },
         {
           name: 'NEXT_PUBLIC_APP_NAME',
@@ -142,15 +164,19 @@ export class AmplifyStack extends cdk.Stack {
         },
         {
           name: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
-          value: this.node.tryGetContext('googleMapsApiKey') || '',
+          value: this.node.tryGetContext('googleMapsApiKey') || 'AIzaSyDxbPP0UtZWlM4O50lXSq4FUayoRwy5JLg',
         },
         {
           name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
-          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
+          value: googleClientId,
+        },
+        {
+          name: 'GOOGLE_CLIENT_SECRET',
+          value: googleClientSecret,
         },
         {
           name: 'NEXT_PUBLIC_GOOGLE_REDIRECT_URI',
-          value: 'https://feature-frontend-user.d3npwupb455k1n.amplifyapp.com/auth/google',
+          value: 'https://feature-frontend-user.dgcndz0zrpvos.amplifyapp.com/auth/google',
         },
         {
           name: 'NEXT_PUBLIC_APP_NAME',
@@ -197,15 +223,19 @@ export class AmplifyStack extends cdk.Stack {
         },
         {
           name: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
-          value: this.node.tryGetContext('googleMapsApiKey') || '',
+          value: this.node.tryGetContext('googleMapsApiKey') || 'AIzaSyDxbPP0UtZWlM4O50lXSq4FUayoRwy5JLg',
         },
         {
           name: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
-          value: '816694945748-4mcep0bf0abnjoa36bta8btqlevgonft.apps.googleusercontent.com',
+          value: googleClientId,
+        },
+        {
+          name: 'GOOGLE_CLIENT_SECRET',
+          value: googleClientSecret,
         },
         {
           name: 'NEXT_PUBLIC_GOOGLE_REDIRECT_URI',
-          value: 'https://develop.d3npwupb455k1n.amplifyapp.com/auth/google',
+          value: 'https://develop.dgcndz0zrpvos.amplifyapp.com/auth/google',
         },
         {
           name: 'NEXT_PUBLIC_APP_NAME',

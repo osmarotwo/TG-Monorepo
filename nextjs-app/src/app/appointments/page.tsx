@@ -11,6 +11,7 @@ import { fetchLocationsByBusiness, type Location as LocationType } from '@/servi
 import { fetchUpcomingAppointments, type Appointment, deleteAppointment } from '@/services/api/appointments'
 import { ToastContainer, useToast } from '@/components/Toast'
 import { formatPrice } from '@/utils/formatPrice'
+import { getAvailableSlots, type AvailableSlot } from '@/services/api/availabilityService'
 
 type Industry = 'all' | 'beauty' | 'fitness' | 'health' | 'food'
 
@@ -83,8 +84,50 @@ export default function AppointmentsPage() {
     try {
       setLoadingAppointments(true)
       const data = await fetchUpcomingAppointments(user.userId, 50, true) // Obtener próximas citas
+      
+      // Enriquecer citas con información faltante
+      const enrichedAppointments = await Promise.all(data.map(async (appointment) => {
+        const enriched = { ...appointment }
+        
+        // Si es cita de negocio y le falta información
+        if (appointment.type !== 'personal') {
+          // Obtener nombre de ubicación si falta
+          if (!enriched.locationName && enriched.locationId) {
+            try {
+              const locationData = await fetchLocationsByBusiness(enriched.businessId)
+              const location = locationData.find(loc => loc.locationId === enriched.locationId)
+              if (location) {
+                enriched.locationName = location.name
+              }
+            } catch (error) {
+              console.error('Error fetching location:', error)
+            }
+          }
+          
+          // Obtener precio del servicio si falta
+          if (!enriched.servicePrice && enriched.businessId) {
+            try {
+              const { fetchServicesByBusiness } = await import('@/services/api/services')
+              const services = await fetchServicesByBusiness(enriched.businessId)
+              const service = services.find(s => 
+                s.name === enriched.serviceType || 
+                s.name === enriched.serviceName
+              )
+              if (service) {
+                enriched.servicePrice = service.basePrice
+                enriched.serviceCurrency = service.currency
+              }
+            } catch (error) {
+              console.error('Error fetching service price:', error)
+            }
+          }
+        }
+        
+        return enriched
+      }))
+      
       // Ordenar por fecha y hora
-      const sorted = data.sort((a, b) => {
+      const sorted = enrichedAppointments.sort((a, b) => {
         const dateA = new Date(`${a.date}T${a.time || '00:00'}`)
         const dateB = new Date(`${b.date}T${b.time || '00:00'}`)
         return dateA.getTime() - dateB.getTime()
@@ -612,6 +655,66 @@ function EditAppointmentModal({ appointment, isOpen, onClose, onSave }: EditAppo
   const [time, setTime] = useState(appointment.time || '')
   const [notes, setNotes] = useState(appointment.notes || '')
   const [saving, setSaving] = useState(false)
+  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [servicePrice, setServicePrice] = useState<number | null>(appointment.servicePrice || null)
+  const [serviceCurrency, setServiceCurrency] = useState<string>(appointment.serviceCurrency || 'COP')
+
+  const isPersonal = appointment.type === 'personal'
+
+  // Obtener precio del servicio si no está en la cita
+  useEffect(() => {
+    if (!isPersonal && !servicePrice && appointment.businessId) {
+      fetchServicePrice()
+    }
+  }, [isPersonal, servicePrice, appointment.businessId])
+
+  // Cargar slots disponibles cuando cambia la fecha (solo para citas de negocio)
+  useEffect(() => {
+    if (!isPersonal && date && appointment.locationId) {
+      loadAvailableSlots()
+    } else {
+      setAvailableSlots([])
+    }
+  }, [date, isPersonal, appointment.locationId])
+
+  const fetchServicePrice = async () => {
+    try {
+      const { fetchServicesByBusiness } = await import('@/services/api/services')
+      const services = await fetchServicesByBusiness(appointment.businessId)
+      const service = services.find(s => 
+        s.name === appointment.serviceType || 
+        s.name === appointment.serviceName
+      )
+      if (service) {
+        setServicePrice(service.basePrice)
+        setServiceCurrency(service.currency)
+      }
+    } catch (error) {
+      console.error('Error fetching service price:', error)
+    }
+  }
+
+  const loadAvailableSlots = async () => {
+    if (!appointment.locationId) return
+    
+    try {
+      setLoadingSlots(true)
+      const slots = await getAvailableSlots(
+        appointment.locationId,
+        date,
+        appointment.serviceType || appointment.serviceName,
+        appointment.duration || appointment.estimatedDuration,
+        appointment.userId
+      )
+      setAvailableSlots(slots)
+    } catch (error) {
+      console.error('Error loading available slots:', error)
+      setAvailableSlots([])
+    } finally {
+      setLoadingSlots(false)
+    }
+  }
 
   if (!isOpen) return null
 
@@ -624,8 +727,6 @@ function EditAppointmentModal({ appointment, isOpen, onClose, onSave }: EditAppo
       setSaving(false)
     }
   }
-
-  const isPersonal = appointment.type === 'personal'
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -667,6 +768,16 @@ function EditAppointmentModal({ appointment, isOpen, onClose, onSave }: EditAppo
               Cliente: {appointment.customerName}
             </p>
           )}
+          {!isPersonal && servicePrice && serviceCurrency && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Precio del servicio:</span>
+                <span className="text-lg font-bold text-[#13a4ec]">
+                  {formatPrice(servicePrice, serviceCurrency)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Formulario */}
@@ -682,7 +793,7 @@ function EditAppointmentModal({ appointment, isOpen, onClose, onSave }: EditAppo
                 id="edit-date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900"
                 required
               />
             </div>
@@ -692,14 +803,39 @@ function EditAppointmentModal({ appointment, isOpen, onClose, onSave }: EditAppo
               <label htmlFor="edit-time" className="block text-sm font-medium text-gray-700 mb-1">
                 Hora
               </label>
-              <input
-                type="time"
-                id="edit-time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
-                required
-              />
+              {isPersonal ? (
+                <input
+                  type="time"
+                  id="edit-time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900"
+                  required
+                />
+              ) : loadingSlots ? (
+                <div className="w-full px-4 py-3 rounded-lg bg-[#f6f7f8] border border-gray-300 text-gray-500 text-center">
+                  Cargando horarios disponibles...
+                </div>
+              ) : availableSlots.length === 0 ? (
+                <div className="w-full px-4 py-3 rounded-lg bg-[#f6f7f8] border border-gray-300 text-gray-500 text-center text-sm">
+                  No hay horarios disponibles para esta fecha. Selecciona otra fecha.
+                </div>
+              ) : (
+                <select
+                  id="edit-time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900"
+                  required
+                >
+                  <option value="" className="text-gray-500">Selecciona un horario</option>
+                  {availableSlots.map((slot) => (
+                    <option key={`${slot.time}-${slot.specialistId}`} value={slot.time} className="text-gray-900">
+                      {slot.time} - {slot.specialistName} ({slot.durationMinutes} min)
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Notas */}
@@ -712,7 +848,7 @@ function EditAppointmentModal({ appointment, isOpen, onClose, onSave }: EditAppo
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent resize-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent resize-none text-gray-900 placeholder:text-gray-400"
                 placeholder="Agrega notas adicionales..."
               />
             </div>

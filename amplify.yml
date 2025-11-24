@@ -5,16 +5,15 @@ frontend:
       commands:
         - nvm use 20
         - cd nextjs-app
-        - npm ci --legacy-peer-deps
+        - npm install
     build:
       commands:
         - npm run build
-        - echo "✅ Next.js build completed with SSR support"
+        - echo "✅ Next.js build completed"
   artifacts:
-    baseDirectory: nextjs-app/.next
+    baseDirectory: nextjs-app/out
     files:
       - '**/*'
   cache:
     paths:
       - nextjs-app/node_modules/**/*
-      - nextjs-app/.next/cache/**/*

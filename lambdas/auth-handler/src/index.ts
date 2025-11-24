@@ -262,6 +262,52 @@ const handleLogin = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxy
 };
 
 // 🔓 ENDPOINT: Google OAuth
+// 🔓 ENDPOINT: Intercambiar código de Google por idToken
+const handleGoogleCodeExchange = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    const { code, redirectUri } = JSON.parse(event.body || '{}');
+    
+    if (!code) {
+      return createResponse(400, { error: 'No se recibió el código de Google.' });
+    }
+    
+    const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+    const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+    
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      console.error('[Google OAuth] Missing credentials');
+      return createResponse(500, { error: 'Server configuration error' });
+    }
+    
+    // Intercambiar el código por tokens en Google
+    const params = new URLSearchParams({
+      code,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    });
+
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+    
+    const tokenData = await tokenRes.json() as any;
+    
+    if (!tokenRes.ok || !tokenData.id_token) {
+      console.error('[Google OAuth] Error:', tokenData.error, tokenData.error_description);
+      return createResponse(400, { error: tokenData.error_description || 'No se pudo obtener el idToken de Google.' });
+    }
+
+    // Retornar el idToken al frontend
+    return createResponse(200, { idToken: tokenData.id_token });
+  } catch (error) {
+    return handleError(error);
+  }
+};
+
 const handleGoogleAuth = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const data = validateData(googleAuthSchema, JSON.parse(event.body || '{}')) as GoogleAuthRequest;
@@ -650,6 +696,11 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     // Support both /auth/google and /auth/google-auth for backward compatibility
     if (method === 'POST' && (path === '/auth/google' || path === '/auth/google-auth')) {
       return await handleGoogleAuth(event);
+    }
+    
+    // New endpoint to exchange Google authorization code for idToken
+    if (method === 'POST' && path === '/auth/google-exchange') {
+      return await handleGoogleCodeExchange(event);
     }
     
     if (method === 'POST' && path === '/auth/refresh') {

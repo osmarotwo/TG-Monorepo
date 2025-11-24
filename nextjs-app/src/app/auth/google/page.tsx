@@ -40,11 +40,12 @@ export default function GoogleCallback() {
       if (code && state === 'google_auth') {
         try {
           console.log('🔵 Intercambiando código por token...');
-          // Llama a tu backend para intercambiar el código por el idToken de Google
+          // Llama al Lambda de Auth para intercambiar el código por el idToken de Google
           const redirectUri = window.location.origin + '/auth/google';
           console.log('🔵 Redirect URI para intercambio:', redirectUri);
           
-          const response = await fetch('/api/auth/google-token', {
+          const authApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://ectre1y1fg.execute-api.us-east-1.amazonaws.com/prod';
+          const response = await fetch(`${authApiUrl}/google-exchange`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code, redirectUri }),

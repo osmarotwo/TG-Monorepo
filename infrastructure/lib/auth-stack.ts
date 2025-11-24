@@ -90,13 +90,22 @@ export class AuthStack extends cdk.Stack {
     const frontendUrl = this.node.tryGetContext('frontendUrl') || 
                        'https://feature-frontend-user.d3npwupb455k1n.amplifyapp.com'; // Production URL from Amplify
     
+    // Get Google OAuth credentials from context (required)
+    const googleClientId = this.node.tryGetContext('googleClientId');
+    const googleClientSecret = this.node.tryGetContext('googleClientSecret');
+    
+    if (!googleClientId || !googleClientSecret) {
+      throw new Error('Google OAuth credentials must be provided via CDK context');
+    }
+    
     // Common environment variables
     const commonEnvironment = {
       USERS_TABLE: this.usersTable.tableName,
       SESSIONS_TABLE: this.sessionsTable.tableName,
       EMAIL_VERIFICATIONS_TABLE: this.emailVerificationsTable.tableName,
       JWT_SECRET: '{{resolve:ssm:/auth/jwt-secret:1}}', // From SSM Parameter Store
-      GOOGLE_CLIENT_ID: '{{resolve:ssm:/auth/google-client-id:3}}', // Version 3 with correct Client ID
+      GOOGLE_CLIENT_ID: googleClientId, // From context parameter
+      GOOGLE_CLIENT_SECRET: googleClientSecret, // From context parameter
       BCRYPT_ROUNDS: '12',
       TOKEN_EXPIRY: '1h',
       REFRESH_TOKEN_EXPIRY: '30d',

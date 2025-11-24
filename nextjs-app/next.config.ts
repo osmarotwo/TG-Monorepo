@@ -1,13 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Configuración para AWS Amplify con soporte de API Routes
-  // NO usar 'export' porque necesitamos API routes (server-side)
+  // Configuración optimizada para AWS Amplify
+  output: 'export',
   images: {
     unoptimized: true
   },
-  // trailingSlash removido para evitar conflictos con API routes
-  // Amplify manejará el SSR automáticamente
+  // Asegurar compatibilidad con Amplify
+  distDir: 'out',
 };
 
 export default nextConfig;

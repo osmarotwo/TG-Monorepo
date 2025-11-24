@@ -11,6 +11,7 @@ export interface AvailableSlot {
 
 export interface RescheduledAppointment {
   appointmentId: string;
+  id?: string; // Alias de appointmentId para compatibilidad
   clientName: string;
   serviceType: string;
   locationId: string;

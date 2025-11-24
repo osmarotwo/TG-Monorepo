@@ -26,6 +26,7 @@ export interface Appointment {
   };
   type?: 'personal' | 'business';
   isFlexible?: boolean;
+  businessName?: string;
 }
 
 export interface OptimizationResult {
@@ -256,10 +257,12 @@ export async function buildOptimizedRouteWithRescheduling(
       optimizedRoute: appointments,
       originalMetrics: calculateRouteMetrics(appointments, userLocation),
       optimizedMetrics: calculateRouteMetrics(appointments, userLocation),
-      distanceReduction: 0,
-      timeReduction: 0,
-      distanceReductionPercentage: 0,
-      timeReductionPercentage: 0,
+      improvements: {
+        distanceReduction: 0,
+        distanceReductionPercentage: 0,
+        timeReduction: 0,
+        timeReductionPercentage: 0
+      },
       rescheduledAppointments: []
     };
   }
@@ -450,7 +453,7 @@ export async function buildOptimizedRouteWithRescheduling(
     durationMinutes: apt.estimatedDuration || 60,
     specialistId: '',
     specialistName: '',
-    status: 'confirmed' as const,
+    status: 'proposed',
     reason: '',
     businessName: '',
     type: apt.type,

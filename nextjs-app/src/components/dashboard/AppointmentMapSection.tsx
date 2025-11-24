@@ -73,7 +73,7 @@ export default function AppointmentMapSection({
         type: a.type,
         date: a.date,
         startTime: a.startTime,
-        hasLocation: !!(a.location || (a.latitude && a.longitude))
+        hasLocation: !!(a.address || (a.latitude && a.longitude))
       }))
     })
     

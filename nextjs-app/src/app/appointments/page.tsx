@@ -124,16 +124,14 @@ export default function AppointmentsPage() {
       const startTime = new Date(`${updatedData.date}T${updatedData.time}`)
       const endTime = new Date(startTime.getTime() + (editingAppointment.estimatedDuration || 60) * 60000)
 
-      const updatePayload = {
-        appointmentId: editingAppointment.appointmentId,
-        newStartTime: startTime.toISOString(),
-        newEndTime: endTime.toISOString(),
-        notes: updatedData.notes
-      }
-
       // Importar y usar la función de actualización
       const { updateAppointmentTimes } = await import('@/services/api/appointments')
-      await updateAppointmentTimes(updatePayload)
+      await updateAppointmentTimes(
+        editingAppointment.appointmentId,
+        editingAppointment.userId,
+        startTime.toISOString(),
+        endTime.toISOString()
+      )
 
       toast.success('Cita actualizada exitosamente')
       setShowEditModal(false)

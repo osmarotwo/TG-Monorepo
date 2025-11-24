@@ -37,6 +37,9 @@ export interface Appointment {
   address?: string; // Dirección para citas personales
   latitude?: number; // Coordenada para citas personales
   longitude?: number; // Coordenada para citas personales
+  duration?: number; // Duración en minutos (usado en citas personales)
+  businessName?: string; // Nombre del negocio
+  clientName?: string; // Nombre del cliente (alias de customerName)
 }
 
 export interface AppointmentsResponse {

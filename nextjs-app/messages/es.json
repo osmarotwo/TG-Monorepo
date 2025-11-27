@@ -314,6 +314,22 @@
     "cancel": "Cancelar",
     "create": "Crear",
     "save": "Guardar",
-    "back": "Volver"
+    "back": "Volver",
+    "type": "Tipo",
+    "serviceEvent": "Servicio/Evento",
+    "dateTime": "Fecha y Hora",
+    "price": "Precio",
+    "actions": "Acciones",
+    "personal": "Personal",
+    "business": "Negocio",
+    "scheduledAppointments": "Citas Programadas",
+    "myScheduledAppointments": "Mis Citas Programadas",
+    "filterByDate": "Filtrar por fecha",
+    "allDates": "Todas las fechas",
+    "loadingAppointments": "Cargando citas...",
+    "bookFirstAppointment": "Reserva tu primera cita para comenzar",
+    "bookAppointment": "Reservar Cita",
+    "manageAppointments": "Administra tus citas programadas o reserva una nueva",
+    "selectBusinessLocation": "Selecciona un comercio y ubicación para agendar tu cita"
   }
 }

@@ -133,13 +133,13 @@ export default function RegisterPage() {
       </div>
       
       <div className="max-w-md w-full">
-        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl p-8">
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl p-6 sm:p-8">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-4">
               <Logo size="lg" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               {t('createAccount', 'auth')}
             </h1>
             <p className="text-gray-600">
@@ -148,7 +148,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Name Field */}
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">

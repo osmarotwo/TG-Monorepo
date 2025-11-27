@@ -299,14 +299,14 @@ export default function DashboardPage() {
   return (
     <>
       <Navigation />
-      <div className="min-h-screen bg-[#f6f7f8]">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-[#f6f7f8] pb-20 md:pb-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Welcome Section */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               {t('dashboard.welcome', 'dashboard')}, {user?.firstName}!
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-500 mt-1 text-sm sm:text-base">
               {t('dashboard.welcomeMessage', 'dashboard')}
             </p>
           </div>
@@ -343,29 +343,30 @@ export default function DashboardPage() {
           )}
 
           {/* Upcoming Appointments */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">
-                {showPastAppointments ? t('dashboard.allAppointments', 'dashboard') : t('dashboard.upcomingAppointments', 'dashboard')}
+          <div className="mb-8">
+            <div className="mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
+                Próximas Citas
               </h2>
               
-              <div className="flex items-center gap-3">
+              {/* Botones de acción - Stack en móvil, inline en desktop */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 {/* Botón para crear cita personal */}
                 <button
                   onClick={() => setShowPersonalAppointmentModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#13a4ec] hover:bg-[#0f8fcd] text-white transition-colors text-sm font-medium shadow-sm"
+                  className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#13a4ec] hover:bg-[#0f8fcd] text-white transition-colors font-medium shadow-md"
                 >
-                  <span>📝</span>
-                  <span>{t('dashboard.addPersonalAppointment', 'dashboard')}</span>
+                  <span className="text-lg">📝</span>
+                  <span>Agregar Cita Personal</span>
                 </button>
 
                 {/* Toggle para mostrar citas pasadas */}
                 <button
                   onClick={() => setShowPastAppointments(!showPastAppointments)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                  className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors font-medium text-gray-700 bg-white"
                 >
-                  <span>{showPastAppointments ? '📅' : '🕐'}</span>
-                  <span>{showPastAppointments ? t('dashboard.showUpcomingOnly', 'dashboard') : t('dashboard.showPastAppointments', 'dashboard')}</span>
+                  <span className="text-lg">{showPastAppointments ? '🕙' : '🕐'}</span>
+                  <span>Mostrar Citas Pasadas</span>
                 </button>
               </div>
             </div>
@@ -423,7 +424,7 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={appointment.appointmentId}
-                      className={`rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer relative ${
+                      className={`rounded-xl p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer relative ${
                         isPast 
                           ? 'bg-gray-50 border-2 border-gray-200 opacity-75' 
                           : isPersonal
@@ -433,22 +434,22 @@ export default function DashboardPage() {
                     >
                       {/* Badge de "Pasada" */}
                       {isPast && (
-                        <div className="absolute top-3 right-3 px-3 py-1 bg-gray-500 text-white text-xs font-semibold rounded-full">
+                        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-500 text-white text-xs font-semibold rounded-full">
                           ✓ Completed
                         </div>
                       )}
                       
                       {/* Badge de "Personal" */}
                       {!isPast && isPersonal && (
-                        <div className="absolute top-3 right-3 px-3 py-1 bg-purple-500 text-white text-xs font-semibold rounded-full">
+                        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 px-2 sm:px-3 py-0.5 sm:py-1 bg-purple-500 text-white text-xs font-semibold rounded-full">
                           📝 Personal
                         </div>
                       )}
                       
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         {/* Business Logo o ícono personal */}
                         {isPersonal ? (
-                          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center text-2xl flex-shrink-0">
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0">
                             📝
                           </div>
                         ) : appointment.business?.logoUrl ? (
@@ -456,10 +457,10 @@ export default function DashboardPage() {
                           <img
                             src={appointment.business.logoUrl}
                             alt={appointment.business.name}
-                            className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
                           />
                         ) : (
-                          <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-2xl flex-shrink-0">
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0">
                             {appointment.business?.industry ? industryEmojis[appointment.business.industry] : '🏢'}
                           </div>
                         )}
@@ -672,11 +673,11 @@ function EditPersonalAppointmentModal({ appointment, isOpen, onClose, onSave }: 
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl sm:rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Editar Cita Personal</h2>
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Editar Cita Personal</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"

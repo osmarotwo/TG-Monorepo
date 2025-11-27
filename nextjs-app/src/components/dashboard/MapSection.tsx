@@ -13,7 +13,7 @@ interface MapSectionProps {
   height?: string;
 }
 
-export default function MapSection({ locations, height = 'h-80' }: MapSectionProps) {
+export default function MapSection({ locations, height = 'h-64 sm:h-80' }: MapSectionProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -333,14 +333,14 @@ export default function MapSection({ locations, height = 'h-80' }: MapSectionPro
       )}
       
       {/* Overlay with info */}
-      <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-900">
+      <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 bg-white/95 backdrop-blur-sm rounded-lg p-2 sm:p-3 shadow-lg">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
               {locations.length} {locations.length === 1 ? 'Sede' : 'Sedes'} en {getCitiesCount()} {getCitiesCount() === 1 ? 'Ciudad' : 'Ciudades'}
             </p>
             {useInteractiveMap && (
-              <p className="text-xs text-gray-600">
+              <p className="hidden sm:block text-xs text-gray-600">
                 💡 Click en los marcadores para ver detalles
               </p>
             )}
@@ -348,24 +348,27 @@ export default function MapSection({ locations, height = 'h-80' }: MapSectionPro
           
           <button 
             onClick={() => setIsFullscreen(true)}
-            className="px-3 py-1.5 bg-[#13a4ec] text-white text-sm font-medium rounded-lg hover:bg-[#0f8fcd] transition-colors"
+            aria-label="Ver mapa en pantalla completa"
+            className="px-2 py-1.5 sm:px-3 sm:py-1.5 bg-[#13a4ec] text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-[#0f8fcd] transition-colors whitespace-nowrap"
           >
-            🗺️ Ampliar
+            <span className="hidden sm:inline">🗺️ Ampliar</span>
+            <span className="sm:hidden">🗺️</span>
           </button>
         </div>
       </div>
       
       {/* Fullscreen Map Modal */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="relative w-full h-full max-w-7xl max-h-[90vh] bg-white rounded-2xl overflow-hidden animate-slideUp">
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
+          <div className="relative w-full h-full max-w-7xl max-h-[95vh] sm:max-h-[90vh] bg-white rounded-xl sm:rounded-2xl overflow-hidden animate-slideUp">
             {/* Close button */}
-            <div className="absolute top-4 right-4 z-10">
+            <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10">
               <button
                 onClick={() => setIsFullscreen(false)}
-                className="bg-white hover:bg-gray-100 text-gray-800 font-bold px-4 py-2 rounded-lg shadow-lg transition-colors"
+                className="bg-white hover:bg-gray-100 text-gray-800 font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg shadow-lg transition-colors text-sm sm:text-base"
               >
-                ✕ Cerrar
+                <span className="hidden sm:inline">✕ Cerrar</span>
+                <span className="sm:hidden">✕</span>
               </button>
             </div>
             
@@ -380,9 +383,9 @@ export default function MapSection({ locations, height = 'h-80' }: MapSectionPro
             )}
             
             {/* Location list overlay */}
-            <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-lg max-h-48 overflow-y-auto">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">Todas las Sedes</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow-lg max-h-36 sm:max-h-48 overflow-y-auto">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">Todas las Sedes</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {locations.map(loc => (
                   <div key={loc.locationId} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                     <div className="h-3 w-3 rounded-full bg-[#13a4ec]" />

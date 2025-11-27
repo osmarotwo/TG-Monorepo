@@ -12,6 +12,7 @@ import { fetchUpcomingAppointments, type Appointment, deleteAppointment } from '
 import { ToastContainer, useToast } from '@/components/Toast'
 import { formatPrice } from '@/utils/formatPrice'
 import { getAvailableSlots, type AvailableSlot } from '@/services/api/availabilityService'
+import { useLocale } from '@/contexts/LocaleContext'
 
 type Industry = 'all' | 'beauty' | 'fitness' | 'health' | 'food'
 
@@ -27,6 +28,7 @@ export default function AppointmentsPage() {
   const { user, status } = useAuth()
   const router = useRouter()
   const toast = useToast()
+  const { t } = useLocale()
   
   const [selectedIndustry, setSelectedIndustry] = useState<Industry>('all')
   const [allBusinesses, setAllBusinesses] = useState<Business[]>([])
@@ -249,9 +251,9 @@ export default function AppointmentsPage() {
             <>
               {/* Header */}
               <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Gestión de Citas</h1>
+                <h1 className="text-3xl font-bold text-gray-900">{t('appointments.title')}</h1>
                 <p className="text-gray-600 mt-2">
-                  Administra tus citas programadas o reserva una nueva
+                  {t('manageAppointments', 'appointments') || 'Manage your scheduled appointments or book a new one'}
                 </p>
               </div>
 
@@ -266,7 +268,7 @@ export default function AppointmentsPage() {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    📋 Citas Programadas
+                    📋 {t('scheduledAppointments', 'appointments') || 'Scheduled Appointments'}
                   </button>
                   <button
                     onClick={() => setShowScheduledAppointments(false)}
@@ -276,7 +278,7 @@ export default function AppointmentsPage() {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    ➕ Reservar Nueva Cita
+                    ➕ {t('bookNewAppointment', 'appointments') || 'Book New Appointment'}
                   </button>
                 </div>
               </div>
@@ -288,10 +290,10 @@ export default function AppointmentsPage() {
                     {/* Header con filtro de fecha */}
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <h2 className="text-xl font-bold text-gray-900">Mis Citas Programadas</h2>
+                        <h2 className="text-xl font-bold text-gray-900">{t('myScheduledAppointments', 'appointments') || 'My Scheduled Appointments'}</h2>
                         <div className="flex items-center gap-3">
                           <label htmlFor="date-filter" className="text-sm font-medium text-gray-700">
-                            Filtrar por fecha:
+                            {t('filterByDate', 'appointments') || 'Filter by date'}:
                           </label>
                           <select
                             id="date-filter"
@@ -299,7 +301,7 @@ export default function AppointmentsPage() {
                             onChange={(e) => setSelectedDateFilter(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900 bg-white"
                           >
-                            <option value="all">Todas las fechas</option>
+                            <option value="all">{t('allDates', 'appointments') || 'All dates'}</option>
                             {Array.from(new Set(appointments.map(apt => apt.date).filter(Boolean)))
                               .sort()
                               .map(date => {
@@ -319,12 +321,12 @@ export default function AppointmentsPage() {
                       </div>
                     </div>
 
-                    {/* Tabla de citas */}
-                    <div className="overflow-x-auto">
+                    {/* Tabla de citas - Desktop */}
+                    <div className="hidden md:block overflow-x-auto">
                       {loadingAppointments ? (
                         <div className="p-12 text-center">
                           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#13a4ec] mx-auto"></div>
-                          <p className="mt-4 text-gray-600">Cargando citas...</p>
+                          <p className="mt-4 text-gray-600">{t('loadingAppointments', 'appointments') || 'Loading appointments...'}</p>
                         </div>
                       ) : appointments.filter(apt => selectedDateFilter === 'all' || apt.date === selectedDateFilter).length === 0 ? (
                         <div className="p-12 text-center">
@@ -343,25 +345,25 @@ export default function AppointmentsPage() {
                           <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Tipo
+                                {t('type', 'appointments') || 'Type'}
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Servicio/Evento
+                                {t('serviceEvent', 'appointments') || 'Service/Event'}
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Ubicación
+                                {t('location', 'appointments')}
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Fecha y Hora
+                                {t('dateTime', 'appointments') || 'Date & Time'}
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Duración
+                                {t('duration', 'appointments')}
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Precio
+                                {t('price', 'appointments') || 'Price'}
                               </th>
                               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Acciones
+                                {t('actions', 'appointments') || 'Actions'}
                               </th>
                             </tr>
                           </thead>
@@ -386,11 +388,11 @@ export default function AppointmentsPage() {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       {isPersonal ? (
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                          📝 Personal
+                                          📝 {t('personal', 'appointments') || 'Personal'}
                                         </span>
                                       ) : (
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                          🏢 Negocio
+                                          🏢 {t('business', 'appointments') || 'Business'}
                                         </span>
                                       )}
                                     </td>
@@ -400,7 +402,7 @@ export default function AppointmentsPage() {
                                       </div>
                                       {!isPersonal && appointment.customerName && (
                                         <div className="text-sm text-gray-500">
-                                          Cliente: {appointment.customerName}
+                                          {t('customer', 'appointments')}: {appointment.customerName}
                                         </div>
                                       )}
                                     </td>
@@ -433,16 +435,16 @@ export default function AppointmentsPage() {
                                         <button
                                           onClick={() => handleEditAppointment(appointment)}
                                           className="text-[#13a4ec] hover:text-[#0f8fcd] font-medium transition-colors"
-                                          title="Editar cita"
+                                          title={t('editAppointment', 'appointments')}
                                         >
-                                          ✏️ Editar
+                                          ✏️ {t('edit', 'common')}
                                         </button>
                                         <button
                                           onClick={() => handleDeleteAppointment(appointment)}
                                           className="text-red-600 hover:text-red-800 font-medium transition-colors"
-                                          title="Eliminar cita"
+                                          title={t('deleteAppointment', 'appointments')}
                                         >
-                                          🗑️ Eliminar
+                                          🗑️ {t('delete', 'common')}
                                         </button>
                                       </div>
                                     </td>
@@ -453,6 +455,113 @@ export default function AppointmentsPage() {
                         </table>
                       )}
                     </div>
+
+                    {/* Cards de citas - Mobile */}
+                    <div className="md:hidden">
+                      {loadingAppointments ? (
+                        <div className="p-12 text-center">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#13a4ec] mx-auto"></div>
+                          <p className="mt-4 text-gray-600">{t('loadingAppointments', 'appointments') || 'Loading appointments...'}</p>
+                        </div>
+                      ) : appointments.filter(apt => selectedDateFilter === 'all' || apt.date === selectedDateFilter).length === 0 ? (
+                        <div className="p-12 text-center">
+                          <div className="text-6xl mb-4">📅</div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">No hay citas programadas</h3>
+                          <p className="text-gray-600 mb-6">Reserva tu primera cita para comenzar</p>
+                          <button
+                            onClick={() => setShowScheduledAppointments(false)}
+                            className="bg-[#13a4ec] hover:bg-[#0f8fcd] text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                          >
+                            Reservar Cita
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="p-4 space-y-4">
+                          {appointments
+                            .filter(apt => selectedDateFilter === 'all' || apt.date === selectedDateFilter)
+                            .map((appointment) => {
+                              const isPersonal = appointment.type === 'personal'
+                              const dateObj = new Date(`${appointment.date}T${appointment.time || '00:00'}`)
+                              const formattedDate = dateObj.toLocaleDateString('es-CO', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })
+                              const formattedTime = appointment.time || dateObj.toLocaleTimeString('es-CO', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+
+                              return (
+                                <div key={appointment.appointmentId} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                                  {/* Header con tipo */}
+                                  <div className="flex items-center justify-between mb-3">
+                                    {isPersonal ? (
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                        📝 Personal
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        🏢 Negocio
+                                      </span>
+                                    )}
+                                    {appointment.servicePrice && appointment.serviceCurrency && (
+                                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-50 text-[#13a4ec] border border-blue-200">
+                                        {formatPrice(appointment.servicePrice, appointment.serviceCurrency)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Título/Servicio */}
+                                  <h3 className="text-base font-bold text-gray-900 mb-2">
+                                    {isPersonal ? appointment.title : appointment.serviceType}
+                                  </h3>
+                                  
+                                  {/* Detalles */}
+                                  <div className="space-y-2 text-sm text-gray-600 mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <span>📍</span>
+                                      <span>{isPersonal ? (appointment.address || 'N/A') : (appointment.locationName || 'N/A')}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span>📅</span>
+                                      <span>{formattedDate} • {formattedTime}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span>⏱️</span>
+                                      <span>{appointment.duration || appointment.estimatedDuration || 'N/A'} min</span>
+                                    </div>
+                                    {!isPersonal && appointment.customerName && (
+                                      <div className="flex items-center gap-2">
+                                        <span>👤</span>
+                                        <span>Cliente: {appointment.customerName}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Acciones */}
+                                  <div className="flex items-center gap-3 pt-3 border-t border-gray-200">
+                                    <button
+                                      onClick={() => handleEditAppointment(appointment)}
+                                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#13a4ec] hover:bg-[#0f8fcd] text-white font-medium transition-colors"
+                                    >
+                                      <span>✏️</span>
+                                      <span>Editar</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteAppointment(appointment)}
+                                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-medium transition-colors border border-red-200"
+                                    >
+                                      <span>🗑️</span>
+                                      <span>Eliminar</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -461,9 +570,9 @@ export default function AppointmentsPage() {
               {!showScheduledAppointments && (
                 <>
                   <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Reservar Nueva Cita</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('bookNewAppointment', 'appointments')}</h2>
                     <p className="text-gray-600">
-                      Selecciona un comercio y ubicación para agendar tu cita
+                      {t('selectBusinessLocation', 'appointments') || 'Select a business and location to schedule your appointment'}
                     </p>
                   </div>
                 </>
@@ -729,11 +838,11 @@ function EditAppointmentModal({ appointment, isOpen, onClose, onSave }: EditAppo
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl sm:rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Editar Cita</h2>
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Editar Cita</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"

@@ -81,11 +81,11 @@ function LoginForm() {
       </div>
       
       <div className="w-full max-w-md">
-        <div className="rounded-xl bg-white/50 backdrop-blur-sm shadow-2xl p-8">
+        <div className="rounded-xl bg-white/50 backdrop-blur-sm shadow-2xl p-6 sm:p-8">
           {/* Logo and Header */}
           <div className="flex flex-col items-center mb-6">
             <Logo size="lg" className="mb-4" />
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               {t('signIn', 'auth')}
             </h1>
             <p className="mt-2 text-sm text-gray-600">
@@ -118,7 +118,7 @@ function LoginForm() {
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="sr-only">
@@ -131,7 +131,7 @@ function LoginForm() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="form-input w-full rounded-lg bg-[#f6f7f8] border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-[#13a4ec] focus:border-[#13a4ec] p-3"
+                className="form-input w-full rounded-lg bg-[#f6f7f8] border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-[#13a4ec] focus:border-[#13a4ec] px-4 py-3 text-base"
                 placeholder={t('email', 'auth')}
               />
             </div>
@@ -148,7 +148,7 @@ function LoginForm() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="form-input w-full rounded-lg bg-[#f6f7f8] border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-[#13a4ec] focus:border-[#13a4ec] p-3"
+                className="form-input w-full rounded-lg bg-[#f6f7f8] border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-[#13a4ec] focus:border-[#13a4ec] px-4 py-3 text-base"
                 placeholder={t('password', 'auth')}
               />
             </div>
@@ -167,7 +167,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#13a4ec] hover:bg-[#13a4ec]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#13a4ec] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-3.5 sm:py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-[#13a4ec] hover:bg-[#13a4ec]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#13a4ec] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="flex items-center">

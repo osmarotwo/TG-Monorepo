@@ -97,13 +97,13 @@ export default function ForgotPasswordPage() {
       </div>
       
       <div className="max-w-md w-full">
-        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl p-8">
+        <div className="bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl p-6 sm:p-8">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-4">
               <Logo size="lg" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               {t('forgotPassword', 'forgotPassword')}
             </h1>
             <p className="text-gray-600">
@@ -145,7 +145,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#13a4ec] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#0f8fcd] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-[#13a4ec] text-white py-3.5 sm:py-3 px-4 rounded-lg font-medium text-base sm:text-sm hover:bg-[#0f8fcd] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {isLoading ? (
                 <>

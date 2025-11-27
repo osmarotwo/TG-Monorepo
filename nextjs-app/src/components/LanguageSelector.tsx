@@ -31,7 +31,11 @@ export default function LanguageSelector() {
         aria-label={t('selectLanguage', 'language')}
       >
         <span className="text-lg">{currentLanguage?.flag}</span>
-        <span className="text-sm font-medium text-gray-700">
+        {/* Móvil: Solo código (ES/EN), Desktop: Nombre completo */}
+        <span className="text-sm font-medium text-gray-700 md:hidden">
+          {currentLanguage?.code.toUpperCase()}
+        </span>
+        <span className="hidden md:inline text-sm font-medium text-gray-700">
           {currentLanguage?.name}
         </span>
         <svg

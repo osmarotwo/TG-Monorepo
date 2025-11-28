@@ -18,6 +18,7 @@ export interface LoginData {
 
 export interface GoogleAuthData {
   idToken: string
+  profileType?: 'customer' | 'business'
 }
 
 export interface CompleteProfileData {
@@ -38,6 +39,12 @@ export interface User {
   provider: 'google' | 'email'
   createdAt: string
   updatedAt: string
+  // B2B fields
+  profileType?: 'customer' | 'business' | 'admin'
+  businessId?: string
+  role?: 'business-owner' | 'business-manager' | 'business-staff' | 'platform-admin'
+  businessName?: string
+  businessType?: string
 }
 
 export interface AuthTokens {

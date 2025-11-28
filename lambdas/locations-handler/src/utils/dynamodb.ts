@@ -9,6 +9,7 @@ export const docClient = DynamoDBDocumentClient.from(dynamoClient);
 export const USERS_TABLE = process.env.USERS_TABLE!;
 export const SESSIONS_TABLE = process.env.SESSIONS_TABLE!;
 export const EMAIL_VERIFICATIONS_TABLE = process.env.EMAIL_VERIFICATIONS_TABLE!;
+export const LOCATIONS_TABLE = process.env.LOCATIONS_TABLE!;
 
 // Validate required environment variables at module load so errors are clear
 function assertEnv(name: string, value: any) {
@@ -19,6 +20,7 @@ function assertEnv(name: string, value: any) {
 }
 
 assertEnv('USERS_TABLE', USERS_TABLE);
+assertEnv('LOCATIONS_TABLE', LOCATIONS_TABLE);
 assertEnv('SESSIONS_TABLE', SESSIONS_TABLE);
 assertEnv('EMAIL_VERIFICATIONS_TABLE', EMAIL_VERIFICATIONS_TABLE);
 
@@ -373,5 +375,202 @@ export async function deleteEmailVerification(token: string): Promise<void> {
   } catch (error) {
     console.error('Error deleting email verification:', error);
     throw new Error('Failed to delete email verification');
+  }
+}
+
+// ==================== LOCATIONS ====================
+
+export interface Location {
+  PK: string;                     // BUSINESS#${businessId}
+  SK: string;                     // LOCATION#${locationId}
+  GSI1PK: string;                 // LOCATION#${locationId}
+  GSI1SK: string;                 // BUSINESS#${businessId}
+  
+  locationId: string;
+  businessId: string;
+  name: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  phone?: string;
+  email?: string;
+  hours?: {
+    [key: string]: {           // 'monday', 'tuesday', etc.
+      open: string;            // '09:00'
+      close: string;           // '18:00'
+      closed?: boolean;
+    };
+  };
+  isActive: boolean;
+  isPrimary?: boolean;           // Ubicación principal
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Create a new location
+ */
+export async function createLocation(
+  locationData: Omit<Location, 'PK' | 'SK' | 'GSI1PK' | 'GSI1SK' | 'locationId' | 'createdAt' | 'updatedAt' | 'isActive'>
+): Promise<Location> {
+  const locationId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const now = new Date().toISOString();
+
+  const location: Location = {
+    PK: `BUSINESS#${locationData.businessId}`,
+    SK: `LOCATION#${locationId}`,
+    GSI1PK: `LOCATION#${locationId}`,
+    GSI1SK: `BUSINESS#${locationData.businessId}`,
+    locationId,
+    ...locationData,
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  try {
+    await docClient.send(new PutCommand({
+      TableName: LOCATIONS_TABLE,
+      Item: location,
+    }));
+
+    console.log('Location created:', locationId);
+    return location;
+  } catch (error: any) {
+    console.error('Error creating location:', error);
+    throw new Error('Failed to create location');
+  }
+}
+
+/**
+ * Get all locations for a business
+ */
+export async function getLocationsByBusiness(businessId: string): Promise<Location[]> {
+  try {
+    const response = await docClient.send(new QueryCommand({
+      TableName: LOCATIONS_TABLE,
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+      ExpressionAttributeValues: {
+        ':pk': `BUSINESS#${businessId}`,
+        ':sk': 'LOCATION#',
+      },
+    }));
+
+    return (response.Items as Location[]) || [];
+  } catch (error) {
+    console.error('Error getting locations by business:', error);
+    throw new Error('Failed to get locations');
+  }
+}
+
+/**
+ * Get location by ID
+ */
+export async function getLocationById(locationId: string): Promise<Location | null> {
+  try {
+    const response = await docClient.send(new QueryCommand({
+      TableName: LOCATIONS_TABLE,
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'GSI1PK = :locationId',
+      ExpressionAttributeValues: {
+        ':locationId': `LOCATION#${locationId}`,
+      },
+    }));
+
+    const items = response.Items;
+    return items && items.length > 0 ? items[0] as Location : null;
+  } catch (error) {
+    console.error('Error getting location by ID:', error);
+    throw new Error('Failed to get location');
+  }
+}
+
+/**
+ * Update location
+ */
+export async function updateLocation(locationId: string, updates: Partial<Location>): Promise<Location> {
+  // First get the location to find its PK
+  const location = await getLocationById(locationId);
+  if (!location) {
+    throw new Error('Location not found');
+  }
+
+  const updateExpressions: string[] = [];
+  const expressionAttributeNames: Record<string, string> = {};
+  const expressionAttributeValues: Record<string, any> = {};
+
+  // Build update expression dynamically
+  Object.entries(updates).forEach(([key, value]) => {
+    if (key !== 'PK' && key !== 'SK' && key !== 'GSI1PK' && key !== 'GSI1SK' && 
+        key !== 'locationId' && key !== 'businessId' && key !== 'updatedAt' && 
+        value !== undefined) {
+      updateExpressions.push(`#${key} = :${key}`);
+      expressionAttributeNames[`#${key}`] = key;
+      expressionAttributeValues[`:${key}`] = value;
+    }
+  });
+
+  // Always update updatedAt
+  updateExpressions.push('#updatedAt = :updatedAt');
+  expressionAttributeNames['#updatedAt'] = 'updatedAt';
+  expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+
+  try {
+    const response = await docClient.send(new UpdateCommand({
+      TableName: LOCATIONS_TABLE,
+      Key: {
+        PK: location.PK,
+        SK: location.SK,
+      },
+      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW',
+    }));
+
+    return response.Attributes as Location;
+  } catch (error) {
+    console.error('Error updating location:', error);
+    throw new Error('Failed to update location');
+  }
+}
+
+/**
+ * Delete location (soft delete - mark as inactive)
+ */
+export async function deleteLocation(locationId: string): Promise<void> {
+  // First get the location to find its PK
+  const location = await getLocationById(locationId);
+  if (!location) {
+    throw new Error('Location not found');
+  }
+
+  try {
+    await docClient.send(new UpdateCommand({
+      TableName: LOCATIONS_TABLE,
+      Key: {
+        PK: location.PK,
+        SK: location.SK,
+      },
+      UpdateExpression: 'SET isActive = :inactive, updatedAt = :updatedAt',
+      ExpressionAttributeValues: {
+        ':inactive': false,
+        ':updatedAt': new Date().toISOString(),
+      },
+    }));
+
+    console.log('Location soft deleted:', locationId);
+  } catch (error) {
+    console.error('Error deleting location:', error);
+    throw new Error('Failed to delete location');
   }
 }

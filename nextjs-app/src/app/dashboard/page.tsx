@@ -131,6 +131,12 @@ export default function DashboardPage() {
       return
     }
     
+    // Redirect business users to business dashboard
+    if (user && (user.profileType === 'business' || user.role?.includes('business'))) {
+      router.replace('/business/dashboard')
+      return
+    }
+    
     if (user && !user.profileCompleted) {
       router.replace('/onboarding')
       return

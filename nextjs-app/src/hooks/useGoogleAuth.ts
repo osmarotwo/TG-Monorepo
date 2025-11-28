@@ -104,7 +104,7 @@ export const useGoogleAuth = () => {
     }
   }, [])
 
-  const signInWithGoogle = () => {
+  const signInWithGoogle = (profileType?: 'customer' | 'business') => {
     console.log('Iniciando Google Auth - Redirección directa')
     console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
     console.log('Origin:', window.location.origin)
@@ -120,12 +120,13 @@ export const useGoogleAuth = () => {
       console.log('Usando redirección directa a Google')
       
       const redirectUri = window.location.origin + '/auth/google'
+      const state = profileType === 'business' ? 'business_google_auth' : 'google_auth'
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)}&` +
         `response_type=code&` +
         `scope=${encodeURIComponent('openid email profile')}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `state=google_auth&` +
+        `state=${encodeURIComponent(state)}&` +
         `access_type=offline&` +
         `prompt=select_account`
       

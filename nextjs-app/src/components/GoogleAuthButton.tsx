@@ -4,7 +4,7 @@ import { useGoogleAuth } from '@/hooks/useGoogleAuth'
 import { useLocale } from '@/contexts/LocaleContext'
 import { GoogleIcon } from './GoogleIcon'
 
-export function GoogleAuthButton() {
+export function GoogleAuthButton({ profileType }: { profileType?: 'customer' | 'business' }) {
   const { user, isLoaded, signInWithGoogle, signOut } = useGoogleAuth()
   const { t } = useLocale()
 
@@ -36,7 +36,7 @@ export function GoogleAuthButton() {
       {/* Usar solo nuestro botón personalizado - Sin warnings de FedCM */}
       {!user && (
         <button
-          onClick={signInWithGoogle}
+          onClick={() => signInWithGoogle(profileType)}
           disabled={!isLoaded}
           className={`w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#13a4ec] ${
             isLoaded 

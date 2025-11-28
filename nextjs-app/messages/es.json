@@ -24,7 +24,12 @@
     "logout": "Cerrar Sesión",
     "services": "Servicios",
     "appointments": "Citas",
-    "locations": "Ubicaciones"
+    "locations": "Ubicaciones",
+    "manageLocations": "Ubicaciones",
+    "servicesPricing": "Servicios",
+    "availability": "Disponibilidad",
+    "analytics": "Análisis",
+    "businessSettings": "Ajustes"
   },
   "auth": {
     "title": "¡Bienvenido!",
@@ -50,6 +55,7 @@
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
     "dontHaveAccount": "¿No tienes una cuenta?",
     "forgotPassword": "¿Olvidaste tu contraseña?",
+    "rememberMe": "Recuérdame",
     "passwordMismatch": "Las contraseñas no coinciden",
     "passwordMinLength": "Mínimo 8 caracteres",
     "birthDate": "Fecha de nacimiento",
@@ -330,6 +336,35 @@
     "bookFirstAppointment": "Reserva tu primera cita para comenzar",
     "bookAppointment": "Reservar Cita",
     "manageAppointments": "Administra tus citas programadas o reserva una nueva",
-    "selectBusinessLocation": "Selecciona un comercio y ubicación para agendar tu cita"
+    "selectBusinessLocation": "Selecciona un negocio y ubicación para agendar tu cita"
+  },
+  "business": {
+    "auth": {
+      "title": "Portal de Negocios",
+      "subtitle": "Administra tu negocio",
+      "joinOurPlatform": "Registra tu negocio",
+      "businessName": "Nombre del Negocio",
+      "businessNamePlaceholder": "Ingresa el nombre de tu negocio",
+      "businessType": "Tipo de Negocio",
+      "businessTypePlaceholder": "Selecciona el tipo de negocio",
+      "ownerName": "Nombre del Propietario",
+      "ownerNamePlaceholder": "Nombre completo del propietario",
+      "createBusinessAccount": "Crear Cuenta de Negocio",
+      "signInToBusiness": "Ingresar al Portal de Negocios",
+      "alreadyHaveBusinessAccount": "¿Ya tienes una cuenta de negocio?",
+      "dontHaveBusinessAccount": "¿No tienes una cuenta de negocio?",
+      "registerWithGoogle": "Registrar negocio con Google",
+      "continueWithGoogle": "Continuar con Google",
+      "accessBusinessPortal": "Acceder al Portal de Negocios",
+      "notBusinessAccount": "Esta cuenta no pertenece a un negocio. Por favor usa el acceso de clientes.",
+      "businessTypes": {
+        "salon": "Salón de Belleza",
+        "spa": "Spa y Bienestar",
+        "clinic": "Clínica Médica",
+        "gym": "Gimnasio y Fitness",
+        "restaurant": "Restaurante",
+        "other": "Otro"
+      }
+    }
   }
 }

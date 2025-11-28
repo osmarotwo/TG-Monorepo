@@ -69,6 +69,9 @@ class ApiService {
     fullName: string;
     birthDate?: string;
     gender?: string;
+    profileType?: 'customer' | 'business';
+    businessName?: string;
+    businessType?: string;
   }): Promise<ApiResponse<{ userId: string; message: string }>> {
     return this.request('/auth/register', {
       method: 'POST',

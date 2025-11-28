@@ -98,23 +98,41 @@ const handleError = (error: any): APIGatewayProxyResult => {
 // 🔓 ENDPOINT: Registro manual
 export const handleRegister = async (event: any): Promise<any> => {
   try {
-    console.log('Register event received:', JSON.stringify(event));
-    
     if (!event.body) {
       return createResponse(400, { error: 'Request body is required' });
     }
 
-    const { email, password, firstName, lastName, fullName, birthDate, gender, clientId } = JSON.parse(event.body);
+    const parsed = JSON.parse(event.body);
+    const { email, password, firstName, lastName, fullName, birthDate, gender, clientId, profileType, businessName, businessType } = parsed;
+
+    // Log payload for debugging but avoid exposing password
+    const loggedPayload: any = { ...parsed };
+    if (loggedPayload.password) loggedPayload.password = '***';
+    console.log('Register payload:', JSON.stringify(loggedPayload));
 
     // Support both fullName and firstName/lastName
     const finalFullName = fullName || (firstName && lastName ? `${firstName} ${lastName}` : '');
     const finalFirstName = firstName || (fullName ? fullName.split(' ')[0] : '');
     const finalLastName = lastName || (fullName ? fullName.split(' ').slice(1).join(' ') : '');
 
-    if (!email || !password || (!fullName && (!firstName || !lastName))) {
-      return createResponse(400, { 
-        error: 'Email, password, and name (fullName or firstName/lastName) are required' 
-      });
+    // Collect missing required fields for clearer 400 responses
+    const missing: string[] = [];
+    if (!email) missing.push('email');
+    if (!password) missing.push('password');
+    if (!finalFullName && (!firstName || !lastName)) missing.push('fullName or firstName+lastName');
+
+    if (missing.length > 0) {
+      return createResponse(400, { error: `Missing required fields: ${missing.join(', ')}` });
+    }
+
+    // If registering a business, ensure business fields are provided
+    if (profileType === 'business') {
+      const missingBusiness: string[] = [];
+      if (!businessName) missingBusiness.push('businessName');
+      if (!businessType) missingBusiness.push('businessType');
+      if (missingBusiness.length > 0) {
+        return createResponse(400, { error: `Missing business fields: ${missingBusiness.join(', ')}` });
+      }
     }
 
     // Validate email format
@@ -164,7 +182,7 @@ export const handleRegister = async (event: any): Promise<any> => {
     const userId = uuidv4();
     const hashedPassword = await hashPassword(password);
     
-    const newUser = {
+    const newUser: any = {
       userId,
       email,
       password: hashedPassword,
@@ -181,29 +199,50 @@ export const handleRegister = async (event: any): Promise<any> => {
       updatedAt: new Date().toISOString()
     };
 
+    // Add B2B fields if profileType is 'business'
+    if (profileType === 'business') {
+      newUser.profileType = 'business';
+      newUser.role = 'business-owner';
+      newUser.businessName = businessName;
+      newUser.businessType = businessType;
+      // businessId will be created after user completes business setup
+      newUser.profileCompleted = false; // Business users need to complete business setup
+    } else {
+      newUser.profileType = 'customer';
+    }
+
     await createUser(newUser);
 
     // Generate email verification token
-    const verificationToken = uuidv4();
-    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    let verificationToken: string | null = null;
+    let emailDeliveryStatus: 'sent' | 'failed' = 'sent';
 
-    await createEmailVerification({
-      userId,
-      email,
-      token: verificationToken,
-      expiresAt: verificationExpiry.getTime(),
-      createdAt: new Date().toISOString()
-    });
+    try {
+      verificationToken = uuidv4();
+      const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    console.log(`Email verification created for user ${userId} with token ${verificationToken}`);
+      await createEmailVerification({
+        userId,
+        email,
+        token: verificationToken,
+        expiresAt: verificationExpiry.getTime(),
+        createdAt: new Date().toISOString()
+      });
 
-    // Send verification email
-    await sendVerificationEmail(email, verificationToken, finalFirstName);
-    console.log(`Verification email sent to: ${email}`);
+      console.log(`Email verification created for user ${userId} with token ${verificationToken}`);
+
+      // Send verification email
+      await sendVerificationEmail(email, verificationToken, finalFirstName || '');
+      console.log(`Verification email sent to: ${email}`);
+    } catch (emailError) {
+      emailDeliveryStatus = 'failed';
+      console.error('Failed to deliver verification email:', emailError);
+    }
 
     return createResponse(201, {
       message: 'User registered successfully. Please check your email for verification.',
-      userId
+      userId,
+      emailDeliveryStatus
       // verificationToken removed for security in production
     });
 
@@ -233,8 +272,8 @@ const handleLogin = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxy
     // Crear sesión (permitir login incluso si email no está verificado)
     const sessionId = uuidv4();
     
-    // Generar tokens con el sessionId
-    const tokens = await generateTokens(user.userId, user.email, sessionId);
+    // Generar tokens con el sessionId y businessId si existe
+    const tokens = await generateTokens(user.userId, user.email, sessionId, user.businessId);
     
     // Crear sesión en DynamoDB
     await createSession({
@@ -253,6 +292,11 @@ const handleLogin = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxy
         lastName: user.lastName,
         profileCompleted: user.profileCompleted,
         emailVerified: user.emailVerified, // El frontend usará esto para determinar el flujo
+        profileType: user.profileType || 'customer',
+        role: user.role || null,
+        businessName: user.businessName || null,
+        businessType: user.businessType || null,
+        provider: user.provider || 'email',
       },
       tokens,
     });
@@ -310,7 +354,8 @@ const handleGoogleCodeExchange = async (event: APIGatewayProxyEvent): Promise<AP
 
 const handleGoogleAuth = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
-    const data = validateData(googleAuthSchema, JSON.parse(event.body || '{}')) as GoogleAuthRequest;
+    const body = JSON.parse(event.body || '{}');
+    const data = validateData(googleAuthSchema, body) as GoogleAuthRequest;
     
     // Verificar Google ID token
     const googleUser = await verifyGoogleToken(data.idToken);
@@ -330,7 +375,7 @@ const handleGoogleAuth = async (event: APIGatewayProxyEvent): Promise<APIGateway
     } else {
       // Nuevo usuario - crear cuenta
       const userId = uuidv4();
-      user = await createUser({
+      const newUserData: any = {
         userId,
         email: googleUser.email,
         firstName: googleUser.given_name || '',
@@ -341,14 +386,25 @@ const handleGoogleAuth = async (event: APIGatewayProxyEvent): Promise<APIGateway
         provider: 'google',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      };
+
+      // Add B2B fields if profileType is 'business'
+      if (body.profileType === 'business') {
+        newUserData.profileType = 'business';
+        newUserData.role = 'business-owner';
+        // businessId will be created after user completes business setup
+      } else {
+        newUserData.profileType = 'customer';
+      }
+
+      user = await createUser(newUserData);
     }
     
     // Crear sesión primero
     const sessionId = uuidv4();
     
-    // Generar tokens con el sessionId
-    const tokens = await generateTokens(user.userId, user.email, sessionId);
+    // Generar tokens con el sessionId y businessId si existe
+    const tokens = await generateTokens(user.userId, user.email, sessionId, user.businessId);
     
     // Crear sesión en DynamoDB
     await createSession({
@@ -496,8 +552,12 @@ const handleRefreshToken = async (event: APIGatewayProxyEvent): Promise<APIGatew
       throw new Error('Invalid refresh token');
     }
     
-    // Generar nuevos tokens con el mismo sessionId
-    const tokens = await generateTokens(session.userId, payload.email, session.sessionId);
+    // Obtener usuario para incluir businessId si existe
+    const user = await getUserById(session.userId);
+    const businessId = user?.businessId;
+    
+    // Generar nuevos tokens con el mismo sessionId y businessId
+    const tokens = await generateTokens(session.userId, payload.email, session.sessionId, businessId);
     
     // Actualizar sesión con nuevo refresh token
     await createSession({

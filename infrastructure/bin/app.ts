@@ -19,7 +19,7 @@ const apiStack = new ApiLambdaStack(app, 'ApiLambdaStack', {
   env,
 });
 
-// Authentication Stack with serverless backend
+// Authentication Stack with serverless backend (includes Locations endpoints)
 const authStack = new AuthStack(app, 'AuthStack', {
   env,
 });

@@ -37,9 +37,19 @@ function LoginForm() {
   // Redirect based on auth status after login
   useEffect(() => {
     if (status === 'authenticated' && user) {
-      if (!user.profileCompleted) {
+      // Check if user is business account
+      const isBusinessAccount = user.profileType === 'business' || 
+                               user.role?.includes('business') || 
+                               !!(user.businessName || user.businessType);
+      
+      if (isBusinessAccount) {
+        // Business users go to business dashboard
+        router.push('/business/dashboard');
+      } else if (!user.profileCompleted) {
+        // Customer users with incomplete profile go to onboarding
         router.push('/onboarding');
       } else {
+        // Customer users with complete profile go to customer dashboard
         router.push('/dashboard');
       }
     } else if (status === 'email-pending') {

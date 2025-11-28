@@ -303,6 +303,33 @@ export class AuthStack extends cdk.Stack {
     });
 
     // ====================
+    // Locations Resources
+    // ====================
+
+    // Importar tabla Locations existente desde DataStack
+    const locationsTable = dynamodb.Table.fromTableName(
+      this,
+      'LocationsTable',
+      'Locations'
+    );
+
+    // Importar Lambda LocationsHandler existente (creado manualmente via AWS CLI)
+    const locationsHandler = lambda.Function.fromFunctionArn(
+      this,
+      'LocationsHandler',
+      `arn:aws:lambda:${this.region}:${this.account}:function:LocationsHandler`
+    );
+
+    // Locations API Integration
+    // Los endpoints ya fueron creados manualmente via AWS CLI
+    // CDK ahora solo mantiene la referencia para futuras actualizaciones
+    const locationsIntegration = new apigateway.LambdaIntegration(locationsHandler);
+
+    // Los recursos de API Gateway ya existen (creados manualmente via AWS CLI)
+    // Para evitar conflictos con el hook de AWS, no intentamos recrearlos aquí
+    // Si necesitas actualizar los endpoints, usa AWS CLI o la consola de AWS
+    
+    // ====================
     // Outputs
     // ====================
 
@@ -316,6 +343,16 @@ export class AuthStack extends cdk.Stack {
       description: 'Name of the Users DynamoDB table',
     });
 
+    new cdk.CfnOutput(this, 'LocationsTableNameOutput', {
+      value: locationsTable.tableName,
+      description: 'Name of the Locations DynamoDB table',
+    });
+
+    new cdk.CfnOutput(this, 'LocationsHandlerArnOutput', {
+      value: locationsHandler.functionArn,
+      description: 'ARN del Lambda LocationsHandler',
+    });
+
     new cdk.CfnOutput(this, 'SessionsTableName', {
       value: this.sessionsTable.tableName,
       description: 'Name of the Sessions DynamoDB table',
@@ -324,6 +361,11 @@ export class AuthStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'EmailVerificationsTableName', {
       value: this.emailVerificationsTable.tableName,
       description: 'Name of the Email Verifications DynamoDB table',
+    });
+
+    new cdk.CfnOutput(this, 'LocationsTableName', {
+      value: locationsTable.tableName,
+      description: 'Name of the Locations DynamoDB table',
     });
   }
 }

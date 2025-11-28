@@ -1,0 +1,25 @@
+{
+  "name": "locations-handler",
+  "version": "1.0.0",
+  "description": "Lambda handler for business locations management",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "deploy": "npm run build && cd deployment && npm install --production && cd .. && cdk deploy"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.529.0",
+    "@aws-sdk/client-ssm": "^3.529.0",
+    "@aws-sdk/lib-dynamodb": "^3.529.0",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.133",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.11.5",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.3"
+  }
+}

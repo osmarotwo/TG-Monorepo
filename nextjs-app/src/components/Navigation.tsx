@@ -1,7 +1,8 @@
 'use client'
 
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Logo } from '@/components/Logo'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -9,13 +10,33 @@ import LanguageSelector from '@/components/LanguageSelector'
 
 export default function Navigation() {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const router = useRouter()
+  const { user, logout } = useAuth()
   const { t } = useLocale()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
-  const navItems = [
+  // Detectar si es un usuario business
+  const isBusiness = user?.profileType === 'business' || pathname.includes('/business/')
+
+  // Opciones para usuarios B2C (clientes)
+  const customerNavItems = [
     { label: t('navigation.home', 'navigation'), href: '/dashboard', icon: '🏠' },
     { label: t('navigation.appointments', 'navigation'), href: '/appointments', icon: '📅' },
   ]
+
+  // Opciones para usuarios B2B (negocios)
+  const businessNavItems = [
+    { label: t('navigation.home', 'navigation'), href: '/business/dashboard', icon: '🏠' },
+    { label: t('navigation.manageLocations', 'navigation'), href: '/business/locations', icon: '📍' },
+    { label: t('navigation.servicesPricing', 'navigation'), href: '/business/services', icon: '⏰' },
+    { label: t('navigation.availability', 'navigation'), href: '/business/availability', icon: '📅' },
+    { label: t('navigation.appointments', 'navigation'), href: '/business/appointments', icon: '📋' },
+    { label: t('navigation.analytics', 'navigation'), href: '/business/analytics', icon: '📊' },
+    { label: t('navigation.businessSettings', 'navigation'), href: '/business/settings', icon: '⚙️' },
+  ]
+
+  const navItems = isBusiness ? businessNavItems : customerNavItems
 
   const isActive = (href: string) => {
     // Normalizar rutas removiendo trailing slash
@@ -28,6 +49,38 @@ export default function Navigation() {
     
     return normalizedPathname === normalizedHref
   }
+
+  const handleLogout = async () => {
+    await logout()
+    setIsMenuOpen(false)
+    
+    // Determinar si es usuario business o regular
+    const isBusiness = pathname.includes('/business/')
+    
+    // Redirigir a la página de login correspondiente
+    if (isBusiness) {
+      router.push('/business/auth/login')
+    } else {
+      router.push('/auth/login')
+    }
+  }
+
+  // Cerrar menú al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMenuOpen])
 
   return (
     <header className="sticky top-0 z-10 bg-white shadow-sm">
@@ -51,33 +104,60 @@ export default function Navigation() {
                 </svg>
               </button>
 
-              {/* User Avatar */}
-              <div className="h-10 w-10 rounded-full bg-[#13a4ec] flex items-center justify-center text-white font-bold text-base shadow-sm">
-                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+              {/* User Avatar con menú desplegable */}
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="h-10 w-10 rounded-full bg-[#13a4ec] flex items-center justify-center text-white font-bold text-base shadow-sm hover:bg-[#0f8fcd] transition-colors"
+                >
+                  {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                </button>
+
+                {/* Dropdown Menu */}
+                {isMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      {t('navigation.logout', 'navigation')}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs - Desktop (centrados) */}
+      {/* Navigation Tabs - Desktop */}
       <div className="hidden md:block border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex justify-center space-x-8 py-4">
+          <nav className={`${
+            isBusiness 
+              ? 'grid grid-cols-7 gap-2 py-3'
+              : 'flex justify-center space-x-8 py-4'
+          }`}>
             {navItems.map((item) => {
               const active = isActive(item.href)
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex flex-col items-center px-8 py-3 rounded-xl text-base font-medium transition-all duration-200 ${
+                  className={`flex flex-col items-center ${
+                    isBusiness ? 'px-2 py-2' : 'px-8 py-3'
+                  } rounded-xl text-base font-medium transition-all duration-200 ${
                     active
                       ? 'bg-[#e3f5ff] text-[#13a4ec]'
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="text-3xl mb-1">{item.icon}</span>
-                  <span className="text-sm">{item.label}</span>
+                  <span className={`${isBusiness ? 'text-2xl' : 'text-3xl'} mb-1`}>{item.icon}</span>
+                  <span className="text-xs text-center leading-tight">{item.label}</span>
                 </Link>
               )
             })}
@@ -87,23 +167,29 @@ export default function Navigation() {
 
       {/* Mobile Navigation - Bottom Fixed */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-        <nav className="flex justify-around py-3">
+        <nav className={`flex py-3 ${
+          isBusiness 
+            ? 'overflow-x-auto px-2 gap-1 scrollbar-hide' 
+            : 'justify-around'
+        }`}>
           {navItems.map((item) => {
             const active = isActive(item.href)
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center px-6 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
+                className={`flex flex-col items-center ${
+                  isBusiness ? 'px-3 min-w-[70px]' : 'px-6'
+                } py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
                   active
                     ? 'text-[#13a4ec] bg-[#13a4ec]/10'
                     : 'text-gray-500 hover:text-[#13a4ec]'
                 }`}
               >
-                <span className={`text-2xl mb-1 transition-transform ${active ? 'scale-110' : ''}`}>
+                <span className={`${isBusiness ? 'text-xl' : 'text-2xl'} mb-1 transition-transform ${active ? 'scale-110' : ''}`}>
                   {item.icon}
                 </span>
-                <span className="font-medium">{item.label}</span>
+                <span className="font-medium text-center leading-tight">{item.label}</span>
               </Link>
             )
           })}

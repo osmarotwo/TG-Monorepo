@@ -37,7 +37,11 @@ export default function GoogleCallback() {
         return;
       }
 
-      if (code && state === 'google_auth') {
+      // Accept both customer and business states
+      const isCustomerState = state === 'google_auth'
+      const isBusinessState = state === 'business_google_auth'
+
+      if (code && (isCustomerState || isBusinessState)) {
         try {
           console.log('🔵 Intercambiando código por token...');
           // Llama al Lambda de Auth para intercambiar el código por el idToken de Google
@@ -61,8 +65,9 @@ export default function GoogleCallback() {
           }
           
           console.log('✅ idToken obtenido, autenticando con contexto...');
-          // Autentica globalmente usando el contexto
-          await authenticateWithGoogle({ idToken: data.idToken });
+          // Autentica globalmente usando el contexto. Pasar profileType si viene en state
+          const profileType = isBusinessState ? 'business' : undefined
+          await authenticateWithGoogle({ idToken: data.idToken, profileType });
           console.log('✅ Autenticación completada');
           
           // La redirección se hará en el siguiente useEffect cuando el user se actualice
@@ -91,6 +96,9 @@ export default function GoogleCallback() {
       if (!user.profileCompleted) {
         console.log('➡️ Redirigiendo a onboarding');
         router.replace('/onboarding');
+      } else if (user.profileType === 'business') {
+        console.log('➡️ Usuario business: redirigiendo a business dashboard');
+        router.replace('/business/dashboard');
       } else {
         console.log('➡️ Redirigiendo a dashboard');
         router.replace('/dashboard');

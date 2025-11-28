@@ -12,7 +12,6 @@ export interface JWTPayload {
   email: string;
   role: string;
   sessionId: string;
-  businessId?: string;
 }
 
 export interface TokenPair {
@@ -31,9 +30,12 @@ async function getJWTSecret(): Promise<string> {
     return jwtSecretCache;
   }
 
+  // Use environment variable for parameter name
+  const parameterName = process.env.JWT_SECRET_PARAM || '/tg-om/jwt-secret';
+
   try {
     const command = new GetParameterCommand({
-      Name: '/auth/jwt-secret',
+      Name: parameterName,
       WithDecryption: true,
     });
     
@@ -43,10 +45,11 @@ async function getJWTSecret(): Promise<string> {
       throw new Error('JWT secret not found in SSM');
     }
 
-    jwtSecretCache = response.Parameter.Value;
+    const secretValue = response.Parameter.Value;
+    jwtSecretCache = secretValue;
     cacheExpiry = now + (10 * 60 * 1000); // Cache for 10 minutes
     
-    return jwtSecretCache;
+    return secretValue;
   } catch (error) {
     console.error('Error getting JWT secret from SSM:', error);
     throw new Error('Failed to retrieve JWT secret');
@@ -56,7 +59,7 @@ async function getJWTSecret(): Promise<string> {
 /**
  * Generate access token and refresh token
  */
-export async function generateTokens(userId: string, email?: string, sessionId?: string, businessId?: string): Promise<TokenPair> {
+export async function generateTokens(userId: string, email?: string, sessionId?: string): Promise<TokenPair> {
   const secret = await getJWTSecret();
   const finalSessionId = sessionId || Date.now().toString();
   
@@ -64,8 +67,7 @@ export async function generateTokens(userId: string, email?: string, sessionId?:
     userId,
     email: email || '',
     role: 'user',
-    sessionId: finalSessionId,
-    ...(businessId && { businessId })
+    sessionId: finalSessionId
   };
   
   const accessTokenExpiry = process.env.TOKEN_EXPIRY || '1h';
@@ -82,8 +84,7 @@ export async function generateTokens(userId: string, email?: string, sessionId?:
       userId: payload.userId, 
       sessionId: payload.sessionId,
       email: payload.email,
-      type: 'refresh',
-      ...(businessId && { businessId })
+      type: 'refresh'
     }, 
     secret, 
     {
@@ -109,13 +110,12 @@ export async function verifyToken(token: string, type: 'access' | 'refresh' = 'a
   const secret = await getJWTSecret();
   
   try {
-    const decoded = jwt.verify(token, secret, {
-      issuer: 'auth-service',
-      audience: type === 'access' ? 'api-service' : 'api-service',
-    }) as any;
+    // No verificar issuer/audience para compatibilidad con tokens generados por auth-handler
+    const decoded = jwt.verify(token, secret) as any;
     
     return decoded;
   } catch (error) {
+    console.error('Token verification failed:', error);
     throw new Error('Invalid token');
   }
 }

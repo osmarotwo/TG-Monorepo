@@ -45,6 +45,7 @@
     "dontHaveAccount": "Don't have an account?",
     "accessYourAccount": "Access your account",
     "forgotPassword": "Forgot your password?",
+    "rememberMe": "Remember me",
     "passwordMinLength": "Minimum 8 characters",
     "birthDate": "Birth date",
     "minAge13": "You must be at least 13 years old",
@@ -219,7 +220,12 @@
     "logout": "Logout",
     "services": "Services",
     "appointments": "Appointments",
-    "locations": "Locations"
+    "locations": "Locations",
+    "manageLocations": "Locations",
+    "servicesPricing": "Services",
+    "availability": "Availability",
+    "analytics": "Analytics",
+    "businessSettings": "Settings"
   },
   "forgotPassword": {
     "forgotPassword": "Forgot Password?",
@@ -327,5 +333,34 @@
     "bookAppointment": "Book Appointment",
     "manageAppointments": "Manage your scheduled appointments or book a new one",
     "selectBusinessLocation": "Select a business and location to schedule your appointment"
+  },
+  "business": {
+    "auth": {
+      "title": "Business Portal",
+      "subtitle": "Manage your business",
+      "joinOurPlatform": "Register your business",
+      "businessName": "Business Name",
+      "businessNamePlaceholder": "Enter your business name",
+      "businessType": "Business Type",
+      "businessTypePlaceholder": "Select business type",
+      "ownerName": "Owner Name",
+      "ownerNamePlaceholder": "Full name of the owner",
+      "createBusinessAccount": "Create Business Account",
+      "signInToBusiness": "Sign in to Business Portal",
+      "alreadyHaveBusinessAccount": "Already have a business account?",
+      "dontHaveBusinessAccount": "Don't have a business account?",
+      "registerWithGoogle": "Register business with Google",
+      "continueWithGoogle": "Continue with Google",
+      "accessBusinessPortal": "Access Business Portal",
+      "notBusinessAccount": "This is not a business account. Please use the customer login.",
+      "businessTypes": {
+        "salon": "Hair Salon",
+        "spa": "Spa & Wellness",
+        "clinic": "Medical Clinic",
+        "gym": "Gym & Fitness",
+        "restaurant": "Restaurant",
+        "other": "Other"
+      }
+    }
   }
 }

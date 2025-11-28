@@ -421,7 +421,7 @@ export default function AppointmentMapSection({
           title: apt.title,
           hasLocation: !!apt.location,
           locationName: apt.location?.name,
-          coords: apt.location ? `${apt.location.coordinates.lat}, ${apt.location.coordinates.lng}` : 'none'
+          coords: apt.location ? `${apt.location.latitude}, ${apt.location.longitude}` : 'none'
         }))
       })
       
@@ -432,10 +432,10 @@ export default function AppointmentMapSection({
       }
 
       const centerLat =
-        validLocations.reduce((sum, apt) => sum + (apt.location?.coordinates.lat || 0), 0) /
+        validLocations.reduce((sum, apt) => sum + (apt.location?.latitude || 0), 0) /
         validLocations.length
       const centerLng =
-        validLocations.reduce((sum, apt) => sum + (apt.location?.coordinates.lng || 0), 0) /
+        validLocations.reduce((sum, apt) => sum + (apt.location?.longitude || 0), 0) /
         validLocations.length
 
       // Crear mapa solo si no existe

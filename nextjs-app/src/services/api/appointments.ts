@@ -36,7 +36,7 @@ export interface Appointment {
   isFlexible?: boolean; // Si se puede reprogramar automáticamente
   title?: string; // Título de cita personal
   description?: string; // Descripción de cita personal
-  address?: string | { street: string; city?: string; state?: string; }; // Dirección para citas personales
+  address?: string; // Dirección para citas personales
   latitude?: number; // Coordenada para citas personales
   longitude?: number; // Coordenada para citas personales
   coordinates?: { lat: number; lng: number }; // Coordenadas como objeto

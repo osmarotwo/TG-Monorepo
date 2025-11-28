@@ -312,8 +312,8 @@ export default function AppointmentMapSection({
     
     validLocations.forEach((apt, index) => {
       const position = {
-        lat: apt.location!.coordinates.lat,
-        lng: apt.location!.coordinates.lng,
+        lat: apt.location!.latitude,
+        lng: apt.location!.longitude,
       };
 
       const pinElement = document.createElement('div');

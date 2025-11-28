@@ -230,6 +230,8 @@ export default function DashboardPage() {
                   businessId: apt.businessId,
                   name: apt.businessName || 'Business',
                   industry: 'beauty' as const,
+                  ownerId: apt.userId,
+                  totalLocations: 1,
                   createdAt: apt.createdAt || new Date().toISOString(),
                   updatedAt: apt.updatedAt || new Date().toISOString()
                 }
@@ -253,15 +255,13 @@ export default function DashboardPage() {
                   locationId: apt.locationId,
                   businessId: apt.businessId,
                   name: apt.locationName || 'Location',
-                  address: {
-                    street: apt.address || '',
-                    city: '',
-                    state: '',
-                    zipCode: '',
-                    country: 'Colombia'
-                  },
-                  coordinates: apt.coordinates || { lat: 5.0214, lng: -74.0637 },
-                  isPrimary: false,
+                  address: apt.address || '',
+                  city: '',
+                  latitude: apt.coordinates?.lat || apt.latitude || 5.0214,
+                  longitude: apt.coordinates?.lng || apt.longitude || -74.0637,
+                  resources: [],
+                  specialists: [],
+                  status: 'active' as const,
                   createdAt: apt.createdAt || new Date().toISOString(),
                   updatedAt: apt.updatedAt || new Date().toISOString()
                 },
@@ -269,6 +269,8 @@ export default function DashboardPage() {
                   businessId: apt.businessId,
                   name: apt.businessName || 'Business',
                   industry: 'beauty' as const,
+                  ownerId: apt.userId,
+                  totalLocations: 1,
                   createdAt: apt.createdAt || new Date().toISOString(),
                   updatedAt: apt.updatedAt || new Date().toISOString()
                 }

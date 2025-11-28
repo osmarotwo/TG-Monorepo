@@ -61,6 +61,7 @@ export default function AppointmentMapSection({
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<(google.maps.Marker | google.maps.marker.AdvancedMarkerElement)[]>([])
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null)
+  const activeInfoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const isInitializingRef = useRef(false)
 
   // Filtrar citas por la fecha seleccionada
@@ -73,7 +74,7 @@ export default function AppointmentMapSection({
         type: a.type,
         date: a.date,
         startTime: a.startTime,
-        hasLocation: !!(a.address || (a.latitude && a.longitude))
+        hasLocation: !!(a.address || (a.coordinates?.lat && a.coordinates?.lng))
       }))
     })
     
@@ -123,31 +124,38 @@ export default function AppointmentMapSection({
   const appointmentsWithDetails = React.useMemo(() => {
     return filteredAppointments.map((apt) => {
       // Citas personales tienen coordenadas directas
-      if (apt.type === 'personal' && apt.latitude && apt.longitude) {
+      if (apt.type === 'personal' && apt.coordinates) {
         return {
           ...apt,
           location: {
             locationId: 'personal',
-            name: apt.title || 'Personal Appointment',
-            address: apt.address || '',
-            city: '',
-            latitude: apt.latitude,
-            longitude: apt.longitude,
             businessId: '',
-            capacity: 0,
-            status: 'active' as const,
-            resources: [],
-            specialists: [],
-            createdAt: '',
-            updatedAt: ''
+            name: apt.title || 'Personal Appointment',
+            address: apt.address || 'Dirección no disponible', // Mantener como string
+            coordinates: apt.coordinates,
+            isPrimary: false,
+            createdAt: apt.createdAt || '',
+            updatedAt: apt.updatedAt || ''
           }
         }
       }
       
-      // Citas de negocio tienen location
+      // Citas de negocio: usar datos embebidos de la cita (vienen de DynamoDB)
+      // o buscar en locations array como fallback
+      const locationFromArray = locations.find((loc) => loc.locationId === apt.locationId)
+      
       return {
         ...apt,
-        location: locations.find((loc) => loc.locationId === apt.locationId),
+        location: locationFromArray || {
+          locationId: apt.locationId || '',
+          businessId: apt.businessId || '',
+          name: apt.locationName || apt.businessName || 'Ubicación',
+          address: apt.address || 'Dirección no disponible', // Usar address de la cita
+          coordinates: apt.coordinates || { lat: 0, lng: 0 },
+          isPrimary: false,
+          createdAt: apt.createdAt || '',
+          updatedAt: apt.updatedAt || ''
+        }
       }
     })
   }, [filteredAppointments, locations])
@@ -304,8 +312,8 @@ export default function AppointmentMapSection({
     
     validLocations.forEach((apt, index) => {
       const position = {
-        lat: apt.location!.latitude,
-        lng: apt.location!.longitude,
+        lat: apt.location!.coordinates.lat,
+        lng: apt.location!.coordinates.lng,
       };
 
       const pinElement = document.createElement('div');
@@ -413,7 +421,7 @@ export default function AppointmentMapSection({
           title: apt.title,
           hasLocation: !!apt.location,
           locationName: apt.location?.name,
-          coords: apt.location ? `${apt.location.latitude}, ${apt.location.longitude}` : 'none'
+          coords: apt.location ? `${apt.location.coordinates.lat}, ${apt.location.coordinates.lng}` : 'none'
         }))
       })
       
@@ -424,10 +432,10 @@ export default function AppointmentMapSection({
       }
 
       const centerLat =
-        validLocations.reduce((sum, apt) => sum + (apt.location?.latitude || 0), 0) /
+        validLocations.reduce((sum, apt) => sum + (apt.location?.coordinates.lat || 0), 0) /
         validLocations.length
       const centerLng =
-        validLocations.reduce((sum, apt) => sum + (apt.location?.longitude || 0), 0) /
+        validLocations.reduce((sum, apt) => sum + (apt.location?.coordinates.lng || 0), 0) /
         validLocations.length
 
       // Crear mapa solo si no existe
@@ -488,10 +496,19 @@ export default function AppointmentMapSection({
         })
 
         userMarker.addListener('click', () => {
+          // Cerrar el InfoWindow anterior si existe
+          if (activeInfoWindowRef.current) {
+            activeInfoWindowRef.current.close()
+          }
+          
+          // Abrir el nuevo InfoWindow
           userInfoWindow.open({
             anchor: userMarker,
             map,
           })
+          
+          // Guardar referencia al InfoWindow activo
+          activeInfoWindowRef.current = userInfoWindow
         })
       }
 
@@ -529,7 +546,7 @@ export default function AppointmentMapSection({
 
         const marker = new google.maps.marker.AdvancedMarkerElement({
           map,
-          position: { lat: apt.location.latitude, lng: apt.location.longitude },
+          position: { lat: apt.location.coordinates.lat, lng: apt.location.coordinates.lng },
           content: pin,
           title: `${serviceOrTitle} - ${apt.location.name}`,
         })
@@ -547,27 +564,34 @@ export default function AppointmentMapSection({
           day: 'numeric',
         })
 
+        // Formatear dirección correctamente
+        const addressStr = typeof apt.location.address === 'string' 
+          ? apt.location.address 
+          : apt.location.address?.street || 'Dirección no disponible'
+
         const infoContent = `
           <div style="padding: 12px; max-width: 250px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-            <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #DC2626;">
-              ${index + 1}. ${apt.location.name}
+            <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: ${isPersonal ? '#8B5CF6' : '#DC2626'};">
+              ${isPersonal ? '📝' : (index + 1) + '.'} ${apt.location.name}
             </div>
             ${apt.type === 'personal' ? `
               <div style="display: inline-block; background-color: #8B5CF6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-bottom: 8px;">
-                📝 Personal
+                Cita Personal
               </div>
             ` : ''}
             <div style="margin-bottom: 4px; color: #1F2937;">
-              <strong style="color: #374151;">${apt.type === 'personal' ? 'Evento' : 'Servicio'}:</strong> ${serviceOrTitle}
+              <strong style="color: #374151;">${apt.type === 'personal' ? 'Evento' : 'Servicio'}:</strong> ${serviceOrTitle || 'Sin especificar'}
             </div>
             <div style="margin-bottom: 4px; color: #1F2937;">
               <strong style="color: #374151;">Fecha:</strong> ${dateStr} ${timeStr}
             </div>
-            <div style="margin-bottom: 4px; color: #1F2937;">
-              <strong style="color: #374151;">Especialista:</strong> ${apt.specialistName}
-            </div>
+            ${apt.specialistName ? `
+              <div style="margin-bottom: 4px; color: #1F2937;">
+                <strong style="color: #374151;">Especialista:</strong> ${apt.specialistName}
+              </div>
+            ` : ''}
             <div style="color: #4B5563; font-size: 13px; margin-top: 8px;">
-              📍 ${apt.location.address}
+              📍 ${addressStr}
             </div>
           </div>
         `
@@ -577,10 +601,19 @@ export default function AppointmentMapSection({
         })
 
         marker.addListener('click', () => {
+          // Cerrar el InfoWindow anterior si existe
+          if (activeInfoWindowRef.current) {
+            activeInfoWindowRef.current.close()
+          }
+          
+          // Abrir el nuevo InfoWindow
           infoWindow.open({
             anchor: marker,
             map,
           })
+          
+          // Guardar referencia al InfoWindow activo
+          activeInfoWindowRef.current = infoWindow
         })
       })
 
@@ -620,7 +653,7 @@ export default function AppointmentMapSection({
     const waypoints = appointments
       .filter((apt) => apt.location)
       .map((apt) => ({
-        location: new window.google.maps.LatLng(apt.location!.latitude, apt.location!.longitude),
+        location: new window.google.maps.LatLng(apt.location!.coordinates.lat, apt.location!.coordinates.lng),
         stopover: true,
       }))
 
@@ -680,38 +713,77 @@ export default function AppointmentMapSection({
             return apt
           })
 
-          // Calcular conflictos de tiempo
+          // 🔥 ORDENAR las citas cronológicamente antes de calcular conflictos
+          const sortedTimesData = [...timesData].sort((a, b) => {
+            return new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+          })
+
+          // Calcular conflictos de tiempo usando el orden cronológico
           const conflicts: TimeConflict[] = []
-          for (let i = 0; i < timesData.length - 1; i++) {
-            const current = timesData[i]
-            const next = timesData[i + 1]
+          
+          // Crear un mapa para encontrar el índice en timesData de cada cita
+          const aptIndexMap = new Map<string, number>()
+          timesData.forEach((apt, idx) => {
+            aptIndexMap.set(apt.appointmentId, idx)
+          })
+          
+          for (let i = 0; i < sortedTimesData.length - 1; i++) {
+            const current = sortedTimesData[i]
+            const next = sortedTimesData[i + 1]
             
-            if (!current.estimatedDuration || !next.travelTimeMinutes) continue
+            // 🔥 IMPORTANTE: Calcular el tiempo de viaje ENTRE estas dos citas consecutivas cronológicamente
+            // No podemos usar next.travelTimeMinutes porque ese es el tiempo desde la cita ANTERIOR en la ruta del mapa
+            // Necesitamos calcular la distancia real entre current y next
+            
+            if (!current.location || !next.location || !current.estimatedDuration) continue
+            
+            // Calcular distancia entre estas dos ubicaciones
+            const lat1 = current.location.coordinates.lat
+            const lng1 = current.location.coordinates.lng
+            const lat2 = next.location.coordinates.lat
+            const lng2 = next.location.coordinates.lng
+            
+            // Fórmula de Haversine para distancia
+            const R = 6371 // Radio de la Tierra en km
+            const dLat = (lat2 - lat1) * Math.PI / 180
+            const dLng = (lng2 - lng1) * Math.PI / 180
+            const a = 
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) * Math.sin(dLng / 2)
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+            const distanceKm = R * c
+            
+            // Estimar tiempo de viaje (30 km/h promedio en ciudad)
+            const travelTimeMinutes = Math.ceil((distanceKm / 30) * 60)
             
             // Tiempo disponible entre fin de cita actual e inicio de siguiente
             const currentEnd = new Date(current.endTime).getTime()
             const nextStart = new Date(next.startTime).getTime()
             const availableMinutes = Math.floor((nextStart - currentEnd) / (60 * 1000))
             
-            // Tiempo requerido (viaje)
-            const requiredMinutes = next.travelTimeMinutes
-            
             // Verificar si hay conflicto
-            if (availableMinutes < requiredMinutes) {
-              const shortfall = requiredMinutes - availableMinutes
+            if (availableMinutes < travelTimeMinutes) {
+              const shortfall = travelTimeMinutes - availableMinutes
               conflicts.push({
                 fromAppointment: current,
                 toAppointment: next,
-                required: requiredMinutes,
+                required: travelTimeMinutes,
                 available: availableMinutes,
                 shortfall: shortfall,
               })
               
-              // Marcar la cita siguiente como no alcanzable
-              timesData[i + 1].isReachable = false
-              timesData[i + 1].conflictMessage = `⚠️ Faltan ${shortfall} min para llegar a tiempo`
+              // Marcar la cita como no alcanzable en timesData
+              const nextIdx = aptIndexMap.get(next.appointmentId)
+              if (nextIdx !== undefined) {
+                timesData[nextIdx].isReachable = false
+                timesData[nextIdx].conflictMessage = `⚠️ Faltan ${shortfall} min para llegar a tiempo`
+              }
             } else {
-              timesData[i + 1].isReachable = true
+              const nextIdx = aptIndexMap.get(next.appointmentId)
+              if (nextIdx !== undefined) {
+                timesData[nextIdx].isReachable = true
+              }
             }
           }
 
@@ -984,8 +1056,8 @@ export default function AppointmentMapSection({
                 distanceKm = calculateDistance(
                   userLocation.lat,
                   userLocation.lng,
-                  apt.location.latitude,
-                  apt.location.longitude
+                  apt.location.coordinates.lat,
+                  apt.location.coordinates.lng
                 )
                 timeEstimate = estimateTime(distanceKm)
                 // Extraer minutos del estimado (formato: "X min")
@@ -996,10 +1068,10 @@ export default function AppointmentMapSection({
                 const prevApt = appointmentsWithDetails[index - 1]
                 if (prevApt?.location) {
                   distanceKm = calculateDistance(
-                    prevApt.location.latitude,
-                    prevApt.location.longitude,
-                    apt.location.latitude,
-                    apt.location.longitude
+                    prevApt.location.coordinates.lat,
+                    prevApt.location.coordinates.lng,
+                    apt.location.coordinates.lat,
+                    apt.location.coordinates.lng
                   )
                   timeEstimate = estimateTime(distanceKm)
                   // Extraer minutos del estimado

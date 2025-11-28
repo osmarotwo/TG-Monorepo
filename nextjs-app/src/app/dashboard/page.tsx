@@ -206,13 +206,75 @@ export default function DashboardPage() {
               }
             }
             
-            // Citas de negocio: cargar location y business
-            const location = await fetchLocationById(apt.locationId)
-            const business = location ? await fetchBusinessById(apt.businessId) : null
-            return {
-              ...apt,
-              location: location || undefined,
-              business: business || undefined,
+            // Si la cita ya tiene coordenadas, crear objeto location desde los datos de la cita
+            if (apt.coordinates && apt.address) {
+              const locationFromAppointment: Location = {
+                locationId: apt.locationId,
+                businessId: apt.businessId,
+                name: apt.locationName || 'Location',
+                address: {
+                  street: apt.address,
+                  city: '',
+                  state: '',
+                  zipCode: '',
+                  country: 'Colombia'
+                },
+                coordinates: apt.coordinates,
+                isPrimary: false,
+                createdAt: apt.createdAt || new Date().toISOString(),
+                updatedAt: apt.updatedAt || new Date().toISOString()
+              }
+              
+              return {
+                ...apt,
+                location: locationFromAppointment,
+                business: {
+                  businessId: apt.businessId,
+                  name: apt.businessName || 'Business',
+                  industry: 'beauty' as const,
+                  createdAt: apt.createdAt || new Date().toISOString(),
+                  updatedAt: apt.updatedAt || new Date().toISOString()
+                }
+              }
+            }
+            
+            // Fallback: intentar cargar desde API (para citas antiguas sin coordenadas)
+            try {
+              const location = await fetchLocationById(apt.locationId)
+              const business = location ? await fetchBusinessById(apt.businessId) : null
+              return {
+                ...apt,
+                location: location || undefined,
+                business: business || undefined,
+              }
+            } catch (apiError) {
+              // Si falla la API, usar datos básicos de la cita
+              return {
+                ...apt,
+                location: {
+                  locationId: apt.locationId,
+                  businessId: apt.businessId,
+                  name: apt.locationName || 'Location',
+                  address: {
+                    street: apt.address || '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                    country: 'Colombia'
+                  },
+                  coordinates: apt.coordinates || { lat: 5.0214, lng: -74.0637 },
+                  isPrimary: false,
+                  createdAt: apt.createdAt || new Date().toISOString(),
+                  updatedAt: apt.updatedAt || new Date().toISOString()
+                },
+                business: {
+                  businessId: apt.businessId,
+                  name: apt.businessName || 'Business',
+                  industry: 'beauty' as const,
+                  createdAt: apt.createdAt || new Date().toISOString(),
+                  updatedAt: apt.updatedAt || new Date().toISOString()
+                }
+              }
             }
           } catch (error) {
             console.error(`Error loading details for appointment ${apt.appointmentId}:`, error)

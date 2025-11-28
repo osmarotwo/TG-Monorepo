@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import Script from 'next/script'
 import { useLocale } from '@/contexts/LocaleContext'
 import { createAppointment, CreateAppointmentData, validateAppointmentSlot } from '@/services/api/appointments'
 import { fetchServicesByBusiness, type Service } from '@/services/api/services'
 import { getAvailableSlots, type AvailableSlot } from '@/services/api/availabilityService'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatPrice } from '@/utils/formatPrice'
+import { generateOrderId, generateBoldHash, calculateDeposit, formatAmountForBold } from '@/services/api/boldPayment'
 
 interface CreateAppointmentModalProps {
   isOpen: boolean
@@ -47,6 +49,14 @@ export default function CreateAppointmentModal({
   
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Estados para pago Bold
+  const [paymentStep, setPaymentStep] = useState<'form' | 'payment' | 'processing'>('form')
+  const [boldOrderId, setBoldOrderId] = useState<string>('')
+  const [boldHash, setBoldHash] = useState<string>('')
+  const [depositAmount, setDepositAmount] = useState<number>(0)
+  const [servicePrice, setServicePrice] = useState<number>(0)
+  const boldButtonContainerRef = useRef<HTMLDivElement>(null)
 
   // Auto-fill customer name from authenticated user
   useEffect(() => {
@@ -87,6 +97,183 @@ export default function CreateAppointmentModal({
       setAvailableSlots([])
     }
   }, [formData.date, formData.serviceId, locationId])
+
+  // Efecto para inyectar el botón de Bold cuando se muestra el paso de pago
+  useEffect(() => {
+    if (paymentStep === 'payment' && boldOrderId && boldHash && depositAmount > 0 && user) {
+      console.log('💳 Inyectando botón de Bold con datos:', {
+        orderId: boldOrderId,
+        amount: depositAmount,
+        hash: boldHash
+      })
+
+      const container = document.getElementById('bold-button-container')
+      if (!container) {
+        console.error('❌ Contenedor del botón no encontrado')
+        return
+      }
+
+      // Limpiar contenedor
+      container.innerHTML = ''
+
+      const selectedService = services.find(s => s.serviceId === formData.serviceId)
+      const serviceName = selectedService?.name || 'Servicio'
+
+      // Crear el script del botón con todos los atributos data-* (ATRIBUTOS REQUERIDOS)
+      const buttonScript = document.createElement('script')
+      buttonScript.setAttribute('src', 'https://checkout.bold.co/library/boldPaymentButton.js')
+      buttonScript.setAttribute('data-bold-button', 'dark-L')
+      
+      // ATRIBUTOS OBLIGATORIOS
+      buttonScript.setAttribute('data-api-key', 'kNL9SEkKTHnDfI68ws-J_IKl6UKjj-cKtbUeY_I2Zks')
+      buttonScript.setAttribute('data-order-id', boldOrderId)
+      buttonScript.setAttribute('data-currency', 'COP')
+      buttonScript.setAttribute('data-amount', depositAmount.toString())
+      buttonScript.setAttribute('data-integrity-signature', boldHash)
+      
+      // ATRIBUTOS OPCIONALES
+      buttonScript.setAttribute('data-description', `Reserva de cita - ${serviceName}`)
+      buttonScript.setAttribute('data-render-mode', 'embedded')
+      
+      // Bold requiere formato especial para localhost según documentación:
+      // "Para pruebas locales no usar 127.0.0.1, en vez debe usar localhost"
+      // Sin https:// para localhost
+      if (!window.location.origin.includes('localhost')) {
+        // Solo agregar redirection-url en producción con https
+        buttonScript.setAttribute('data-redirection-url', `${window.location.origin}/appointments/payment-success`)
+      }
+      // En localhost, Bold usará la URL base automáticamente
+      
+      // Datos del cliente (pre-llenar formulario) - JSON como string
+      const customerData = {
+        email: user.email || '',
+        fullName: `${user.firstName} ${user.lastName}`,
+        phone: user.phone || '',
+        dialCode: '+57'
+      }
+      buttonScript.setAttribute('data-customer-data', JSON.stringify(customerData))
+      
+      console.log('📋 Atributos del botón Bold:', {
+        apiKey: 'kNL9SEkKTHnDfI68ws-J_IKl6UKjj-cKtbUeY_I2Zks',
+        orderId: boldOrderId,
+        currency: 'COP',
+        amount: depositAmount.toString(),
+        hash: boldHash,
+        description: `Reserva de cita - ${serviceName}`,
+        redirectionUrl: `${window.location.origin}/appointments/payment-success`,
+        renderMode: 'embedded',
+        customerData
+      })
+
+      // Agregar al contenedor
+      container.appendChild(buttonScript)
+
+      console.log('✅ Botón de Bold inyectado correctamente')
+    }
+
+    // Escuchar evento de pago exitoso de Bold (modo embedded)
+    const handleBoldPaymentSuccess = async (event: MessageEvent) => {
+      // Log todos los mensajes para debugging
+      console.log('📨 Mensaje recibido:', {
+        origin: event.origin,
+        data: event.data,
+        type: typeof event.data
+      })
+      
+      // Bold en modo embedded envía mensajes con diferentes formatos
+      // Verificar si viene de Bold (checkout.bold.co)
+      if (!event.origin.includes('bold.co')) {
+        return
+      }
+      
+      // Bold puede enviar el orderId en el mensaje
+      const eventData = typeof event.data === 'string' ? JSON.parse(event.data) : event.data
+      const isPaymentComplete = (
+        eventData?.status === 'approved' ||
+        eventData?.status === 'APPROVED' ||
+        eventData?.type === 'payment_success' ||
+        (eventData?.orderId === boldOrderId && eventData?.success === true)
+      )
+      
+      if (isPaymentComplete && user) {
+        console.log('✅ Pago exitoso detectado de Bold:', eventData)
+        
+        setPaymentStep('processing')
+        
+        try {
+          const selectedService = services.find(s => s.serviceId === formData.serviceId)
+          const selectedSlot = availableSlots.find(s => s.time === formData.timeSlot)
+          const serviceType = locale === 'es' ? selectedService?.name : selectedService?.nameEn
+          const duration = selectedSlot?.durationMinutes || selectedService?.defaultDuration || 30
+          
+          // Validar disponibilidad antes de crear
+          console.log('🔍 Validando disponibilidad del horario...')
+          const validation = await validateAppointmentSlot(
+            locationId,
+            formData.date,
+            formData.timeSlot,
+            duration
+          )
+          
+          if (!validation.available) {
+            throw new Error(validation.reason || 'Horario no disponible')
+          }
+          
+          // Crear cita con información de pago
+          const appointmentData: CreateAppointmentData = {
+            userId: user.userId,
+            businessId: businessId,
+            locationId: locationId,
+            customerName: formData.customerName,
+            serviceType: serviceType || '',
+            serviceId: formData.serviceId,
+            date: formData.date,
+            time: formData.timeSlot,
+            duration: duration,
+            notes: `Pago confirmado - Order ID: ${boldOrderId}${formData.notes ? '\n' + formData.notes : ''}`,
+          }
+          
+          console.log('📤 Creando cita con pago confirmado:', appointmentData)
+          
+          const result = await createAppointment(appointmentData)
+          
+          console.log('✅ Cita creada exitosamente:', result)
+          
+          // Reset form
+          setFormData({
+            customerName: '',
+            serviceId: '',
+            date: '',
+            timeSlot: '',
+            duration: '',
+            notes: '',
+            specialistId: '',
+            specialistName: ''
+          })
+          setPaymentStep('form')
+          setBoldOrderId('')
+          setBoldHash('')
+          setDepositAmount(0)
+          setServicePrice(0)
+          
+          onSuccess?.()
+          onClose()
+        } catch (error) {
+          console.error('❌ Error al crear cita después del pago:', error)
+          setErrors({ 
+            submit: `Error al confirmar la cita. Tu pago fue exitoso (Order ID: ${boldOrderId}). Por favor contacta soporte.` 
+          })
+          setPaymentStep('payment')
+        }
+      }
+    }
+
+    window.addEventListener('message', handleBoldPaymentSuccess)
+
+    return () => {
+      window.removeEventListener('message', handleBoldPaymentSuccess)
+    }
+  }, [paymentStep, boldOrderId, boldHash, depositAmount, formData, services, availableSlots, user, locale, locationId, businessId, onSuccess, onClose])
 
   const loadServices = async () => {
     try {
@@ -200,6 +387,51 @@ export default function CreateAppointmentModal({
     return Object.keys(newErrors).length === 0
   }
 
+  /**
+   * Prepara el pago con Bold (paso 1: validar formulario y mostrar resumen de pago)
+   */
+  const handleProceedToPayment = async () => {
+    if (!validate() || !user) {
+      return
+    }
+
+    const selectedService = services.find(s => s.serviceId === formData.serviceId)
+    if (!selectedService) {
+      setErrors({ serviceId: 'Servicio no encontrado' })
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+
+      // Calcular anticipo (20% del precio del servicio)
+      const deposit = calculateDeposit(selectedService.basePrice)
+      const amount = formatAmountForBold(deposit)
+
+      // Generar orderId único
+      const orderId = await generateOrderId(user.userId)
+
+      // Generar hash de integridad
+      const hashData = await generateBoldHash(orderId, amount, selectedService.currency)
+
+      // Guardar datos del pago
+      setBoldOrderId(orderId)
+      setBoldHash(hashData.hash)
+      setDepositAmount(amount)
+      setServicePrice(selectedService.basePrice)
+
+      // Cambiar a vista de pago
+      setPaymentStep('payment')
+      
+      console.log('💳 Payment prepared:', { orderId, amount, hash: hashData.hash })
+    } catch (error) {
+      console.error('❌ Error preparing payment:', error)
+      setErrors({ submit: 'Error al preparar el pago. Por favor intenta nuevamente.' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -289,16 +521,24 @@ export default function CreateAppointmentModal({
   }
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
-      onClick={handleBackdropClick}
-    >
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+    <>
+      {/* Bold Payment Button Script */}
+      <Script 
+        src="https://checkout.bold.co/library/boldPaymentButton.js"
+        strategy="lazyOnload"
+      />
+      
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
+        onClick={handleBackdropClick}
+      >
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              {t('createAppointment', 'appointments')}
+              {paymentStep === 'form' && (t('createAppointment', 'appointments'))}
+              {paymentStep === 'payment' && (locale === 'es' ? '💳 Confirmar pago' : '💳 Confirm payment')}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
               {businessName} - {locationName}
@@ -315,8 +555,32 @@ export default function CreateAppointmentModal({
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        {/* Progress Indicator */}
+        <div className="px-4 sm:px-6 py-3 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center justify-center gap-2">
+            <div className={`flex items-center ${paymentStep === 'form' ? 'text-[#13a4ec]' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${paymentStep === 'form' ? 'bg-[#13a4ec] text-white' : 'bg-gray-200'}`}>
+                1
+              </div>
+              <span className="ml-2 text-sm font-medium hidden sm:inline">
+                {locale === 'es' ? 'Datos de la cita' : 'Appointment details'}
+              </span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-300"></div>
+            <div className={`flex items-center ${paymentStep === 'payment' ? 'text-[#13a4ec]' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${paymentStep === 'payment' ? 'bg-[#13a4ec] text-white' : 'bg-gray-200'}`}>
+                2
+              </div>
+              <span className="ml-2 text-sm font-medium hidden sm:inline">
+                {locale === 'es' ? 'Pago' : 'Payment'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Form - Paso 1: Formulario */}
+        {paymentStep === 'form' && (
+          <form onSubmit={(e) => { e.preventDefault(); handleProceedToPayment(); }} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Info Message */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
@@ -495,13 +759,113 @@ export default function CreateAppointmentModal({
             <button
               type="submit"
               className="flex-1 px-6 py-3 rounded-lg bg-[#13a4ec] text-white font-medium hover:bg-[#0f8fcd] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !formData.serviceId || !formData.date || !formData.timeSlot}
             >
-              {isSubmitting ? t('creating', 'appointments') : t('create', 'appointments')}
+              {isSubmitting ? (locale === 'es' ? 'Preparando...' : 'Preparing...') : (locale === 'es' ? 'Continuar al pago' : 'Continue to payment')}
             </button>
           </div>
         </form>
+        )}
+
+        {/* Paso 2: Vista de Pago con Bold */}
+        {paymentStep === 'payment' && (
+          <div className="p-4 sm:p-6 space-y-6">
+            {/* Resumen de la cita */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                {locale === 'es' ? '📋 Resumen de tu cita' : '📋 Appointment summary'}
+              </h3>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">{locale === 'es' ? 'Servicio:' : 'Service:'}</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {services.find(s => s.serviceId === formData.serviceId)?.name}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">{locale === 'es' ? 'Fecha:' : 'Date:'}</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {new Date(formData.date + 'T00:00:00').toLocaleDateString('es-CO', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">{locale === 'es' ? 'Hora:' : 'Time:'}</span>
+                  <span className="text-sm font-semibold text-gray-900">{formData.timeSlot}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">{locale === 'es' ? 'Ubicación:' : 'Location:'}</span>
+                  <span className="text-sm font-semibold text-gray-900">{locationName}</span>
+                </div>
+                
+                <div className="border-t border-blue-300 pt-3 mt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-medium text-gray-700">
+                      {locale === 'es' ? 'Precio total:' : 'Total price:'}
+                    </span>
+                    <span className="text-xl font-bold text-gray-900">
+                      {formatPrice(servicePrice, 'COP')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2 bg-white rounded-lg p-3 border-2 border-[#13a4ec]">
+                    <span className="text-base font-bold text-[#13a4ec]">
+                      {locale === 'es' ? 'Anticipo a pagar (20%):' : 'Deposit to pay (20%):'}
+                    </span>
+                    <span className="text-2xl font-bold text-[#13a4ec]">
+                      {formatPrice(depositAmount, 'COP')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Información del pago */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex gap-3">
+                <span className="text-2xl">💡</span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-yellow-900 mb-1">
+                    {locale === 'es' ? '¿Por qué pagar un anticipo?' : 'Why pay a deposit?'}
+                  </p>
+                  <p className="text-xs text-yellow-800">
+                    {locale === 'es' 
+                      ? 'El anticipo del 20% confirma tu reserva y garantiza tu espacio. El resto lo pagas al recibir el servicio.'
+                      : 'The 20% deposit confirms your reservation and guarantees your spot. You pay the rest when receiving the service.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenedor del botón de Bold */}
+            <div className="flex flex-col items-center py-4 space-y-4">
+              <div id="bold-button-container" className="w-full max-w-md"></div>
+              
+              {/* Información de seguridad */}
+              <div className="text-center text-xs text-gray-500">
+                <p>🔒 {locale === 'es' ? 'Pago seguro procesado por Bold' : 'Secure payment processed by Bold'}</p>
+              </div>
+            </div>
+
+            {/* Botones de acción */}
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setPaymentStep('form')}
+                className="flex-1 px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                disabled={isSubmitting}
+              >
+                ← {locale === 'es' ? 'Volver' : 'Back'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
+    </>
   )
 }

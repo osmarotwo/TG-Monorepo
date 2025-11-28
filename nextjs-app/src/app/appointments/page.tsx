@@ -290,7 +290,12 @@ export default function AppointmentsPage() {
                     {/* Header con filtro de fecha */}
                     <div className="p-6 border-b border-gray-200">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <h2 className="text-xl font-bold text-gray-900">{t('myScheduledAppointments', 'appointments') || 'My Scheduled Appointments'}</h2>
+                        <div className="flex items-center gap-3">
+                          <h2 className="text-xl font-bold text-gray-900">{t('myScheduledAppointments', 'appointments') || 'My Scheduled Appointments'}</h2>
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-[#13a4ec] text-white">
+                            {appointments.filter(apt => selectedDateFilter === 'all' || apt.date === selectedDateFilter).length}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-3">
                           <label htmlFor="date-filter" className="text-sm font-medium text-gray-700">
                             {t('filterByDate', 'appointments') || 'Filter by date'}:
@@ -301,7 +306,7 @@ export default function AppointmentsPage() {
                             onChange={(e) => setSelectedDateFilter(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900 bg-white"
                           >
-                            <option value="all">{t('allDates', 'appointments') || 'All dates'}</option>
+                            <option value="all">{t('allDates', 'appointments') || 'All dates'} ({appointments.length})</option>
                             {Array.from(new Set(appointments.map(apt => apt.date).filter(Boolean)))
                               .sort()
                               .map(date => {
@@ -312,8 +317,9 @@ export default function AppointmentsPage() {
                                   month: 'short',
                                   year: 'numeric'
                                 })
+                                const count = appointments.filter(apt => apt.date === date).length
                                 return (
-                                  <option key={date} value={date}>{formatted}</option>
+                                  <option key={date} value={date}>{formatted} ({count})</option>
                                 )
                               })}
                           </select>

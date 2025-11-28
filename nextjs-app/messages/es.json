@@ -267,6 +267,7 @@
     "title": "Citas",
     "createNew": "Nueva Cita",
     "createAppointment": "Crear Cita",
+    "bookNewAppointment": "Agendar Nueva Cita",
     "editAppointment": "Editar Cita",
     "deleteAppointment": "Eliminar Cita",
     "upcomingAppointments": "Próximas Citas",

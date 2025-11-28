@@ -175,8 +175,25 @@ export class DataStack extends cdk.Stack {
       },
     });
 
-    // Lambda integration
+    // ====================
+    // Bold Payment Handler Lambda
+    // ====================
+
+    const boldPaymentHandler = new lambda.Function(this, 'BoldPaymentHandlerFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('../lambdas/bold-payment-handler/dist'),
+      environment: {
+        BOLD_SECRET_KEY: 'OTsOCB2JDGT_8RZTJ9uxFw', // Llave secreta de Bold
+        NODE_ENV: 'production',
+      },
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+    });
+
+    // Lambda integrations
     const dataIntegration = new apigateway.LambdaIntegration(dataHandler);
+    const boldIntegration = new apigateway.LambdaIntegration(boldPaymentHandler);
 
     // Create /api resource
     const apiResource = this.dataApi.root.addResource('api');
@@ -231,6 +248,21 @@ export class DataStack extends cdk.Stack {
     // POST /api/availability/reserve
     const reserveResource = availabilityResource.addResource('reserve');
     reserveResource.addMethod('POST', dataIntegration);
+
+    // Bold Payment routes
+    const boldResource = apiResource.addResource('bold');
+    
+    // GET /api/bold/order-id
+    const orderIdResource = boldResource.addResource('order-id');
+    orderIdResource.addMethod('GET', boldIntegration);
+    
+    // POST /api/bold/generate-hash
+    const generateHashResource = boldResource.addResource('generate-hash');
+    generateHashResource.addMethod('POST', boldIntegration);
+    
+    // POST /api/bold/webhook
+    const webhookResource = boldResource.addResource('webhook');
+    webhookResource.addMethod('POST', boldIntegration);
 
     // ====================
     // Outputs

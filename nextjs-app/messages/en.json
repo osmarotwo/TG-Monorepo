@@ -263,6 +263,7 @@
     "title": "Appointments",
     "createNew": "New Appointment",
     "createAppointment": "Create Appointment",
+    "bookNewAppointment": "Book New Appointment",
     "editAppointment": "Edit Appointment",
     "deleteAppointment": "Delete Appointment",
     "upcomingAppointments": "Upcoming Appointments",

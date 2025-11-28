@@ -37,6 +37,11 @@ export default function RootLayout({
             defer
           ></script>
         )}
+        {/* Bold Payment Button Script */}
+        <script 
+          src="https://checkout.bold.co/library/boldPaymentButton.js" 
+          async
+        ></script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

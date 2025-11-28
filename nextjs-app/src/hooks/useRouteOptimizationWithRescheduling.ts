@@ -45,19 +45,21 @@ export function useRouteOptimizationWithRescheduling(
     }
 
     // Verificar que todas las citas tengan ubicación con coordenadas
-    // Soporta tanto citas de negocio (location) como personales (latitude/longitude directos)
+    // Soporta tanto citas de negocio (location) como personales (coordinates directos)
     const appointmentsWithLocation = appointments.filter(apt => {
-      // Citas de negocio: tienen location object
+      // Citas de negocio: tienen location object con coordinates
       if (apt.location && 
-          typeof apt.location.latitude === 'number' && 
-          typeof apt.location.longitude === 'number') {
+          apt.location.coordinates &&
+          typeof apt.location.coordinates.lat === 'number' && 
+          typeof apt.location.coordinates.lng === 'number') {
         return true;
       }
       
-      // Citas personales: tienen latitude/longitude directos
+      // Citas personales: tienen coordinates directos
       if (apt.type === 'personal' && 
-          typeof apt.latitude === 'number' && 
-          typeof apt.longitude === 'number') {
+          apt.coordinates &&
+          typeof apt.coordinates.lat === 'number' && 
+          typeof apt.coordinates.lng === 'number') {
         return true;
       }
       
@@ -147,18 +149,20 @@ export function useRouteOptimizationWithRescheduling(
         // Obtener coordenadas según el tipo de cita
         const getLocation = () => {
           if (apt.type === 'personal') {
-            // Cita personal: usar latitude/longitude directos
+            // Cita personal: usar coordinates directos
             return {
-              lat: apt.latitude!,
-              lng: apt.longitude!,
+              lat: apt.coordinates!.lat,
+              lng: apt.coordinates!.lng,
               address: apt.address || 'Personal appointment'
             };
           } else {
-            // Cita de negocio: usar location object
+            // Cita de negocio: usar location.coordinates
             return {
-              lat: apt.location!.latitude,
-              lng: apt.location!.longitude,
-              address: apt.location!.address
+              lat: apt.location!.coordinates.lat,
+              lng: apt.location!.coordinates.lng,
+              address: typeof apt.location!.address === 'string' 
+                ? apt.location!.address 
+                : apt.location!.address.street
             };
           }
         };

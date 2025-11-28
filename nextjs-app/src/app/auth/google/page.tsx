@@ -21,7 +21,6 @@ export default function GoogleCallback() {
         console.log('⏭️ Ya procesado, saltando...');
         return;
       }
-      hasProcessed.current = true;
 
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
@@ -42,6 +41,9 @@ export default function GoogleCallback() {
       const isBusinessState = state === 'business_google_auth'
 
       if (code && (isCustomerState || isBusinessState)) {
+        // Marcar como procesado ANTES de hacer la petición para evitar duplicados
+        hasProcessed.current = true;
+        
         try {
           console.log('🔵 Intercambiando código por token...');
           // Llama al Lambda de Auth para intercambiar el código por el idToken de Google
@@ -57,11 +59,13 @@ export default function GoogleCallback() {
           
           console.log('🔵 Respuesta del backend:', response.status, response.statusText);
           const data = await response.json();
-          console.log('🔵 Data recibida:', data);
+          console.log('🔵 Data recibida completa:', JSON.stringify(data, null, 2));
           
           if (!response.ok || !data.idToken) {
-            console.error('❌ Error al obtener idToken:', data.error);
-            throw new Error(data.error || 'No se pudo obtener el idToken de Google');
+            console.error('❌ Error al obtener idToken:', data);
+            console.error('❌ Error message:', data.error || data.message);
+            console.error('❌ Full response:', JSON.stringify(data, null, 2));
+            throw new Error(data.error || data.message || 'No se pudo obtener el idToken de Google');
           }
           
           console.log('✅ idToken obtenido, autenticando con contexto...');

@@ -212,15 +212,13 @@ export default function DashboardPage() {
                 locationId: apt.locationId,
                 businessId: apt.businessId,
                 name: apt.locationName || 'Location',
-                address: {
-                  street: apt.address,
-                  city: '',
-                  state: '',
-                  zipCode: '',
-                  country: 'Colombia'
-                },
-                coordinates: apt.coordinates,
-                isPrimary: false,
+                address: apt.address,
+                city: '',
+                latitude: apt.coordinates.lat,
+                longitude: apt.coordinates.lng,
+                resources: [],
+                specialists: [],
+                status: 'active' as const,
                 createdAt: apt.createdAt || new Date().toISOString(),
                 updatedAt: apt.updatedAt || new Date().toISOString()
               }

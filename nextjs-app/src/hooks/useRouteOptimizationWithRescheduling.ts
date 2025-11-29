@@ -47,11 +47,10 @@ export function useRouteOptimizationWithRescheduling(
     // Verificar que todas las citas tengan ubicación con coordenadas
     // Soporta tanto citas de negocio (location) como personales (coordinates directos)
     const appointmentsWithLocation = appointments.filter(apt => {
-      // Citas de negocio: tienen location object con coordinates
+      // Citas de negocio: tienen location object con latitude/longitude
       if (apt.location && 
-          apt.location.coordinates &&
-          typeof apt.location.coordinates.lat === 'number' && 
-          typeof apt.location.coordinates.lng === 'number') {
+          typeof apt.location.latitude === 'number' && 
+          typeof apt.location.longitude === 'number') {
         return true;
       }
       
@@ -156,13 +155,11 @@ export function useRouteOptimizationWithRescheduling(
               address: apt.address || 'Personal appointment'
             };
           } else {
-            // Cita de negocio: usar location.coordinates
+            // Cita de negocio: usar location.latitude/longitude
             return {
-              lat: apt.location!.coordinates.lat,
-              lng: apt.location!.coordinates.lng,
-              address: typeof apt.location!.address === 'string' 
-                ? apt.location!.address 
-                : apt.location!.address.street
+              lat: apt.location!.latitude,
+              lng: apt.location!.longitude,
+              address: apt.location!.address
             };
           }
         };

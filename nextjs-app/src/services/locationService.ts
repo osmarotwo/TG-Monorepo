@@ -129,11 +129,29 @@ class LocationService {
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(typeof options.headers === 'object' && !Array.isArray(options.headers) ? options.headers : {}),
     }
 
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`
+    }
+
+    // Merge additional headers if provided
+    if (options.headers) {
+      if (options.headers instanceof Headers) {
+        options.headers.forEach((value, key) => {
+          headers[key] = value
+        })
+      } else if (Array.isArray(options.headers)) {
+        options.headers.forEach(([key, value]) => {
+          headers[key] = value
+        })
+      } else {
+        Object.entries(options.headers).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            headers[key] = value
+          }
+        })
+      }
     }
 
     try {

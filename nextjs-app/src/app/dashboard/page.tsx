@@ -207,15 +207,18 @@ export default function DashboardPage() {
             }
             
             // Si la cita ya tiene coordenadas, crear objeto location desde los datos de la cita
-            if (apt.coordinates && apt.address) {
+            if ((apt.coordinates || (apt.latitude && apt.longitude)) && apt.address) {
+              const lat = apt.coordinates?.lat || apt.latitude || 0;
+              const lng = apt.coordinates?.lng || apt.longitude || 0;
+              
               const locationFromAppointment: Location = {
                 locationId: apt.locationId,
                 businessId: apt.businessId,
                 name: apt.locationName || 'Location',
                 address: apt.address,
                 city: '',
-                latitude: apt.coordinates.lat,
-                longitude: apt.coordinates.lng,
+                latitude: lat,
+                longitude: lng,
                 resources: [],
                 specialists: [],
                 status: 'active' as const,

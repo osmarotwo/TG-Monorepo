@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import AuthenticatedApp from '../components/AuthenticatedApp'
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [showPaymentStatus, setShowPaymentStatus] = useState<'success' | 'error' | null>(null)
@@ -81,5 +81,19 @@ export default function Home() {
 
       <AuthenticatedApp />
     </>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#f6f7f8]">
+        <div className="animate-pulse text-[#13a4ec] text-lg">
+          Loading...
+        </div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   )
 }

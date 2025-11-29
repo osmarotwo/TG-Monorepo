@@ -127,9 +127,9 @@ class LocationService {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(typeof options.headers === 'object' && !Array.isArray(options.headers) ? options.headers : {}),
     }
 
     if (this.accessToken) {

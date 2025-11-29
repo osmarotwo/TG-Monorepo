@@ -311,9 +311,10 @@ export default function AppointmentMapSection({
     const validLocations = appointmentsWithDetails.filter((apt) => apt.location);
     
     validLocations.forEach((apt, index) => {
+      const location = apt.location!;
       const position = {
-        lat: apt.location!.latitude,
-        lng: apt.location!.longitude,
+        lat: 'latitude' in location ? location.latitude : location.coordinates.lat,
+        lng: 'longitude' in location ? location.longitude : location.coordinates.lng,
       };
 
       const pinElement = document.createElement('div');

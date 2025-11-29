@@ -131,9 +131,13 @@ export default function AppointmentMapSection({
             locationId: 'personal',
             businessId: '',
             name: apt.title || 'Personal Appointment',
-            address: apt.address || 'Dirección no disponible', // Mantener como string
-            coordinates: apt.coordinates,
-            isPrimary: false,
+            address: apt.address || 'Dirección no disponible',
+            city: '',
+            latitude: apt.coordinates.lat,
+            longitude: apt.coordinates.lng,
+            resources: [],
+            specialists: [],
+            status: 'active' as const,
             createdAt: apt.createdAt || '',
             updatedAt: apt.updatedAt || ''
           }
@@ -150,9 +154,13 @@ export default function AppointmentMapSection({
           locationId: apt.locationId || '',
           businessId: apt.businessId || '',
           name: apt.locationName || apt.businessName || 'Ubicación',
-          address: apt.address || 'Dirección no disponible', // Usar address de la cita
-          coordinates: apt.coordinates || { lat: 0, lng: 0 },
-          isPrimary: false,
+          address: apt.address || 'Dirección no disponible',
+          city: '',
+          latitude: apt.coordinates?.lat || apt.latitude || 0,
+          longitude: apt.coordinates?.lng || apt.longitude || 0,
+          resources: [],
+          specialists: [],
+          status: 'active' as const,
           createdAt: apt.createdAt || '',
           updatedAt: apt.updatedAt || ''
         }
@@ -546,7 +554,7 @@ export default function AppointmentMapSection({
 
         const marker = new google.maps.marker.AdvancedMarkerElement({
           map,
-          position: { lat: apt.location.coordinates.lat, lng: apt.location.coordinates.lng },
+          position: { lat: apt.location.latitude, lng: apt.location.longitude },
           content: pin,
           title: `${serviceOrTitle} - ${apt.location.name}`,
         })
@@ -653,7 +661,7 @@ export default function AppointmentMapSection({
     const waypoints = appointments
       .filter((apt) => apt.location)
       .map((apt) => ({
-        location: new window.google.maps.LatLng(apt.location!.coordinates.lat, apt.location!.coordinates.lng),
+        location: new window.google.maps.LatLng(apt.location!.latitude, apt.location!.longitude),
         stopover: true,
       }))
 
@@ -738,10 +746,10 @@ export default function AppointmentMapSection({
             if (!current.location || !next.location || !current.estimatedDuration) continue
             
             // Calcular distancia entre estas dos ubicaciones
-            const lat1 = current.location.coordinates.lat
-            const lng1 = current.location.coordinates.lng
-            const lat2 = next.location.coordinates.lat
-            const lng2 = next.location.coordinates.lng
+            const lat1 = current.location.latitude
+            const lng1 = current.location.longitude
+            const lat2 = next.location.latitude
+            const lng2 = next.location.longitude
             
             // Fórmula de Haversine para distancia
             const R = 6371 // Radio de la Tierra en km
@@ -1056,8 +1064,8 @@ export default function AppointmentMapSection({
                 distanceKm = calculateDistance(
                   userLocation.lat,
                   userLocation.lng,
-                  apt.location.coordinates.lat,
-                  apt.location.coordinates.lng
+                  apt.location.latitude,
+                  apt.location.longitude
                 )
                 timeEstimate = estimateTime(distanceKm)
                 // Extraer minutos del estimado (formato: "X min")
@@ -1068,10 +1076,10 @@ export default function AppointmentMapSection({
                 const prevApt = appointmentsWithDetails[index - 1]
                 if (prevApt?.location) {
                   distanceKm = calculateDistance(
-                    prevApt.location.coordinates.lat,
-                    prevApt.location.coordinates.lng,
-                    apt.location.coordinates.lat,
-                    apt.location.coordinates.lng
+                    prevApt.location.latitude,
+                    prevApt.location.longitude,
+                    apt.location.latitude,
+                    apt.location.longitude
                   )
                   timeEstimate = estimateTime(distanceKm)
                   // Extraer minutos del estimado

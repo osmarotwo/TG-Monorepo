@@ -573,9 +573,7 @@ export default function AppointmentMapSection({
         })
 
         // Formatear dirección correctamente
-        const addressStr = typeof apt.location.address === 'string' 
-          ? apt.location.address 
-          : apt.location.address?.street || 'Dirección no disponible'
+        const addressStr = apt.location.address || 'Dirección no disponible'
 
         const infoContent = `
           <div style="padding: 12px; max-width: 250px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">

@@ -191,13 +191,72 @@ export default function CreateAppointmentModal({
       const isPaymentComplete = (
         eventData?.status === 'approved' ||
         eventData?.status === 'APPROVED' ||
+        eventData?.txStatus === 'approved' || // Bold callback format
+        eventData?.txStatus === 'APPROVED' ||
         eventData?.type === 'payment_success' ||
         (eventData?.orderId === boldOrderId && eventData?.success === true)
       )
       
-      if (isPaymentComplete && user) {
+      console.log('💳 💳 💳 PAYMENT CALLBACK RECEIVED FROM BOLD:', {
+        eventData,
+        isPaymentComplete,
+        hasUser: !!user,
+        userId: user?.userId,
+        timestamp: new Date().toISOString()
+      })
+      
+      if (isPaymentComplete) {
         console.log('✅ Pago exitoso detectado de Bold:', eventData)
         
+        // PASO 1: Registrar el pago exitoso inmediatamente (incluso si no hay sesión)
+        const paymentRecord = {
+          orderId: eventData.orderId || boldOrderId,
+          txStatus: eventData.txStatus || eventData.status,
+          timestamp: Date.now(),
+          amount: depositAmount,
+          allParams: eventData
+        }
+        console.log('💰 Registrando pago exitoso:', paymentRecord)
+        
+        // PASO 1.5: SIEMPRE guardar en localStorage antes de continuar
+        // Esto es necesario porque Bold puede redirigir y perder el contexto
+        const selectedService = services.find(s => s.serviceId === formData.serviceId)
+        const selectedSlot = availableSlots.find(s => s.time === formData.timeSlot)
+        const serviceType = locale === 'es' ? selectedService?.name : selectedService?.nameEn
+        const duration = selectedSlot?.durationMinutes || selectedService?.defaultDuration || 30
+        
+        const appointmentData: CreateAppointmentData = {
+          userId: user?.userId || '',
+          businessId: businessId,
+          locationId: locationId,
+          customerName: formData.customerName,
+          serviceType: serviceType || '',
+          serviceId: formData.serviceId,
+          date: formData.date,
+          time: formData.timeSlot,
+          duration: duration,
+          notes: formData.notes
+        }
+        
+        localStorage.setItem('pendingAppointmentPayment', JSON.stringify({
+          boldOrderId: boldOrderId,
+          appointmentData: appointmentData,
+          paymentRecord: paymentRecord,
+          timestamp: Date.now()
+        }))
+        console.log('💾 Información de cita guardada en localStorage para callback')
+        
+        // PASO 2: Intentar crear la cita inmediatamente si hay sesión
+        if (!user) {
+          console.warn('⚠️ Sesión expirada, redirigiendo al login')
+          alert(locale === 'es' 
+            ? 'Tu pago fue exitoso. Por favor inicia sesión nuevamente para confirmar tu cita.' 
+            : 'Your payment was successful. Please log in again to confirm your appointment.')
+          return
+        }
+        
+        // PASO 3: Crear cita inmediatamente con sesión activa
+        console.log('🚀 Creando cita inmediatamente - Usuario autenticado:', user.userId)
         setPaymentStep('processing')
         
         try {
@@ -224,20 +283,33 @@ export default function CreateAppointmentModal({
             userId: user.userId,
             businessId: businessId,
             locationId: locationId,
+            locationName: locationName,
             customerName: formData.customerName,
             serviceType: serviceType || '',
             serviceId: formData.serviceId,
+            servicePrice: selectedService?.basePrice,
+            serviceCurrency: selectedService?.currency,
             date: formData.date,
             time: formData.timeSlot,
             duration: duration,
             notes: `Pago confirmado - Order ID: ${boldOrderId}${formData.notes ? '\n' + formData.notes : ''}`,
+            specialistId: formData.specialistId,
+            specialistName: formData.specialistName,
           }
           
-          console.log('📤 Creando cita con pago confirmado:', appointmentData)
+          console.log('📤 CREANDO CITA CON PAGO CONFIRMADO:', {
+            appointmentData,
+            boldOrderId,
+            timestamp: new Date().toISOString()
+          })
           
           const result = await createAppointment(appointmentData)
           
-          console.log('✅ Cita creada exitosamente:', result)
+          console.log('✅ ✅ ✅ CITA CREADA EXITOSAMENTE EN DYNAMODB:', {
+            result,
+            appointmentId: result.appointmentId,
+            timestamp: new Date().toISOString()
+          })
           
           // Reset form
           setFormData({
@@ -419,6 +491,35 @@ export default function CreateAppointmentModal({
       setBoldHash(hashData.hash)
       setDepositAmount(amount)
       setServicePrice(selectedService.basePrice)
+
+      // 🔑 CRÍTICO: Guardar información de la cita en localStorage ANTES de mostrar Bold
+      // Esto garantiza que esté disponible cuando Bold redirija después del pago
+      const selectedSlot = availableSlots.find(s => s.time === formData.timeSlot)
+      const serviceType = locale === 'es' ? selectedService?.name : selectedService?.nameEn
+      const duration = selectedSlot?.durationMinutes || selectedService?.defaultDuration || 30
+      
+      const appointmentDataToSave: CreateAppointmentData = {
+        userId: user.userId,
+        businessId: businessId,
+        locationId: locationId,
+        customerName: formData.customerName,
+        serviceType: serviceType || '',
+        serviceId: formData.serviceId,
+        date: formData.date,
+        time: formData.timeSlot,
+        duration: duration,
+        notes: formData.notes
+      }
+      
+      localStorage.setItem('pendingAppointmentPayment', JSON.stringify({
+        boldOrderId: orderId,
+        appointmentData: appointmentDataToSave,
+        timestamp: Date.now()
+      }))
+      console.log('💾 Información de cita pre-guardada en localStorage:', {
+        orderId,
+        appointmentData: appointmentDataToSave
+      })
 
       // Cambiar a vista de pago
       setPaymentStep('payment')

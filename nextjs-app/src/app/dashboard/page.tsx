@@ -79,13 +79,19 @@ export default function DashboardPage() {
   }, [selectedDate, dismissOptimization]);
 
   useEffect(() => {
-    if (filteredAppointments.length >= 2 && !isOptimizing && !optimizationResult && !optimizationAttempted) {
-      console.log('🔄 Auto-triggering optimization for date:', selectedDate);
-      console.log('📊 Citas filtradas para optimizar:', filteredAppointments.length);
-      setOptimizationAttempted(true);
-      optimize();
+    // Solo optimizar si NO se están mostrando citas pasadas
+    if (!showPastAppointments && filteredAppointments.length >= 2 && !isOptimizing && !optimizationResult && !optimizationAttempted) {
+      // Filtrar solo citas futuras para optimización
+      const futureAppointments = filteredAppointments.filter(apt => !isAppointmentPast(apt));
+      
+      if (futureAppointments.length >= 2) {
+        console.log('🔄 Auto-triggering optimization for date:', selectedDate);
+        console.log('📊 Citas futuras para optimizar:', futureAppointments.length);
+        setOptimizationAttempted(true);
+        optimize();
+      }
     }
-  }, [filteredAppointments, isOptimizing, optimizationResult, optimizationAttempted, optimize, selectedDate]);
+  }, [filteredAppointments, isOptimizing, optimizationResult, optimizationAttempted, optimize, selectedDate, showPastAppointments]);
 
   // Obtener ubicación del usuario
   useEffect(() => {
@@ -131,6 +137,19 @@ export default function DashboardPage() {
       return
     }
     
+    // Marcar que el usuario está usando el dashboard customer
+    if (user) {
+      const lastDashboard = localStorage.getItem('lastDashboard');
+      
+      // Si el usuario estaba en el dashboard business, no redirigir
+      if (lastDashboard === 'business') {
+        console.log('🔄 Usuario viene del dashboard business, permitiendo continuar...');
+        return;
+      }
+      
+      localStorage.setItem('lastDashboard', 'customer');
+    }
+    
     // Redirect business users to business dashboard
     if (user && (user.profileType === 'business' || user.role?.includes('business'))) {
       router.replace('/business/dashboard')
@@ -144,17 +163,76 @@ export default function DashboardPage() {
     
     if (user) {
       loadAppointments()
+      processPendingAppointmentPayment()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, user, router])
 
-  // Recargar citas cuando cambie el toggle
+  // Recargar citas cuando cambie el toggle y limpiar optimización
   useEffect(() => {
     if (user) {
       loadAppointments()
+      // Limpiar optimización de rutas cuando se cambia el toggle
+      dismissOptimization()
+      setOptimizationAttempted(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPastAppointments])
+
+  // Procesar pago pendiente después del login
+  const processPendingAppointmentPayment = async () => {
+    const pendingPaymentStr = localStorage.getItem('pendingAppointmentPayment')
+    if (!pendingPaymentStr || !user) return
+
+    try {
+      const pendingPayment = JSON.parse(pendingPaymentStr)
+      
+      // Verificar que no haya pasado más de 30 minutos
+      const minutesElapsed = (Date.now() - pendingPayment.timestamp) / 1000 / 60
+      if (minutesElapsed > 30) {
+        console.warn('⚠️ Pago pendiente expirado (>30 min)')
+        localStorage.removeItem('pendingAppointmentPayment')
+        return
+      }
+
+      console.log('🔄 Procesando pago pendiente:', pendingPayment)
+      
+      // Importar dinámicamente para evitar circular dependencies
+      const { createAppointment } = await import('@/services/api/appointments')
+      const { fetchServicesByBusiness } = await import('@/services/api/services')
+      
+      // Obtener servicios para nombre y duración
+      const services = await fetchServicesByBusiness(pendingPayment.businessId)
+      const service = services.find(s => s.serviceId === pendingPayment.formData.serviceId)
+      
+      const appointmentData = {
+        userId: user.userId,
+        businessId: pendingPayment.businessId,
+        locationId: pendingPayment.locationId,
+        customerName: pendingPayment.formData.customerName,
+        serviceType: service?.name || '',
+        serviceId: pendingPayment.formData.serviceId,
+        date: pendingPayment.formData.date,
+        time: pendingPayment.formData.timeSlot,
+        duration: service?.defaultDuration || 30,
+        notes: `Pago confirmado - Order ID: ${pendingPayment.orderId}${pendingPayment.formData.notes ? '\n' + pendingPayment.formData.notes : ''}`,
+        specialistId: pendingPayment.formData.specialistId,
+        specialistName: pendingPayment.formData.specialistName,
+      }
+
+      await createAppointment(appointmentData)
+      
+      toast.success(t('appointmentConfirmed', 'appointments') || '¡Cita confirmada!')
+      localStorage.removeItem('pendingAppointmentPayment')
+      
+      // Recargar citas
+      setTimeout(() => loadAppointments(), 1000)
+      
+    } catch (error) {
+      console.error('❌ Error procesando pago pendiente:', error)
+      toast.error('Error al confirmar la cita. Por favor contacta soporte.')
+    }
+  }
 
   // Helper para determinar si una cita ya pasó
   const isAppointmentPast = (appointment: AppointmentWithDetails): boolean => {
@@ -634,7 +712,7 @@ export default function DashboardPage() {
           )}
 
           {/* Route Optimization Card - Justo debajo del mapa */}
-          {hasSignificantImprovement && optimizationResult && !optimizationError && (
+          {!showPastAppointments && hasSignificantImprovement && optimizationResult && !optimizationError && (
             <div className="mb-12">
               <RouteOptimizationCard
                 optimizationResult={optimizationResult}

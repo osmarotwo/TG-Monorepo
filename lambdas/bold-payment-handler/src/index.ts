@@ -10,7 +10,8 @@ const BOLD_SECRET_KEY = process.env.BOLD_SECRET_KEY || '';
 const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://tg-om.vercel.app'
+  'https://tg-om.vercel.app',
+  'https://www.clyok.in'
 ];
 
 interface GenerateHashRequest {

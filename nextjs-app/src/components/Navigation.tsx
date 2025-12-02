@@ -89,8 +89,17 @@ export default function Navigation() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 flex items-center gap-4">
               <Logo size="md" />
+              {/* Business Name Badge - Solo visible para usuarios business */}
+              {isBusiness && user?.businessName && (
+                <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-[#13a4ec]/10 rounded-lg border border-[#13a4ec]/20">
+                  <svg className="w-5 h-5 text-[#13a4ec]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span className="text-sm font-semibold text-[#13a4ec]">{user.businessName}</span>
+                </div>
+              )}
             </div>
 
             {/* Language Selector (centro en móvil, lado derecho en desktop) */}
@@ -133,6 +142,18 @@ export default function Navigation() {
           </div>
         </div>
       </div>
+
+      {/* Business Name Banner - Mobile Only */}
+      {isBusiness && user?.businessName && (
+        <div className="md:hidden bg-gradient-to-r from-[#13a4ec]/5 to-[#13a4ec]/10 border-b border-[#13a4ec]/20 px-4 py-3">
+          <div className="flex items-center justify-center gap-2">
+            <svg className="w-4 h-4 text-[#13a4ec]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span className="text-sm font-semibold text-[#13a4ec]">{user.businessName}</span>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Tabs - Desktop */}
       <div className="hidden md:block border-b border-gray-100">

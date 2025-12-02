@@ -85,6 +85,25 @@ export async function getAvailableSlots(event: any) {
       };
     }
 
+    // 2b. Filtrar especialistas por servicio si se especifica
+    let filteredItems = queryResult.Items;
+    if (serviceType) {
+      filteredItems = queryResult.Items.filter((item: any) => {
+        const schedule = item as SpecialistSchedule;
+        return schedule.services && schedule.services.includes(serviceType);
+      });
+      console.log(`🔍 Filtrado por servicio "${serviceType}": ${queryResult.Items.length} → ${filteredItems.length} especialistas`);
+      
+      if (filteredItems.length === 0) {
+        console.log('⚠️ No hay especialistas que ofrezcan este servicio');
+        return {
+          statusCode: 200,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ availableSlots: [] })
+        };
+      }
+    }
+
     // 3. Consultar citas ya agendadas para esta ubicación y fecha
     const appointmentsResult = await docClient.send(new QueryCommand({
       TableName: APPOINTMENTS_TABLE,
@@ -173,9 +192,24 @@ export async function getAvailableSlots(event: any) {
 
     // 6. Encontrar slots consecutivos disponibles (excluyendo ocupados)
     const availableSlots: AvailableSlot[] = [];
-    const slotsNeeded = Math.ceil(durationMinutes / 15);
     
-    for (const item of queryResult.Items) {
+    // Determinar el intervalo de slots (15 o 30 minutos)
+    // Revisamos el primer especialista para detectar el intervalo
+    let slotInterval = 30; // Por defecto 30 min
+    if (filteredItems.length > 0) {
+      const firstSchedule = filteredItems[0] as SpecialistSchedule;
+      const times = Object.keys(firstSchedule.availability).sort();
+      if (times.length >= 2) {
+        const [h1, m1] = times[0].split(':').map(Number);
+        const [h2, m2] = times[1].split(':').map(Number);
+        slotInterval = (h2 * 60 + m2) - (h1 * 60 + m1);
+      }
+    }
+    
+    const slotsNeeded = Math.ceil(durationMinutes / slotInterval);
+    console.log(`🔢 Duración: ${durationMinutes} min, Intervalo de slots: ${slotInterval} min, Slots necesarios: ${slotsNeeded}`);
+    
+    for (const item of filteredItems) {
       const schedule = item as SpecialistSchedule;
       const times = Object.keys(schedule.availability).sort();
       
@@ -186,8 +220,9 @@ export async function getAvailableSlots(event: any) {
         // Verificar que todos los slots consecutivos estén disponibles Y no ocupados
         for (let j = 0; j < slotsNeeded; j++) {
           const currentTime = times[i + j];
-          // Verificar availability Y que no esté en citas agendadas
-          if (schedule.availability[currentTime] !== 'available' || bookedTimes.has(currentTime)) {
+          // Verificar availability (puede ser boolean true o string 'available') Y que no esté en citas agendadas
+          const isAvailable = schedule.availability[currentTime] === true || schedule.availability[currentTime] === 'available';
+          if (!isAvailable || bookedTimes.has(currentTime)) {
             allAvailable = false;
             break;
           }
@@ -203,6 +238,8 @@ export async function getAvailableSlots(event: any) {
         }
       }
     }
+    
+    console.log(`✅ Slots disponibles encontrados: ${availableSlots.length}`);
     
     // 5. Filtrar slots que ya pasaron si la fecha es hoy
     const now = new Date();

@@ -182,7 +182,7 @@ export default function BusinessLoginPage() {
 
           {/* Sign Up Link */}
           <p className="mt-6 text-center text-sm text-gray-600">
-            {t('dontHaveBusinessAccount', 'business.auth')}{' '}
+            {t('business.auth.dontHaveBusinessAccount')}{' '}
             <Link
               href="/business/auth/register"
               className="text-[#13a4ec] hover:text-[#0f8fcd] font-medium"
@@ -192,14 +192,17 @@ export default function BusinessLoginPage() {
           </p>
 
           {/* Back to Customer Portal */}
-          <p className="mt-4 text-center text-xs text-gray-500">
-            <Link
-              href="/auth/login"
-              className="hover:text-[#13a4ec]"
-            >
-              ← Customer login
-            </Link>
-          </p>
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-center text-sm text-gray-600">
+              ¿Eres cliente?{' '}
+              <Link
+                href="/auth/login"
+                className="font-medium text-[#13a4ec] hover:text-[#13a4ec]/90"
+              >
+                Accede al portal de clientes
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

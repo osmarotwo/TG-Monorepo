@@ -1,6 +1,6 @@
-// Force CDK redeploy: debug conflict detection 2025-11-13T20:45:00
+// Force CDK redeploy: fix module import error 2025-12-02T04:18:00
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { getAppointments, getAppointmentById, updateAppointment, deleteAppointment } from './handlers/appointments';
+import { getAppointments, getAppointmentById, getAppointmentsByBusiness, updateAppointment, deleteAppointment } from './handlers/appointments';
 import { createAppointment, validateAppointmentSlot } from './handlers/createAppointment';
 import { createPersonalAppointment } from './handlers/createPersonalAppointment';
 import { getLocations, getLocationById } from './handlers/locations';
@@ -38,6 +38,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       if (path === '/api/appointments') {
         return await getAppointments(event);
       }
+      if (path.match(/^\/api\/appointments\/business\/[^/]+$/)) {
+        return await getAppointmentsByBusiness(event);
+      }
       if (path.match(/^\/api\/appointments\/[^/]+$/)) {
         return await getAppointmentById(event);
       }
@@ -47,6 +50,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return await getLocations(event);
       }
       if (path.match(/^\/api\/locations\/[^/]+$/)) {
+        console.log('✅ Matched locations by ID route:', path);
         return await getLocationById(event);
       }
 
@@ -106,6 +110,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // Route not found
+    console.log('❌ Route not found - Path:', path, 'Method:', method);
     return {
       statusCode: 404,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },

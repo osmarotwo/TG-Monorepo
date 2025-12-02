@@ -90,22 +90,26 @@ export class AuthStack extends cdk.Stack {
     const frontendUrl = this.node.tryGetContext('frontendUrl') || 
                        'https://feature-frontend-user.d3npwupb455k1n.amplifyapp.com'; // Production URL from Amplify
     
-    // Get Google OAuth credentials from context (required)
-    const googleClientId = this.node.tryGetContext('googleClientId');
-    const googleClientSecret = this.node.tryGetContext('googleClientSecret');
-    
-    if (!googleClientId || !googleClientSecret) {
-      throw new Error('Google OAuth credentials must be provided via CDK context');
-    }
+    // Reference existing SSM parameters for Google OAuth
+    const googleClientIdParam = ssm.StringParameter.fromStringParameterName(
+      this, 
+      'GoogleClientIdParam', 
+      '/auth/google-client-id'
+    );
+    const googleClientSecretParam = ssm.StringParameter.fromStringParameterName(
+      this, 
+      'GoogleClientSecretParam', 
+      '/auth/google-client-secret'
+    );
     
     // Common environment variables
     const commonEnvironment = {
       USERS_TABLE: this.usersTable.tableName,
       SESSIONS_TABLE: this.sessionsTable.tableName,
       EMAIL_VERIFICATIONS_TABLE: this.emailVerificationsTable.tableName,
-      JWT_SECRET: '{{resolve:ssm:/auth/jwt-secret:1}}', // From SSM Parameter Store
-      GOOGLE_CLIENT_ID: googleClientId, // From context parameter
-      GOOGLE_CLIENT_SECRET: googleClientSecret, // From context parameter
+      JWT_SECRET_PARAM: '/auth/jwt-secret', // SSM Parameter path - Lambda reads at runtime
+      GOOGLE_CLIENT_ID: googleClientIdParam.stringValue,
+      GOOGLE_CLIENT_SECRET: googleClientSecretParam.stringValue,
       BCRYPT_ROUNDS: '12',
       TOKEN_EXPIRY: '1h',
       REFRESH_TOKEN_EXPIRY: '30d',

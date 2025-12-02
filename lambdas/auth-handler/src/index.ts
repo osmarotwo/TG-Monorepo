@@ -509,6 +509,12 @@ const handleGetProfile = async (event: AuthorizedEvent): Promise<APIGatewayProxy
         emailVerified: user.emailVerified,
         provider: user.provider,
         createdAt: user.createdAt,
+        // B2B fields
+        profileType: user.profileType,
+        businessId: user.businessId,
+        role: user.role,
+        businessName: user.businessName,
+        businessType: user.businessType,
       },
     });
   } catch (error) {

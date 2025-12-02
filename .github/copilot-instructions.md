@@ -1,5 +1,19 @@
 # GitHub Copilot Instructions - TG-OM Project
 
+## ⚠️ REGLA CRÍTICA DE DEPLOYMENT
+
+**SIEMPRE USA AWS CDK PARA DESPLIEGUES**
+- ❌ **NUNCA** usar `aws lambda update-function-code` directamente
+- ❌ **NUNCA** hacer deploy manual de Lambdas o recursos AWS
+- ✅ **SIEMPRE** usar `cdk deploy` desde la carpeta `/infrastructure`
+- ✅ **SIEMPRE** modificar los stacks de CDK en TypeScript
+- ✅ Comandos válidos:
+  - `cd infrastructure && cdk deploy DataStack`
+  - `cd infrastructure && cdk deploy AuthStack`
+  - `cd infrastructure && cdk deploy --all`
+
+---
+
 ## 🎨 Sistema de Diseño Clyok
 
 **IMPORTANTE**: Este proyecto usa el sistema de diseño Clyok. SIEMPRE consulta y respeta las especificaciones en:

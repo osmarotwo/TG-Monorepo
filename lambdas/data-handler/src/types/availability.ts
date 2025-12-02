@@ -43,16 +43,18 @@ export interface SpecialistSchedule {
   locationId: string;
   date: string; // "2025-10-22"
   availability: AvailabilitySlots; // Objeto con slots de 15 minutos
+  services?: string[]; // Servicios que ofrece este especialista
   createdAt: string;
   updatedAt: string;
 }
 
 /**
- * Objeto con slots de disponibilidad (cada 15 minutos)
+ * Objeto con slots de disponibilidad (cada 15 o 30 minutos)
  * Ejemplo: { "08:00": "available", "08:15": "booked", ... }
+ * O: { "08:00": true, "08:30": false, ... } (boolean true = available)
  */
 export interface AvailabilitySlots {
-  [time: string]: 'available' | 'booked' | 'reserved';
+  [time: string]: 'available' | 'booked' | 'reserved' | boolean;
 }
 
 /**

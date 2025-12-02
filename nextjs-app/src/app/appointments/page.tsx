@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import MapSection from '@/components/dashboard/MapSection'
 import CreateAppointmentModal from '@/components/CreateAppointmentModal'
-import { fetchBusinessesByOwner } from '@/services/api/businesses'
+import { fetchAllBusinesses } from '@/services/api/businesses'
 import { fetchLocationsByBusiness, type Location as LocationType } from '@/services/api/locations'
 import { fetchUpcomingAppointments, type Appointment, deleteAppointment } from '@/services/api/appointments'
 import { ToastContainer, useToast } from '@/components/Toast'
 import { formatPrice } from '@/utils/formatPrice'
 import { getAvailableSlots, type AvailableSlot } from '@/services/api/availabilityService'
 import { useLocale } from '@/contexts/LocaleContext'
+import locationService from '@/services/locationService'
 
 type Industry = 'all' | 'beauty' | 'fitness' | 'health' | 'food'
 
@@ -68,9 +69,8 @@ export default function AppointmentsPage() {
   const loadBusinesses = async () => {
     try {
       setLoading(true)
-      // En producción, esto debería obtener TODOS los negocios disponibles, no solo del owner
-      // Por ahora, usamos el test user para obtener los negocios de prueba
-      const businesses = await fetchBusinessesByOwner('test-user-camila')
+      // Obtener TODOS los negocios disponibles en la plataforma para que los clientes puedan agendar citas
+      const businesses = await fetchAllBusinesses()
       setAllBusinesses(businesses)
     } catch (error) {
       console.error('Error loading businesses:', error)
@@ -706,7 +706,7 @@ export default function AppointmentsPage() {
                       </div>
                       <div className="flex-1">
                         <h3 className="font-bold text-gray-900 mb-1">{location.name}</h3>
-                        <p className="text-sm text-gray-600">{location.address}</p>
+                        <p className="text-sm text-gray-600">{locationService.formatAddress(location.address)}</p>
                       </div>
                     </div>
                     {location.phone && (

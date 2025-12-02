@@ -57,7 +57,8 @@ export default function BusinessLocationsPage() {
   const loadLocations = async () => {
     try {
       setIsLoading(true);
-      const response = await locationService.getLocations();
+      const businessId = user?.businessId || user?.userId;
+      const response = await locationService.getLocations(businessId);
       setLocations(response.locations);
     } catch (error: any) {
       console.error('Error loading locations:', error);

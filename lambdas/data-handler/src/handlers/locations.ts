@@ -29,12 +29,24 @@ export async function getLocations(event: APIGatewayProxyEvent): Promise<APIGate
       },
     });
 
+    // Transform DynamoDB structure to match frontend Location interface
+    const transformedLocations = items.map((item: any) => ({
+      ...item,
+      address: {
+        street: item.address || '',
+        city: item.city || '',
+        state: '', // Not stored in DynamoDB
+        zipCode: '', // Not stored in DynamoDB
+        country: 'Colombia', // Default
+      },
+    }));
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
-        locations: items,
-        count: items.length,
+        locations: transformedLocations,
+        count: transformedLocations.length,
       }),
     };
   } catch (error) {
@@ -63,18 +75,30 @@ export async function getLocationById(event: APIGatewayProxyEvent): Promise<APIG
       };
     }
 
-    // Buscar usando GSI1 ya que las locaciones tienen:
-    // PK: BUSINESS#{businessId}, SK: LOCATION#{locationId}, GSI1PK: LOCATION#{locationId}
-    const items = await queryItems({
-      tableName: LOCATIONS_TABLE,
-      indexName: 'GSI1',
-      keyConditionExpression: 'GSI1PK = :gsi1pk',
-      expressionAttributeValues: {
-        ':gsi1pk': `LOCATION#${locationId}`,
+    // Hacer scan buscando por locationId ya que no hay un índice directo
+    // La estructura es: PK: BUSINESS#{businessId}, SK: LOCATION#{locationId}
+    console.log(`🔍 Buscando location con locationId: ${locationId}`);
+    
+    const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb');
+    const { DynamoDBDocumentClient, ScanCommand } = await import('@aws-sdk/lib-dynamodb');
+    
+    const client = new DynamoDBClient({});
+    const docClient = DynamoDBDocumentClient.from(client);
+    
+    const scanResult = await docClient.send(new ScanCommand({
+      TableName: LOCATIONS_TABLE,
+      FilterExpression: 'locationId = :lid',
+      ExpressionAttributeValues: {
+        ':lid': locationId,
       },
-    });
+    }));
+    
+    const items = scanResult.Items || [];
+
+    console.log(`📦 DynamoDB devolvió ${items?.length || 0} items para locationId: ${locationId}`);
 
     if (!items || items.length === 0) {
+      console.log(`❌ Location ${locationId} no encontrada en DynamoDB`);
       return {
         statusCode: 404,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -82,10 +106,23 @@ export async function getLocationById(event: APIGatewayProxyEvent): Promise<APIG
       };
     }
 
+    // Transform DynamoDB structure to match frontend Location interface
+    const location = items[0];
+    const transformedLocation = {
+      ...location,
+      address: {
+        street: location.address || '',
+        city: location.city || '',
+        state: '', // Not stored in DynamoDB
+        zipCode: '', // Not stored in DynamoDB
+        country: 'Colombia', // Default
+      },
+    };
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ location: items[0] }),
+      body: JSON.stringify({ location: transformedLocation }),
     };
   } catch (error) {
     console.error('Error fetching location:', error);

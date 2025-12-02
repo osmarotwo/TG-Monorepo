@@ -77,6 +77,60 @@ export async function getAppointments(event: APIGatewayProxyEvent): Promise<APIG
 }
 
 /**
+ * GET /api/appointments/business/{businessId}
+ * Retorna todas las citas de un negocio
+ */
+export async function getAppointmentsByBusiness(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const businessId = event.pathParameters?.businessId;
+
+    if (!businessId) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'businessId is required' }),
+      };
+    }
+
+    // Normalizar businessId: si no tiene prefijo, añadir BUSINESS#
+    const normalizedBusinessId = businessId.startsWith('BUSINESS#') 
+      ? businessId 
+      : `BUSINESS#${businessId}`;
+
+    console.log('📊 Buscando citas para business:', normalizedBusinessId);
+
+    // Query usando GSI3 (businessId index)
+    const items = await queryItems({
+      tableName: APPOINTMENTS_TABLE,
+      indexName: 'GSI3',
+      keyConditionExpression: 'GSI3PK = :pk',
+      expressionAttributeValues: {
+        ':pk': normalizedBusinessId,
+      },
+      scanIndexForward: false, // Más recientes primero
+    });
+
+    console.log('✅ Encontradas', items.length, 'citas para', normalizedBusinessId);
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        appointments: items,
+        count: items.length,
+      }),
+    };
+  } catch (error) {
+    console.error('Error fetching business appointments:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Internal server error' }),
+    };
+  }
+}
+
+/**
  * GET /api/appointments/{appointmentId}
  * Retorna detalles de una cita específica
  */

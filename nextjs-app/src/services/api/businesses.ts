@@ -24,6 +24,35 @@ export interface BusinessesResponse {
 }
 
 /**
+ * Fetch all businesses (for customers booking appointments)
+ */
+export async function fetchAllBusinesses(): Promise<Business[]> {
+  try {
+    const token = getAuthToken();
+    const response = await fetch(
+      `${API_BASE_URL}/api/businesses`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch businesses: ${response.statusText}`);
+    }
+
+    const data: BusinessesResponse = await response.json();
+    return data.businesses;
+  } catch (error) {
+    console.error('Error fetching businesses:', error);
+    throw error;
+  }
+}
+
+/**
  * Fetch businesses by owner ID
  */
 export async function fetchBusinessesByOwner(ownerId: string): Promise<Business[]> {

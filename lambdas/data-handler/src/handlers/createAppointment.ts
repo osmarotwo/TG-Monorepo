@@ -32,13 +32,18 @@ export async function createAppointment(event: APIGatewayProxyEvent): Promise<AP
       userId,
       businessId,
       locationId,
+      locationName,
       customerName,
       serviceType,
       serviceId,
+      servicePrice,
+      serviceCurrency,
       date,
       time,
       duration,
       notes,
+      specialistId,
+      specialistName,
       startTime,
       endTime,
       estimatedDuration,
@@ -61,26 +66,8 @@ export async function createAppointment(event: APIGatewayProxyEvent): Promise<AP
     const appointmentId = uuidv4();
     const now = new Date().toISOString();
 
-    // Obtener precio del servicio si serviceId fue proporcionado
-    let servicePrice: number | undefined;
-    let serviceCurrency: string | undefined;
-    
-    if (serviceId) {
-      try {
-        const service = await getItem(SERVICES_TABLE, {
-          PK: `BUSINESS#${businessId}`,
-          SK: `SERVICE#${serviceId}`
-        });
-        
-        if (service) {
-          servicePrice = service.basePrice;
-          serviceCurrency = service.currency;
-        }
-      } catch (error) {
-        console.warn('Could not fetch service price:', error);
-        // Continuar sin el precio si hay error
-      }
-    }
+    // El precio y moneda vienen del frontend (desde services.ts)
+    // No necesitamos buscar en Services table que no existe aún
 
     // Crear item para DynamoDB
     const appointment = {
@@ -92,10 +79,15 @@ export async function createAppointment(event: APIGatewayProxyEvent): Promise<AP
       isFlexible: true, // Las citas de negocio SÍ se pueden reagendar
       businessId,
       locationId,
+      ...(locationName && { locationName }),
       customerName,
       serviceType,
       serviceName: serviceType, // Alias para compatibilidad
       serviceId: serviceId || undefined,
+      ...(servicePrice !== undefined && { servicePrice }),
+      ...(serviceCurrency && { serviceCurrency }),
+      ...(specialistId && { specialistId }),
+      ...(specialistName && { specialistName }),
       date,
       time,
       duration: duration || estimatedDuration,
@@ -103,16 +95,16 @@ export async function createAppointment(event: APIGatewayProxyEvent): Promise<AP
       endTime: endTime || calculateEndTime(date, time, duration || estimatedDuration),
       status,
       notes: notes || '',
-      // Incluir precio y moneda si están disponibles
-      ...(servicePrice !== undefined && { servicePrice }),
-      ...(serviceCurrency && { serviceCurrency }),
       createdAt: now,
       updatedAt: now,
       // GSI fields para consultas por business y location
       GSI1PK: `BUSINESS#${businessId}`,
       GSI1SK: `DATE#${date}#TIME#${time}`,
       GSI2PK: `LOCATION#${locationId}`,
-      GSI2SK: `DATE#${date}#TIME#${time}`
+      GSI2SK: `DATE#${date}#TIME#${time}`,
+      // GSI3 para consultas por businessId con status
+      GSI3PK: `BUSINESS#${businessId}`,
+      GSI3SK: `STATUS#${status}#${date}#${time}`
     };
 
     // Guardar en DynamoDB

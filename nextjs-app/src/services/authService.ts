@@ -384,3 +384,19 @@ class AuthService {
 // Singleton instance
 export const authService = new AuthService()
 export default authService
+
+/**
+ * Helper function to get authorization headers for API requests
+ */
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  const token = authService.getAccessToken()
+  
+  if (!token) {
+    throw new Error('No authentication token available')
+  }
+  
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  }
+}

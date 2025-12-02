@@ -83,14 +83,10 @@ export class AmplifyStack extends cdk.Stack {
       githubTokenParameterName
     );
     
-    // Get Google OAuth credentials from CDK context (passed at deployment time)
-    // These are NOT hardcoded - they're set via environment variables at deployment
-    const googleClientId = this.node.tryGetContext('googleClientId') || '';
-    const googleClientSecret = this.node.tryGetContext('googleClientSecret') || '';
-    
-    if (!googleClientId || !googleClientSecret) {
-      throw new Error('Google OAuth credentials must be provided via CDK context: -c googleClientId=xxx -c googleClientSecret=xxx');
-    }
+    // Get Google OAuth credentials - these will be read from SSM by Lambda at runtime
+    // We pass empty strings here as Amplify doesn't use them directly
+    const googleClientId = 'PLACEHOLDER_READ_FROM_SSM';
+    const googleClientSecret = 'PLACEHOLDER_READ_FROM_SSM';
 
     // ====================
     // Amplify App

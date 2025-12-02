@@ -83,7 +83,7 @@ class LocationService {
   private accessToken: string | null = null
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://your-api-gateway-url'
+    this.baseUrl = process.env.NEXT_PUBLIC_DATA_API_URL || 'https://your-api-gateway-url'
     
     // Cargar token del localStorage si existe
     if (typeof window !== 'undefined') {
@@ -181,7 +181,7 @@ class LocationService {
    * Crear una nueva ubicación
    */
   async createLocation(locationData: CreateLocationData): Promise<LocationResponse> {
-    return this.request<LocationResponse>('/locations', {
+    return this.request<LocationResponse>('/api/locations', {
       method: 'POST',
       body: JSON.stringify(locationData),
     })
@@ -190,8 +190,9 @@ class LocationService {
   /**
    * Obtener todas las ubicaciones del negocio
    */
-  async getLocations(): Promise<LocationsResponse> {
-    return this.request<LocationsResponse>('/locations', {
+  async getLocations(businessId?: string): Promise<LocationsResponse> {
+    const queryParams = businessId ? `?businessId=${businessId}` : '';
+    return this.request<LocationsResponse>(`/api/locations${queryParams}`, {
       method: 'GET',
     })
   }
@@ -200,7 +201,7 @@ class LocationService {
    * Obtener una ubicación específica por ID
    */
   async getLocation(locationId: string): Promise<LocationResponse> {
-    return this.request<LocationResponse>(`/locations/${locationId}`, {
+    return this.request<LocationResponse>(`/api/locations/${locationId}`, {
       method: 'GET',
     })
   }
@@ -212,7 +213,7 @@ class LocationService {
     locationId: string,
     updates: UpdateLocationData
   ): Promise<LocationResponse> {
-    return this.request<LocationResponse>(`/locations/${locationId}`, {
+    return this.request<LocationResponse>(`/api/locations/${locationId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     })
@@ -222,7 +223,7 @@ class LocationService {
    * Eliminar una ubicación (soft delete)
    */
   async deleteLocation(locationId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/locations/${locationId}`, {
+    return this.request<{ message: string }>(`/api/locations/${locationId}`, {
       method: 'DELETE',
     })
   }
@@ -274,7 +275,32 @@ class LocationService {
    * Formatear dirección como string
    */
   formatAddress(address: Address): string {
-    return `${address.street}, ${address.city}, ${address.state} ${address.zipCode}, ${address.country}`
+    const parts: string[] = [];
+    
+    // Agregar calle
+    if (address.street) {
+      parts.push(address.street);
+    }
+    
+    // Agregar ciudad
+    if (address.city) {
+      parts.push(address.city);
+    }
+    
+    // Agregar estado y código postal juntos si existen
+    const stateZip: string[] = [];
+    if (address.state) stateZip.push(address.state);
+    if (address.zipCode) stateZip.push(address.zipCode);
+    if (stateZip.length > 0) {
+      parts.push(stateZip.join(' '));
+    }
+    
+    // Agregar país
+    if (address.country) {
+      parts.push(address.country);
+    }
+    
+    return parts.join(', ');
   }
 
   /**

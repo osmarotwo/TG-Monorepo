@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import AuthenticatedApp from '../components/AuthenticatedApp'
+import { createAppointment, type CreateAppointmentData } from '@/services/api/appointments'
 
 function HomeContent() {
   const searchParams = useSearchParams()
@@ -10,35 +11,98 @@ function HomeContent() {
   const [showPaymentStatus, setShowPaymentStatus] = useState<'success' | 'error' | null>(null)
 
   useEffect(() => {
-    // Capturar parámetros de pago de Bold
-    const boldOrderId = searchParams?.get('bold-order-id')
-    const boldTxStatus = searchParams?.get('bold-tx-status')
+    const processBoldPayment = async () => {
+      // Capturar parámetros de pago de Bold
+      const boldOrderId = searchParams?.get('bold-order-id')
+      const boldTxStatus = searchParams?.get('bold-tx-status')
 
-    if (boldOrderId && boldTxStatus) {
-      console.log('💳 Pago detectado:', { boldOrderId, boldTxStatus })
-      
-      if (boldTxStatus === 'approved' || boldTxStatus === 'APPROVED') {
-        setShowPaymentStatus('success')
+      if (boldOrderId && boldTxStatus) {
+        console.log('💳 Pago detectado:', { boldOrderId, boldTxStatus })
         
-        // Notificar al componente que escucha para crear la cita
-        window.postMessage(
-          { type: 'BOLD_PAYMENT_SUCCESS', orderId: boldOrderId, status: boldTxStatus },
-          window.location.origin
-        )
-        
-        // Redirigir a appointments después de 3 segundos
-        setTimeout(() => {
-          router.push('/appointments')
-        }, 3000)
-      } else {
-        setShowPaymentStatus('error')
-        
-        // Redirigir después de 5 segundos en caso de error
-        setTimeout(() => {
-          router.push('/appointments')
-        }, 5000)
+        if (boldTxStatus === 'approved' || boldTxStatus === 'APPROVED') {
+          setShowPaymentStatus('success')
+          
+          // Leer información de la cita pendiente de localStorage
+          const pendingPaymentStr = localStorage.getItem('pendingAppointmentPayment')
+          
+          if (pendingPaymentStr) {
+            try {
+              const pendingPayment = JSON.parse(pendingPaymentStr)
+              console.log('📋 Cita pendiente encontrada:', pendingPayment)
+              
+              // Verificar que el orderId coincida
+              if (pendingPayment.boldOrderId === boldOrderId) {
+                console.log('✅ OrderId coincide, creando cita...')
+                
+                // Crear la cita en DynamoDB
+                const appointmentData: CreateAppointmentData = {
+                  ...pendingPayment.appointmentData,
+                  notes: `Pago confirmado - Order ID: ${boldOrderId}${pendingPayment.appointmentData.notes ? '\n' + pendingPayment.appointmentData.notes : ''}`
+                }
+                
+                const result = await createAppointment(appointmentData)
+                
+                console.log('✅ ✅ ✅ CITA CREADA EXITOSAMENTE:', {
+                  appointmentId: result.appointmentId,
+                  boldOrderId,
+                  timestamp: new Date().toISOString()
+                })
+                
+                // Limpiar localStorage
+                localStorage.removeItem('pendingAppointmentPayment')
+                
+                // Redirigir a dashboard después de 2 segundos
+                setTimeout(() => {
+                  router.push('/dashboard')
+                }, 2000)
+              } else {
+                console.error('❌ OrderId no coincide:', {
+                  expected: pendingPayment.boldOrderId,
+                  received: boldOrderId
+                })
+                
+                // Redirigir a appointments
+                setTimeout(() => {
+                  router.push('/appointments')
+                }, 3000)
+              }
+            } catch (error) {
+              console.error('❌ Error al crear cita después del pago:', error)
+              
+              // Redirigir a appointments incluso si hay error
+              setTimeout(() => {
+                router.push('/appointments')
+              }, 3000)
+            }
+          } else {
+            console.log('⚠️ No se encontró información de cita pendiente en localStorage')
+            
+            // Notificar al componente que escucha (por si el modal todavía está abierto)
+            window.postMessage(
+              { type: 'BOLD_PAYMENT_SUCCESS', orderId: boldOrderId, status: boldTxStatus },
+              window.location.origin
+            )
+            
+            // Redirigir a appointments después de 3 segundos
+            setTimeout(() => {
+              router.push('/appointments')
+            }, 3000)
+          }
+        } else {
+          setShowPaymentStatus('error')
+          
+          // Limpiar localStorage en caso de error
+          localStorage.removeItem('pendingAppointmentPayment')
+          
+          // Redirigir después de 5 segundos en caso de error
+          setTimeout(() => {
+            router.push('/appointments')
+          }, 5000)
+        }
       }
     }
+    
+    processBoldPayment()
   }, [searchParams, router])
 
   return (

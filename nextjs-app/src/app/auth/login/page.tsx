@@ -216,6 +216,16 @@ function LoginForm() {
               {t('signUp', 'auth')}
             </Link>
           </p>
+
+          {/* Business Login Link */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-center text-sm text-gray-600">
+              ¿Tienes un negocio?{' '}
+              <Link href="/business/auth/login" className="font-medium text-[#13a4ec] hover:text-[#13a4ec]/90">
+                Accede al portal empresarial
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -132,10 +132,11 @@ export class DataStack extends cdk.Stack {
     // Lambda Function
     // ====================
 
-    const dataHandler = new lambda.Function(this, 'DataHandlerFunction', {
+    const dataHandler = new lambda.Function(this, 'DataHandlerFunctionV2', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset('../lambdas/data-handler/dist'),
+      description: 'Data handler for Clyok API - v2 with fixed module structure',
       environment: {
         APPOINTMENTS_TABLE: this.appointmentsTable.tableName,
         BUSINESSES_TABLE: this.businessesTable.tableName,
@@ -210,6 +211,11 @@ export class DataStack extends cdk.Stack {
     // Validate appointment slot route
     const validateResource = appointmentsResource.addResource('validate');
     validateResource.addMethod('POST', dataIntegration); // POST /api/appointments/validate
+    
+    // Business appointments route
+    const businessAppointmentsResource = appointmentsResource.addResource('business');
+    const businessAppointmentsByIdResource = businessAppointmentsResource.addResource('{businessId}');
+    businessAppointmentsByIdResource.addMethod('GET', dataIntegration); // GET /api/appointments/business/{businessId}
     
     const appointmentByIdResource = appointmentsResource.addResource('{id}');
     appointmentByIdResource.addMethod('GET', dataIntegration); // GET /api/appointments/{id}

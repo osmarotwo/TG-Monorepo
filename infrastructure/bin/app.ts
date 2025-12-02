@@ -5,6 +5,7 @@ import { ApiLambdaStack } from '../lib/api-lambda-stack';
 import { AuthStack } from '../lib/auth-stack';
 import { AmplifyStack } from '../lib/amplify-stack';
 import { DataStack } from '../lib/data-stack';
+import { BusinessStack } from '../lib/business-stack';
 
 const app = new cdk.App();
 
@@ -29,6 +30,21 @@ const dataStack = new DataStack(app, 'DataStack', {
   env,
 });
 
+// Business Stack for B2B Portal (Business Appointments, Availability)
+const businessStack = new BusinessStack(app, 'BusinessStack', {
+  env,
+  apiId: authStack.authApi.restApiId,
+  rootResourceId: authStack.authApi.restApiRootResourceId,
+  appointmentsTableArn: dataStack.appointmentsTable.tableArn,
+  appointmentsTableName: dataStack.appointmentsTable.tableName,
+  usersTableArn: authStack.usersTable.tableArn,
+  usersTableName: authStack.usersTable.tableName,
+  locationsTableArn: dataStack.locationsTable.tableArn,
+  locationsTableName: dataStack.locationsTable.tableName,
+  availabilityTableArn: dataStack.availabilityTable.tableArn,
+  availabilityTableName: dataStack.availabilityTable.tableName,
+});
+
 // Frontend Amplify Stack
 const amplifyStack = new AmplifyStack(app, 'AmplifyStack', {
   env,
@@ -40,6 +56,9 @@ const amplifyStack = new AmplifyStack(app, 'AmplifyStack', {
 });
 
 // Add dependencies to ensure proper deployment order
+businessStack.addDependency(authStack);
+businessStack.addDependency(dataStack);
 amplifyStack.addDependency(authStack);
 amplifyStack.addDependency(apiStack);
 amplifyStack.addDependency(dataStack);
+amplifyStack.addDependency(businessStack);

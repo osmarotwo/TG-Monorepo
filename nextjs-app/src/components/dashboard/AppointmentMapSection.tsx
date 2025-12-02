@@ -20,6 +20,23 @@ interface AppointmentMapSectionProps {
   onDateChange?: (date: string) => void
 }
 
+// Helper to safely render address (handles both string and object formats)
+const formatAddress = (address: any): string => {
+  if (!address) return 'Dirección no disponible'
+  if (typeof address === 'string') return address
+  if (typeof address === 'object' && address !== null) {
+    const parts = [
+      address.street,
+      address.city,
+      address.state,
+      address.zipCode,
+      address.country
+    ].filter(Boolean)
+    return parts.join(', ') || 'Dirección no disponible'
+  }
+  return 'Dirección no disponible'
+}
+
 interface AppointmentWithLocation extends Appointment {
   location?: Location
   travelTimeFromUser?: string
@@ -131,7 +148,7 @@ export default function AppointmentMapSection({
             locationId: 'personal',
             businessId: '',
             name: apt.title || 'Personal Appointment',
-            address: apt.address || 'Dirección no disponible',
+            address: formatAddress(apt.address) || 'Dirección no disponible',
             city: '',
             latitude: apt.coordinates.lat,
             longitude: apt.coordinates.lng,
@@ -154,7 +171,7 @@ export default function AppointmentMapSection({
           locationId: apt.locationId || '',
           businessId: apt.businessId || '',
           name: apt.locationName || apt.businessName || 'Ubicación',
-          address: apt.address || 'Dirección no disponible',
+          address: formatAddress(apt.address) || 'Dirección no disponible',
           city: '',
           latitude: apt.coordinates?.lat || apt.latitude || 0,
           longitude: apt.coordinates?.lng || apt.longitude || 0,

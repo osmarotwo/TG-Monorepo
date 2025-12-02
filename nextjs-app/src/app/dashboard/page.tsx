@@ -207,25 +207,12 @@ export default function DashboardPage() {
       
       // Importar dinámicamente para evitar circular dependencies
       const { createAppointment } = await import('@/services/api/appointments')
-      const { fetchServicesByBusiness } = await import('@/services/api/services')
       
-      // Obtener servicios para nombre y duración
-      const services = await fetchServicesByBusiness(pendingPayment.appointmentData.businessId)
-      const service = services.find(s => s.serviceId === pendingPayment.appointmentData.serviceId)
-      
+      // El appointmentData ya viene completo del modal
       const appointmentData = {
+        ...pendingPayment.appointmentData,
         userId: user.userId,
-        businessId: pendingPayment.businessId,
-        locationId: pendingPayment.locationId,
-        customerName: pendingPayment.formData.customerName,
-        serviceType: service?.name || '',
-        serviceId: pendingPayment.formData.serviceId,
-        date: pendingPayment.formData.date,
-        time: pendingPayment.formData.timeSlot,
-        duration: service?.defaultDuration || 30,
-        notes: `Pago confirmado - Order ID: ${pendingPayment.orderId}${pendingPayment.formData.notes ? '\n' + pendingPayment.formData.notes : ''}`,
-        specialistId: pendingPayment.formData.specialistId,
-        specialistName: pendingPayment.formData.specialistName,
+        notes: `Pago confirmado - Order ID: ${pendingPayment.boldOrderId}${pendingPayment.appointmentData.notes ? '\n' + pendingPayment.appointmentData.notes : ''}`
       }
 
       await createAppointment(appointmentData)

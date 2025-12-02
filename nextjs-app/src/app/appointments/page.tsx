@@ -706,7 +706,7 @@ export default function AppointmentsPage() {
                       </div>
                       <div className="flex-1">
                         <h3 className="font-bold text-gray-900 mb-1">{location.name}</h3>
-                        <p className="text-sm text-gray-600">{locationService.formatAddress(location.address)}</p>
+                        <p className="text-sm text-gray-600">{location.address}</p>
                       </div>
                     </div>
                     {location.phone && (

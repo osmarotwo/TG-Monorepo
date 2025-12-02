@@ -24,6 +24,23 @@ interface Business {
   description?: string
   logo?: string
 }
+// Helper to safely render address (handles both string and object formats)
+const formatAddress = (address: any): string => {
+  if (!address) return 'N/A'
+  if (typeof address === 'string') return address
+  if (typeof address === 'object' && address !== null) {
+    const parts = [
+      address.street,
+      address.city,
+      address.state,
+      address.zipCode,
+      address.country
+    ].filter(Boolean)
+    return parts.join(', ') || 'N/A'
+  }
+  return 'N/A'
+}
+
 
 export default function AppointmentsPage() {
   const { user, status } = useAuth()
@@ -415,7 +432,7 @@ export default function AppointmentsPage() {
                                     <td className="px-6 py-4">
                                       <div className="text-sm text-gray-900">
                                         {isPersonal 
-                                          ? (appointment.address || 'N/A')
+                                          ? (formatAddress(appointment.address) || 'N/A')
                                           : (appointment.locationName || 'N/A')
                                         }
                                       </div>
@@ -527,7 +544,7 @@ export default function AppointmentsPage() {
                                   <div className="space-y-2 text-sm text-gray-600 mb-3">
                                     <div className="flex items-center gap-2">
                                       <span>📍</span>
-                                      <span>{isPersonal ? (appointment.address || 'N/A') : (appointment.locationName || 'N/A')}</span>
+                                      <span>{isPersonal ? formatAddress(appointment.address) : (appointment.locationName || 'N/A')}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <span>📅</span>
@@ -876,7 +893,7 @@ function EditAppointmentModal({ appointment, isOpen, onClose, onSave }: EditAppo
             {isPersonal ? appointment.title : appointment.serviceType}
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            {isPersonal ? appointment.address : appointment.locationName}
+            {isPersonal ? formatAddress(appointment.address) : appointment.locationName}
           </p>
           {!isPersonal && appointment.customerName && (
             <p className="text-sm text-gray-500 mt-1">

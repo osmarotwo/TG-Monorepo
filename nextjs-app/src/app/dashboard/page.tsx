@@ -19,6 +19,23 @@ interface AppointmentWithDetails extends AppointmentType {
   business?: Business
 }
 
+// Helper to safely render address (handles both string and object formats)
+const formatAddress = (address: any): string => {
+  if (!address) return 'N/A'
+  if (typeof address === 'string') return address
+  if (typeof address === 'object' && address !== null) {
+    const parts = [
+      address.street,
+      address.city,
+      address.state,
+      address.zipCode,
+      address.country
+    ].filter(Boolean)
+    return parts.join(', ') || 'N/A'
+  }
+  return 'N/A'
+}
+
 export default function DashboardPage() {
   const { user, status } = useAuth()
   const { t } = useLocale()
@@ -638,7 +655,7 @@ export default function DashboardPage() {
                           
                           {/* Location */}
                           <p className="text-sm text-gray-600 mb-1">
-                            📍 {isPersonal ? appointment.address : (appointment.location?.name || appointment.locationName || 'Location')}
+                            📍 {isPersonal ? formatAddress(appointment.address) : (appointment.location?.name || appointment.locationName || 'Location')}
                           </p>
                           
                           {/* Date & Time */}

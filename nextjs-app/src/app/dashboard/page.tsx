@@ -210,8 +210,8 @@ export default function DashboardPage() {
       const { fetchServicesByBusiness } = await import('@/services/api/services')
       
       // Obtener servicios para nombre y duración
-      const services = await fetchServicesByBusiness(pendingPayment.businessId)
-      const service = services.find(s => s.serviceId === pendingPayment.formData.serviceId)
+      const services = await fetchServicesByBusiness(pendingPayment.appointmentData.businessId)
+      const service = services.find(s => s.serviceId === pendingPayment.appointmentData.serviceId)
       
       const appointmentData = {
         userId: user.userId,

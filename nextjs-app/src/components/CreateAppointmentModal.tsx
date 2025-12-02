@@ -290,8 +290,6 @@ export default function CreateAppointmentModal({
             time: formData.timeSlot,
             duration: duration,
             notes: `Pago confirmado - Order ID: ${boldOrderId}${formData.notes ? '\n' + formData.notes : ''}`,
-            specialistId: formData.specialistId,
-            specialistName: formData.specialistName,
           }
           
           console.log('📤 CREANDO CITA CON PAGO CONFIRMADO:', {

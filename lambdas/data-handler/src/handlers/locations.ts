@@ -75,25 +75,17 @@ export async function getLocationById(event: APIGatewayProxyEvent): Promise<APIG
       };
     }
 
-    // Hacer scan buscando por locationId ya que no hay un índice directo
-    // La estructura es: PK: BUSINESS#{businessId}, SK: LOCATION#{locationId}
-    console.log(`🔍 Buscando location con locationId: ${locationId}`);
-    
-    const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb');
-    const { DynamoDBDocumentClient, ScanCommand } = await import('@aws-sdk/lib-dynamodb');
-    
-    const client = new DynamoDBClient({});
-    const docClient = DynamoDBDocumentClient.from(client);
-    
-    const scanResult = await docClient.send(new ScanCommand({
-      TableName: LOCATIONS_TABLE,
-      FilterExpression: 'locationId = :lid',
-      ExpressionAttributeValues: {
-        ':lid': locationId,
+    // Buscar usando GSI1 ya que las locaciones tienen:
+    // PK: BUSINESS#{businessId}, SK: LOCATION#{locationId}, GSI1PK: LOCATION#{locationId}
+    console.log(`🔍 Buscando location con ID: ${locationId}, GSI1PK: LOCATION#${locationId}`);
+    const items = await queryItems({
+      tableName: LOCATIONS_TABLE,
+      indexName: 'GSI1',
+      keyConditionExpression: 'GSI1PK = :gsi1pk',
+      expressionAttributeValues: {
+        ':gsi1pk': `LOCATION#${locationId}`,
       },
-    }));
-    
-    const items = scanResult.Items || [];
+    });
 
     console.log(`📦 DynamoDB devolvió ${items?.length || 0} items para locationId: ${locationId}`);
 

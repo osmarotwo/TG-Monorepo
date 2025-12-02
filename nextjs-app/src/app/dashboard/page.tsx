@@ -79,19 +79,13 @@ export default function DashboardPage() {
   }, [selectedDate, dismissOptimization]);
 
   useEffect(() => {
-    // Solo optimizar si NO se están mostrando citas pasadas
-    if (!showPastAppointments && filteredAppointments.length >= 2 && !isOptimizing && !optimizationResult && !optimizationAttempted) {
-      // Filtrar solo citas futuras para optimización
-      const futureAppointments = filteredAppointments.filter(apt => !isAppointmentPast(apt));
-      
-      if (futureAppointments.length >= 2) {
-        console.log('🔄 Auto-triggering optimization for date:', selectedDate);
-        console.log('📊 Citas futuras para optimizar:', futureAppointments.length);
-        setOptimizationAttempted(true);
-        optimize();
-      }
+    if (filteredAppointments.length >= 2 && !isOptimizing && !optimizationResult && !optimizationAttempted) {
+      console.log('🔄 Auto-triggering optimization for date:', selectedDate);
+      console.log('📊 Citas filtradas para optimizar:', filteredAppointments.length);
+      setOptimizationAttempted(true);
+      optimize();
     }
-  }, [filteredAppointments, isOptimizing, optimizationResult, optimizationAttempted, optimize, selectedDate, showPastAppointments]);
+  }, [filteredAppointments, isOptimizing, optimizationResult, optimizationAttempted, optimize, selectedDate]);
 
   // Obtener ubicación del usuario
   useEffect(() => {
@@ -168,13 +162,10 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, user, router])
 
-  // Recargar citas cuando cambie el toggle y limpiar optimización
+  // Recargar citas cuando cambie el toggle
   useEffect(() => {
     if (user) {
       loadAppointments()
-      // Limpiar optimización de rutas cuando se cambia el toggle
-      dismissOptimization()
-      setOptimizationAttempted(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPastAppointments])
@@ -712,7 +703,7 @@ export default function DashboardPage() {
           )}
 
           {/* Route Optimization Card - Justo debajo del mapa */}
-          {!showPastAppointments && hasSignificantImprovement && optimizationResult && !optimizationError && (
+          {hasSignificantImprovement && optimizationResult && !optimizationError && (
             <div className="mb-12">
               <RouteOptimizationCard
                 optimizationResult={optimizationResult}

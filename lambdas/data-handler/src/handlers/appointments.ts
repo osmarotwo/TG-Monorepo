@@ -92,10 +92,10 @@ export async function getAppointmentsByBusiness(event: APIGatewayProxyEvent): Pr
       };
     }
 
-    // Normalizar businessId: si no tiene prefijo, añadir BUSINESS#
-    const normalizedBusinessId = businessId.startsWith('BUSINESS#') 
+    // Normalizar businessId: si no tiene prefijo, añadir BUS#
+    const normalizedBusinessId = businessId.startsWith('BUS#') || businessId.startsWith('BUSINESS#') 
       ? businessId 
-      : `BUSINESS#${businessId}`;
+      : `BUS#${businessId}`;
 
     console.log('📊 Buscando citas para business:', normalizedBusinessId);
 

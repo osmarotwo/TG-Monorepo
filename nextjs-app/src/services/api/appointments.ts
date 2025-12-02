@@ -159,18 +159,13 @@ export interface CreateAppointmentData {
   userId: string;
   businessId: string;
   locationId: string;
-  locationName?: string; // Nombre de la sede
   customerName: string;
   serviceType: string;
-  serviceId?: string; // ID del servicio
-  servicePrice?: number; // Precio del servicio
-  serviceCurrency?: string; // Moneda del precio (COP, USD, etc)
+  serviceId?: string; // ID del servicio para obtener el precio
   date: string; // YYYY-MM-DD
   time: string; // HH:MM
   duration: number; // minutes
   notes?: string;
-  specialistId?: string;
-  specialistName?: string;
 }
 
 export async function createAppointment(data: CreateAppointmentData): Promise<Appointment> {

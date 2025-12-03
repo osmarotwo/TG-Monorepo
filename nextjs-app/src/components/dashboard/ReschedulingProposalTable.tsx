@@ -30,9 +30,9 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
   const unchangedAppointments = rescheduledAppointments.filter(apt => apt.hasTimeChange === false);
 
   const formatTime = (isoString: string): string => {
-    // Los datos ya vienen en hora de Colombia (construidos localmente)
-    // Solo parseamos y formateamos sin conversión de timezone
+    // Parsear la fecha ISO y sumar 5 horas para Colombia
     const date = new Date(isoString);
+    const colombiaDate = new Date(date.getTime() + (5 * 60 * 60 * 1000));
     
     const formatter = new Intl.DateTimeFormat('es-CO', {
       hour: 'numeric',
@@ -40,7 +40,7 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
       hour12: true
     });
     
-    return formatter.format(date);
+    return formatter.format(colombiaDate);
   };
 
   const formatDate = (isoString: string): string => {

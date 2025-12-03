@@ -40,27 +40,23 @@ export default function AppointmentDetailModal({ appointment, isOpen, onClose }:
   const date = new Date(appointment.startTime)
   const endDate = new Date(appointment.endTime)
   
-  const dateStr = date.toLocaleDateString('es-CO', {
+  const dateFormatter = new Intl.DateTimeFormat('es-CO', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     timeZone: 'America/Bogota'
   })
+  const dateStr = dateFormatter.format(date)
   
-  const timeStr = date.toLocaleTimeString('es-CO', {
+  const timeFormatter = new Intl.DateTimeFormat('es-CO', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
     timeZone: 'America/Bogota'
   })
-  
-  const endTimeStr = endDate.toLocaleTimeString('es-CO', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'America/Bogota'
-  })
+  const timeStr = timeFormatter.format(date)
+  const endTimeStr = timeFormatter.format(endDate)
 
   const industryEmojis: Record<string, string> = {
     beauty: '💅',

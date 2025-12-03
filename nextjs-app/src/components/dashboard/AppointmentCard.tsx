@@ -27,7 +27,13 @@ export default function AppointmentCard({ appointment, onViewDetails }: Appointm
   };
   
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' });
+    const formatter = new Intl.DateTimeFormat('es-CO', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/Bogota'
+    });
+    return formatter.format(date);
   };
   
   const dateText = formatDate(startDate);

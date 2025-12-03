@@ -47,5 +47,11 @@
   "license": "MIT",
   "engines": {
     "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.943.0",
+    "@aws-sdk/lib-dynamodb": "^3.943.0",
+    "tsx": "^4.21.0",
+    "uuid": "^13.0.0"
   }
 }

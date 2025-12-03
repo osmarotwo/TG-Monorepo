@@ -380,6 +380,7 @@ export default function AppointmentMapSection({
       const date = apt.startTime ? new Date(apt.startTime) : new Date();
       const timeStr = apt.time || date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
       const dateStr = apt.date || date.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+      const addressStr = formatAddress(apt.location!.address);
 
       const infoContent = `
         <div style="padding: 12px; max-width: 250px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
@@ -398,7 +399,7 @@ export default function AppointmentMapSection({
             <strong style="color: #374151;">Fecha:</strong> ${dateStr} ${timeStr}
           </div>
           <div style="color: #4B5563; font-size: 13px; margin-top: 8px;">
-            📍 ${apt.location!.address}
+            📍 ${addressStr}
           </div>
         </div>
       `;
@@ -589,8 +590,8 @@ export default function AppointmentMapSection({
           day: 'numeric',
         })
 
-        // Formatear dirección correctamente
-        const addressStr = apt.location.address || 'Dirección no disponible'
+        // Formatear dirección correctamente (usando helper)
+        const addressStr = formatAddress(apt.location.address)
 
         const infoContent = `
           <div style="padding: 12px; max-width: 250px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">

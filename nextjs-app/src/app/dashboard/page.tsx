@@ -8,6 +8,7 @@ import Navigation from '@/components/Navigation'
 import AppointmentMapSection from '@/components/dashboard/AppointmentMapSection'
 import RouteOptimizationCard from '@/components/dashboard/RouteOptimizationCard'
 import CreatePersonalAppointmentModal from '@/components/CreatePersonalAppointmentModal'
+import AppointmentDetailModal from '@/components/AppointmentDetailModal'
 import { fetchUpcomingAppointments, type Appointment as AppointmentType } from '@/services/api/appointments'
 import { fetchLocationById, type Location } from '@/services/api/locations'
 import { fetchBusinessById, type Business } from '@/services/api/businesses'
@@ -51,6 +52,8 @@ export default function DashboardPage() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [optimizationAttempted, setOptimizationAttempted] = useState(false) // Prevenir loop infinito
   const [selectedDate, setSelectedDate] = useState<string>('all') // Estado compartido para filtro de fecha
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
 
   // Filtrar citas por fecha seleccionada
   const filteredAppointments = React.useMemo(() => {
@@ -490,7 +493,7 @@ export default function DashboardPage() {
           <div className="mb-8">
             <div className="mb-4">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
-                Próximas Citas
+                {t('dashboard.upcomingAppointments', 'dashboard')}
               </h2>
               
               {/* Botones de acción - Stack en móvil, inline en desktop */}
@@ -675,7 +678,13 @@ export default function DashboardPage() {
                               </>
                             )}
                             {!isPersonal && (
-                              <button className="text-sm text-[#13a4ec] font-medium hover:text-[#0f8fcd]">
+                              <button 
+                                onClick={() => {
+                                  setSelectedAppointment(appointment)
+                                  setShowDetailModal(true)
+                                }}
+                                className="text-sm text-[#13a4ec] font-medium hover:text-[#0f8fcd]"
+                              >
                                 Ver Detalles
                               </button>
                             )}
@@ -934,3 +943,15 @@ function EditPersonalAppointmentModal({ appointment, isOpen, onClose, onSave }: 
     </div>
   )
 }
+
+      {/* Modal de Detalle de Cita */}
+      {selectedAppointment && (
+        <AppointmentDetailModal
+          appointment={selectedAppointment}
+          isOpen={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false)
+            setSelectedAppointment(null)
+          }}
+        />
+      )}

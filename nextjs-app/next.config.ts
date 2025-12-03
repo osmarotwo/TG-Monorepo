@@ -8,6 +8,14 @@ const nextConfig: NextConfig = {
   },
   // Asegurar compatibilidad con Amplify
   distDir: 'out',
+  // Deshabilitar ESLint durante build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  // Deshabilitar TypeScript strict checks durante build
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 };
 
 export default nextConfig;

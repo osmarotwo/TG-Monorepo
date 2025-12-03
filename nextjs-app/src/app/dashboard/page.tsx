@@ -793,6 +793,18 @@ export default function DashboardPage() {
           onSave={handleSaveEditPersonalAppointment}
         />
       )}
+
+      {/* Modal de Detalle de Cita */}
+      {selectedAppointment && (
+        <AppointmentDetailModal
+          appointment={selectedAppointment}
+          isOpen={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false)
+            setSelectedAppointment(null)
+          }}
+        />
+      )}
     </>
   )
 }
@@ -943,15 +955,3 @@ function EditPersonalAppointmentModal({ appointment, isOpen, onClose, onSave }: 
     </div>
   )
 }
-
-      {/* Modal de Detalle de Cita */}
-      {selectedAppointment && (
-        <AppointmentDetailModal
-          appointment={selectedAppointment}
-          isOpen={showDetailModal}
-          onClose={() => {
-            setShowDetailModal(false)
-            setSelectedAppointment(null)
-          }}
-        />
-      )}

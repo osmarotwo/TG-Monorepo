@@ -30,14 +30,14 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
   const unchangedAppointments = rescheduledAppointments.filter(apt => apt.hasTimeChange === false);
 
   const formatTime = (isoString: string): string => {
-    // Parse the UTC date and convert to Colombia timezone
+    // Parse the ISO string (assumed to be in UTC)
     const date = new Date(isoString);
     
-    // Create formatter with Colombia timezone
+    // Format directly with Intl using Colombia timezone
     const formatter = new Intl.DateTimeFormat('es-CO', {
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: false,
+      hour12: true,
       timeZone: 'America/Bogota'
     });
     
@@ -47,14 +47,16 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
   const formatDate = (isoString: string): string => {
     const date = new Date(isoString);
     
+    // Convert to Colombia timezone
+    const colombiaDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    
     const formatter = new Intl.DateTimeFormat('es-CO', { 
       day: '2-digit', 
       month: 'short',
-      year: 'numeric',
-      timeZone: 'America/Bogota'
+      year: 'numeric'
     });
     
-    return formatter.format(date);
+    return formatter.format(colombiaDate);
   };
 
   // Determinar si es cita personal basado en el campo type

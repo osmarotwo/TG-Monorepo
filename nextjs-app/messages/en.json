@@ -41,6 +41,7 @@
     "orSignUpWith": "or sign up with",
     "registerWithGoogle": "Register with Google",
     "continueWithGoogle": "Continue with Google",
+    "loadingGoogle": "Loading Google...",
     "alreadyHaveAccount": "Already have an account?",
     "dontHaveAccount": "Don't have an account?",
     "accessYourAccount": "Access your account",
@@ -352,6 +353,7 @@
       "dontHaveBusinessAccount": "Don't have a business account?",
       "registerWithGoogle": "Register business with Google",
       "continueWithGoogle": "Continue with Google",
+    "loadingGoogle": "Loading Google...",
       "accessBusinessPortal": "Access Business Portal",
       "notBusinessAccount": "This is not a business account. Please use the customer login.",
       "businessTypes": {

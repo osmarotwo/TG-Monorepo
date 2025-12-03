@@ -92,7 +92,7 @@ export const useGoogleAuth = () => {
           initializeGoogleAuth()
           clearInterval(checkGoogle)
         }
-      }, 100)
+      }, 50) // Reducido de 100ms a 50ms para detección más rápida
 
       // Cleanup después de 10 segundos
       setTimeout(() => {

@@ -217,7 +217,7 @@ export default function DashboardPage() {
 
       await createAppointment(appointmentData)
       
-      toast.success(t('appointmentConfirmed', 'appointments') || '¡Cita confirmada!')
+      toast.success(t('createSuccess', 'appointments') || '¡Cita creada exitosamente!')
       localStorage.removeItem('pendingAppointmentPayment')
       
       // Recargar citas

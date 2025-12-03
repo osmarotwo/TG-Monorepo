@@ -212,7 +212,7 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
   };
 
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
-  const monthName = currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const monthName = currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric', timeZone: 'America/Bogota' });
 
   if (loading) {
     return (
@@ -340,7 +340,7 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <Calendar className="w-5 h-5 mr-2 text-[#13a4ec]" />
             {selectedDate 
-              ? `Citas del ${selectedDate.getDate()} ${selectedDate.toLocaleDateString('es-ES', { month: 'long' })}`
+              ? `Citas del ${selectedDate.getDate()} ${selectedDate.toLocaleDateString('es-ES', { month: 'long', timeZone: 'America/Bogota' })}`
               : 'Todas las citas'}
           </h3>
 

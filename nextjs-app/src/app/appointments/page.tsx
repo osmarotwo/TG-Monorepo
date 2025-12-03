@@ -332,7 +332,8 @@ export default function AppointmentsPage() {
                                   weekday: 'short',
                                   day: '2-digit',
                                   month: 'short',
-                                  year: 'numeric'
+                                  year: 'numeric',
+                                  timeZone: 'America/Bogota'
                                 })
                                 const count = appointments.filter(apt => apt.date === date).length
                                 return (
@@ -399,11 +400,13 @@ export default function AppointmentsPage() {
                                 const formattedDate = dateObj.toLocaleDateString('es-CO', {
                                   day: '2-digit',
                                   month: 'short',
-                                  year: 'numeric'
+                                  year: 'numeric',
+                                  timeZone: 'America/Bogota'
                                 })
                                 const formattedTime = appointment.time || dateObj.toLocaleTimeString('es-CO', {
                                   hour: '2-digit',
-                                  minute: '2-digit'
+                                  minute: '2-digit',
+                                  timeZone: 'America/Bogota'
                                 })
 
                                 return (
@@ -508,11 +511,13 @@ export default function AppointmentsPage() {
                               const formattedDate = dateObj.toLocaleDateString('es-CO', {
                                 day: '2-digit',
                                 month: 'short',
-                                year: 'numeric'
+                                year: 'numeric',
+                                timeZone: 'America/Bogota'
                               })
                               const formattedTime = appointment.time || dateObj.toLocaleTimeString('es-CO', {
                                 hour: '2-digit',
-                                minute: '2-digit'
+                                minute: '2-digit',
+                                timeZone: 'America/Bogota'
                               })
 
                               return (

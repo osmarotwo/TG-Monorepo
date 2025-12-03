@@ -886,7 +886,8 @@ export default function CreateAppointmentModal({
                       weekday: 'long',
                       year: 'numeric',
                       month: 'long',
-                      day: 'numeric'
+                      day: 'numeric',
+                      timeZone: 'America/Bogota'
                     })}
                   </span>
                 </div>

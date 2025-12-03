@@ -31,7 +31,7 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
 
   const formatTime = (isoString: string): string => {
     const date = new Date(isoString);
-    return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' });
   };
 
   const formatDate = (isoString: string): string => {
@@ -39,7 +39,8 @@ export default function ReschedulingProposalTable({ rescheduledAppointments }: R
     return date.toLocaleDateString('es-CO', { 
       day: '2-digit', 
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'America/Bogota'
     });
   };
 

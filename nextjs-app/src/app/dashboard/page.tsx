@@ -650,7 +650,7 @@ export default function DashboardPage() {
                           
                           {/* Date & Time */}
                           <p className="text-sm text-gray-600 mb-1">
-                            {new Date(appointment.startTime).toLocaleDateString()} • {new Date(`2000-01-01T${appointment.time}`).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                            {new Date(appointment.startTime).toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })} • {new Date(`2000-01-01T${appointment.time}`).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' })}
                           </p>
                           
                           {/* Duración */}

@@ -44,19 +44,22 @@ export default function AppointmentDetailModal({ appointment, isOpen, onClose }:
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'America/Bogota'
   })
   
   const timeStr = date.toLocaleTimeString('es-CO', {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
+    timeZone: 'America/Bogota'
   })
   
   const endTimeStr = endDate.toLocaleTimeString('es-CO', {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
+    timeZone: 'America/Bogota'
   })
 
   const industryEmojis: Record<string, string> = {

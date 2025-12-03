@@ -4,8 +4,8 @@ frontend:
     preBuild:
       commands:
         - nvm use 20
-        - cd nextjs-app
         - npm install
+        - cd nextjs-app
     build:
       commands:
         - npm run build

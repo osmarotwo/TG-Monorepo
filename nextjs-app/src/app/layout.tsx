@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MiPlataforma - Registro",
-  description: "Únete para gestionar tus citas sin problemas.",
+  title: "Clyok - Gestión de Citas",
+  description: "Plataforma de orquestación de citas y tiempo para negocios y usuarios.",
 };
 
 export default function RootLayout({

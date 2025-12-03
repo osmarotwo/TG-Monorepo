@@ -13,15 +13,26 @@ export default function BusinessDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'loading') return;
+    console.log('🔍 Dashboard useEffect triggered');
+    console.log('   Status:', status);
+    console.log('   User email:', user?.email);
+    console.log('   BusinessId:', user?.businessId);
+    console.log('   UserId:', user?.userId);
+    
+    if (status === 'loading') {
+      console.log('   ⏳ Status is loading, waiting...');
+      return;
+    }
     
     if (status === 'unauthenticated') {
+      console.log('   🔒 Unauthenticated, redirecting to login...');
       router.push('/business/auth/login');
       return;
     }
     
     // Marcar que el usuario está usando el dashboard business
     if (user) {
+      console.log('   ✅ User loaded, setting lastDashboard');
       localStorage.setItem('lastDashboard', 'business');
     }
     
@@ -34,13 +45,40 @@ export default function BusinessDashboard() {
     }
   }, [status, user, router]);
 
-  if (!user) {
+  // Logging detallado del render
+  console.log('🎨 Dashboard RENDER:', {
+    status,
+    hasUser: !!user,
+    userEmail: user?.email,
+    businessId: user?.businessId,
+    userId: user?.userId,
+    willUseBusinessId: user?.businessId || user?.userId
+  });
+
+  // Esperar hasta que el status no sea loading Y tengamos un user válido
+  if (status === 'loading' || !user) {
+    console.log('⏳ Showing loading spinner - status:', status, 'hasUser:', !!user);
     return (
       <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#13a4ec]"></div>
       </div>
     );
   }
+
+  // Extraer businessId
+  const businessId = user.businessId || user.userId;
+  
+  // Si aún no hay businessId, seguir mostrando loading
+  if (!businessId || businessId === 'undefined') {
+    console.log('⏳ Waiting for businessId... current:', businessId);
+    return (
+      <div className="min-h-screen bg-[#f6f7f8] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#13a4ec]"></div>
+      </div>
+    );
+  }
+  
+  console.log('✅ Rendering dashboard with businessId:', businessId);
 
   return (
     <div className="min-h-screen bg-[#f6f7f8] pb-20 md:pb-8">
@@ -57,8 +95,8 @@ export default function BusinessDashboard() {
           </p>
         </div>
 
-        {/* Business Statistics Component */}
-        <BusinessStatistics businessId={user.businessId || user.userId} />
+        {/* Business Statistics Component - Solo renderizar cuando tenemos businessId */}
+        {businessId && <BusinessStatistics key={businessId} businessId={businessId} />}
       </div>
     </div>
   );

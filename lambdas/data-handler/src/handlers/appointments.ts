@@ -92,12 +92,22 @@ export async function getAppointmentsByBusiness(event: APIGatewayProxyEvent): Pr
       };
     }
 
-    // Normalizar businessId: si no tiene prefijo, añadir BUS#
-    const normalizedBusinessId = businessId.startsWith('BUS#') || businessId.startsWith('BUSINESS#') 
-      ? businessId 
-      : `BUS#${businessId}`;
+    // Normalizar businessId: manejar diferentes formatos
+    // BIZ001 -> BUSINESS#BIZ001
+    // BIZ-SALON-BELLEZA -> BUSINESS#BIZ-SALON-BELLEZA
+    let normalizedBusinessId: string;
+    
+    if (businessId.startsWith('BUSINESS#')) {
+      normalizedBusinessId = businessId;
+    } else if (businessId.startsWith('BUS#')) {
+      // Convertir BUS# a BUSINESS#
+      normalizedBusinessId = businessId.replace('BUS#', 'BUSINESS#');
+    } else {
+      // Agregar prefijo BUSINESS#
+      normalizedBusinessId = `BUSINESS#${businessId}`;
+    }
 
-    console.log('📊 Buscando citas para business:', normalizedBusinessId);
+    console.log('📊 Buscando citas para business:', businessId, '→', normalizedBusinessId);
 
     // Query usando GSI3 (businessId index)
     const items = await queryItems({

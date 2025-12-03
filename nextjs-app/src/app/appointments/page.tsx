@@ -238,7 +238,7 @@ export default function AppointmentsPage() {
 
   const filteredBusinesses = allBusinesses.filter(business => {
     if (selectedIndustry === 'all') return true
-    return business.industry.toLowerCase() === selectedIndustry
+    return business.industry?.toLowerCase() === selectedIndustry
   })
 
   const industryFilters: { value: Industry; label: string; emoji: string }[] = [

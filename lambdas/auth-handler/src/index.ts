@@ -294,6 +294,7 @@ const handleLogin = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxy
         emailVerified: user.emailVerified, // El frontend usará esto para determinar el flujo
         profileType: user.profileType || 'customer',
         role: user.role || null,
+        businessId: user.businessId || null,
         businessName: user.businessName || null,
         businessType: user.businessType || null,
         provider: user.provider || 'email',

@@ -28,7 +28,8 @@ interface AppointmentsCalendarProps {
 }
 
 export default function AppointmentsCalendar({ businessId }: AppointmentsCalendarProps) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  // Inicializar en diciembre 2025 para ver las citas del 4 de diciembre
+  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 11, 1)); // Diciembre 2025
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
@@ -48,19 +49,86 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
   const fetchAppointments = async () => {
     setLoading(true);
     try {
+      console.log('📅 Fetching appointments for businessId:', businessId);
+      
       // Import the business service
       const { getBusinessAppointments } = await import('@/services/businessService');
       
       // Fetch real appointments from API
       const fetchedAppointments = await getBusinessAppointments(businessId);
       
-      setAppointments(fetchedAppointments);
+      console.log('✅ Appointments fetched:', {
+        count: fetchedAppointments.length,
+        sample: fetchedAppointments.slice(0, 2)
+      });
       
-      // Extract unique locations
-      const uniqueLocations = Array.from(new Set(fetchedAppointments.map(a => a.locationName)));
+      console.log('📋 First appointment structure:', fetchedAppointments[0]);
+      
+      // Transformar los datos del backend al formato esperado por el frontend
+      const transformedAppointments = fetchedAppointments.map((apt: any) => {
+        // Buscar el nombre de la sede en múltiples campos posibles
+        let locationName = apt.locationName || apt.location?.name || apt.locationAddress;
+        
+        // Si no hay nombre, intentar construirlo desde el locationId
+        if (!locationName && apt.locationId) {
+          // Mapeo de IDs conocidos
+          const locationMap: Record<string, string> = {
+            'LOC001': 'Salón Aurora - Chapinero',
+            'LOC002': 'Salón Aurora - Chía',
+            'LOC003': 'Salón Aurora - Usaquén',
+            'LOC004': 'Salón Aurora - Suba',
+            'LOC005': 'Salón Aurora - Kennedy'
+          };
+          locationName = locationMap[apt.locationId] || apt.locationId;
+        }
+        
+        return {
+          appointmentId: apt.appointmentId,
+          businessId: apt.businessId,
+          locationId: apt.locationId,
+          locationName: locationName || 'Sede no disponible',
+          userId: apt.userId || apt.customerId,
+          userName: apt.customerName || apt.userName || 'Cliente no disponible',
+          userEmail: apt.customerEmail || apt.userEmail || 'No disponible',
+          userPhone: apt.customerPhone || apt.userPhone,
+          serviceName: apt.serviceType || apt.serviceName || 'Servicio',
+          servicePrice: apt.servicePrice || apt.price || 0,
+          serviceCurrency: apt.serviceCurrency || apt.currency || 'COP',
+          serviceDuration: apt.duration || apt.serviceDuration || apt.estimatedDuration || 60,
+          status: apt.status || 'pending',
+          appointmentDate: apt.date || apt.appointmentDate,
+          appointmentTime: apt.time || apt.appointmentTime || '00:00',
+          createdAt: apt.createdAt,
+          notes: apt.notes
+        };
+      });
+      
+      console.log('🔄 Transformed appointments:', transformedAppointments.slice(0, 2));
+      
+      setAppointments(transformedAppointments);
+      
+      // Extract unique locations from appointments
+      const appointmentLocations = Array.from(new Set(transformedAppointments.map(a => a.locationName).filter(Boolean)));
+      
+      console.log('📍 Locations from appointments:', appointmentLocations);
+      
+      // Always include all Aurora locations even if they don't have appointments
+      const allAuroraLocations = [
+        'Salón Aurora - Chapinero',
+        'Salón Aurora - Chía',
+        'Salón Aurora - Usaquén',
+        'Salón Aurora - Suba',
+        'Salón Aurora - Kennedy'
+      ];
+      
+      // Merge appointment locations with all locations, removing duplicates
+      const uniqueLocations = Array.from(new Set([...allAuroraLocations, ...appointmentLocations]));
+      
+      console.log('📍 Final locations list:', uniqueLocations);
+      
       setLocations(uniqueLocations);
     } catch (error) {
-      console.error('Error fetching appointments:', error);
+      console.error('❌ Error fetching appointments:', error);
       
       // Fallback to mock data if API fails
       const mockAppointments: Appointment[] = [
@@ -238,11 +306,11 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
             <select
               value={selectedLocation}
               onChange={(e) => setSelectedLocation(e.target.value)}
-              className="w-full px-4 py-2 bg-[#f6f7f8] border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+              className="w-full px-4 py-2 bg-[#f6f7f8] border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900"
             >
               <option value="all">Todas las sedes</option>
-              {locations.map(location => (
-                <option key={location} value={location}>{location}</option>
+              {locations.map((location, index) => (
+                <option key={`${location}-${index}`} value={location}>{location}</option>
               ))}
             </select>
           </div>
@@ -253,7 +321,7 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-4 py-2 bg-[#f6f7f8] border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+              className="w-full px-4 py-2 bg-[#f6f7f8] border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent text-gray-900"
             >
               <option value="all">Todos los estados</option>
               <option value="pending">Pendiente</option>
@@ -379,7 +447,7 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
                     </div>
                     <div className="flex items-center">
                       <DollarSign className="w-4 h-4 mr-2" />
-                      ${apt.servicePrice.toLocaleString('es-CO')} {apt.serviceCurrency}
+                      ${apt.servicePrice?.toLocaleString('es-CO') || apt.servicePrice || 0} {apt.serviceCurrency}
                     </div>
                     {apt.userPhone && (
                       <div className="flex items-center">

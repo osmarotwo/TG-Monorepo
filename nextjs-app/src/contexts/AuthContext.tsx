@@ -160,12 +160,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('🔐 Iniciando sesión nativa...')
       const response = await authService.loginNative(data)
       
-      updateUserAndStatus(response.user)
+      // Preservar businessId si existe en el usuario actual y no viene en la respuesta
+      const currentBusinessId = state.user?.businessId
+      const userWithBusinessId = {
+        ...response.user,
+        businessId: response.user.businessId || currentBusinessId
+      }
+      
+      console.log('💼 Login - BusinessId preservado:', userWithBusinessId.businessId)
+      updateUserAndStatus(userWithBusinessId)
       
     } catch (error) {
       handleError(error)
     }
-  }, [updateState, handleError, updateUserAndStatus])
+  }, [updateState, handleError, updateUserAndStatus, state.user])
 
   // Autenticación con Google
   const authenticateWithGoogle = useCallback(async (data: GoogleAuthData) => {

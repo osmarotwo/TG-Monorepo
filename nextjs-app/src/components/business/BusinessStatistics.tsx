@@ -63,102 +63,102 @@ export default function BusinessStatistics({ businessId }: BusinessStatisticsPro
   const [confirmedAppointments, setConfirmedAppointments] = useState(0);
   const [pendingAppointments, setPendingAppointments] = useState(0);
 
-  useEffect(() => {
-    fetchBusinessStats();
-  }, [businessId]);
+  const getLocationName = (locationId: string): string => {
+    const locationMap: Record<string, string> = {
+      'LOC001': 'Salón Aurora - Chapinero',
+      'LOC002': 'Salón Aurora - Chía',
+      'LOC003': 'Salón Aurora - Usaquén',
+      'LOC004': 'Salón Aurora - Suba',
+      'LOC005': 'Salón Aurora - Kennedy',
+    };
+    return locationMap[locationId] || locationId;
+  };
 
-  const fetchBusinessStats = async () => {
+  const getDefaultPrice = (serviceType: string): number => {
+    const priceMap: Record<string, number> = {
+      'Corte de cabello': 30000,
+      'Tinte completo': 80000,
+      'Keratina': 120000,
+      'Manicure': 25000,
+      'Pedicure': 30000,
+      'Balayage': 150000,
+      'Color': 80000,
+      'Mechas': 100000,
+    };
+    return priceMap[serviceType] || 50000; // Precio por defecto
+  };
+
+  useEffect(() => {
+    const fetchBusinessStats = async () => {
     setLoading(true);
     try {
+      console.log('📊 Fetching business stats for:', businessId);
+      
+      if (!businessId || businessId === 'undefined' || businessId === 'null') {
+        console.warn('⚠️ Invalid businessId, skipping fetch');
+        setLoading(false);
+        return;
+      }
+      
       // Import the business service
       const { getBusinessAppointments } = await import('@/services/businessService');
       
       // Fetch real appointments from API
       const fetchedAppointments = await getBusinessAppointments(businessId);
+      console.log('✅ Fetched appointments:', fetchedAppointments.length);
+      console.log('📋 First appointment:', fetchedAppointments[0]);
       
-      // Transform to component format
-      const transformedAppointments: Appointment[] = fetchedAppointments.map(apt => ({
-        appointmentId: apt.appointmentId,
-        businessId: apt.businessId,
-        locationId: apt.locationId,
-        locationName: apt.locationName,
-        servicePrice: apt.servicePrice,
-        serviceCurrency: apt.serviceCurrency,
-        status: apt.status,
-        appointmentDate: apt.appointmentDate,
-        createdAt: apt.createdAt,
-      }));
+      // Transform to component format with location name mapping
+      const transformedAppointments: Appointment[] = fetchedAppointments.map(apt => {
+        // Usar servicePrice del registro, o calcular desde serviceType si no existe
+        const price = apt.servicePrice || getDefaultPrice(apt.serviceType || apt.serviceName || '');
+        
+        return {
+          appointmentId: apt.appointmentId,
+          businessId: apt.businessId,
+          locationId: apt.locationId,
+          locationName: getLocationName(apt.locationId),
+          servicePrice: price,
+          serviceCurrency: apt.serviceCurrency || 'COP',
+          status: apt.status,
+          appointmentDate: apt.appointmentDate,
+          createdAt: apt.createdAt,
+        };
+      });
 
+      console.log('🔄 Transformed appointments:', transformedAppointments.length);
+      console.log('💵 Appointments by location:', transformedAppointments.reduce((acc, apt) => {
+        if (!acc[apt.locationId]) acc[apt.locationId] = [];
+        acc[apt.locationId].push({
+          id: apt.appointmentId,
+          status: apt.status,
+          price: apt.servicePrice,
+          location: apt.locationName
+        });
+        return acc;
+      }, {} as any));
       setAppointments(transformedAppointments);
       calculateStatistics(transformedAppointments);
     } catch (error) {
-      console.error('Error fetching business statistics:', error);
+      console.error('❌ Error fetching business statistics:', error);
       
-      // Fallback to mock data if API fails
-      const mockAppointments: Appointment[] = [
-        {
-          appointmentId: '1',
-          businessId,
-          locationId: 'loc1',
-          locationName: 'Sede Norte',
-          servicePrice: 50000,
-          serviceCurrency: 'COP',
-          status: 'confirmed',
-          appointmentDate: new Date().toISOString(),
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          appointmentId: '2',
-          businessId,
-          locationId: 'loc1',
-          locationName: 'Sede Norte',
-          servicePrice: 75000,
-          serviceCurrency: 'COP',
-          status: 'confirmed',
-          appointmentDate: new Date().toISOString(),
-          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          appointmentId: '3',
-          businessId,
-          locationId: 'loc2',
-          locationName: 'Sede Sur',
-          servicePrice: 60000,
-          serviceCurrency: 'COP',
-          status: 'pending',
-          appointmentDate: new Date().toISOString(),
-          createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          appointmentId: '4',
-          businessId,
-          locationId: 'loc2',
-          locationName: 'Sede Sur',
-          servicePrice: 80000,
-          serviceCurrency: 'COP',
-          status: 'confirmed',
-          appointmentDate: new Date().toISOString(),
-          createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          appointmentId: '5',
-          businessId,
-          locationId: 'loc3',
-          locationName: 'Sede Centro',
-          servicePrice: 90000,
-          serviceCurrency: 'COP',
-          status: 'confirmed',
-          appointmentDate: new Date().toISOString(),
-          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
-
-      setAppointments(mockAppointments);
-      calculateStatistics(mockAppointments);
+      // Set empty appointments array on error
+      setAppointments([]);
+      calculateStatistics([]);
     } finally {
       setLoading(false);
     }
-  };
+    };
+
+    // Solo ejecutar si hay businessId válido
+    if (businessId && businessId !== 'undefined' && businessId !== 'null') {
+      console.log('🎯 BusinessId changed, fetching stats:', businessId);
+      fetchBusinessStats();
+    } else {
+      console.log('⏳ Waiting for valid businessId, current:', businessId);
+      setLoading(false);
+    }
+  }, [businessId]);
 
   const calculateStatistics = (appts: Appointment[]) => {
     // Total appointments
@@ -176,24 +176,32 @@ export default function BusinessStatistics({ businessId }: BusinessStatisticsPro
       .reduce((sum, a) => sum + (a.servicePrice * 0.20), 0);
     setTotalRevenue(revenue);
 
+    // Initialize all 5 Aurora locations
+    const allLocations: LocationStats[] = [
+      { locationId: 'LOC001', locationName: 'Salón Aurora - Chapinero', totalAppointments: 0, confirmedAppointments: 0, occupancyRate: 0 },
+      { locationId: 'LOC002', locationName: 'Salón Aurora - Chía', totalAppointments: 0, confirmedAppointments: 0, occupancyRate: 0 },
+      { locationId: 'LOC003', locationName: 'Salón Aurora - Usaquén', totalAppointments: 0, confirmedAppointments: 0, occupancyRate: 0 },
+      { locationId: 'LOC004', locationName: 'Salón Aurora - Suba', totalAppointments: 0, confirmedAppointments: 0, occupancyRate: 0 },
+      { locationId: 'LOC005', locationName: 'Salón Aurora - Kennedy', totalAppointments: 0, confirmedAppointments: 0, occupancyRate: 0 },
+    ];
+
     // Calculate location statistics
     const locationMap = new Map<string, LocationStats>();
     
+    // Initialize map with all locations
+    allLocations.forEach(loc => {
+      locationMap.set(loc.locationId, { ...loc });
+    });
+    
+    // Update with actual appointment data
     appts.forEach(apt => {
-      const existing = locationMap.get(apt.locationId) || {
-        locationId: apt.locationId,
-        locationName: apt.locationName,
-        totalAppointments: 0,
-        confirmedAppointments: 0,
-        occupancyRate: 0,
-      };
-
-      existing.totalAppointments++;
-      if (apt.status === 'confirmed') {
-        existing.confirmedAppointments++;
+      const existing = locationMap.get(apt.locationId);
+      if (existing) {
+        existing.totalAppointments++;
+        if (apt.status === 'confirmed') {
+          existing.confirmedAppointments++;
+        }
       }
-
-      locationMap.set(apt.locationId, existing);
     });
 
     // Calculate occupancy rate (confirmed / total * 100)
@@ -204,16 +212,57 @@ export default function BusinessStatistics({ businessId }: BusinessStatisticsPro
         : 0,
     }));
 
+    // Count active locations (locations with appointments)
+    const activeLocations = stats.filter(s => s.totalAppointments > 0).length;
+
     setLocationStats(stats);
+    console.log('📊 Statistics calculated:', { 
+      totalAppointments: appts.length, 
+      confirmed, 
+      pending, 
+      revenue,
+      activeLocations,
+      stats 
+    });
   };
+
+  // Calculate appointments over time (last 6 days)
+  const getAppointmentsOverTime = () => {
+    const today = new Date();
+    const labels: string[] = [];
+    const data: number[] = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      
+      const label = i === 0 ? 'Hoy' : i === 1 ? 'Ayer' : `Hace ${i} días`;
+      labels.push(label);
+
+      // Count confirmed appointments created on this day
+      const count = appointments.filter(apt => {
+        const aptDate = new Date(apt.createdAt);
+        return apt.status === 'confirmed' &&
+               aptDate.getDate() === date.getDate() &&
+               aptDate.getMonth() === date.getMonth() &&
+               aptDate.getFullYear() === date.getFullYear();
+      }).length;
+      
+      data.push(count);
+    }
+
+    return { labels, data };
+  };
+
+  const timeData = getAppointmentsOverTime();
 
   // Chart configurations
   const appointmentsOverTimeData = {
-    labels: ['Hace 5 días', 'Hace 4 días', 'Hace 3 días', 'Hace 2 días', 'Ayer', 'Hoy'],
+    labels: timeData.labels,
     datasets: [
       {
         label: 'Citas Confirmadas',
-        data: [1, 1, 1, 1, 0, 0],
+        data: timeData.data,
         borderColor: '#13a4ec',
         backgroundColor: 'rgba(19, 164, 236, 0.1)',
         tension: 0.4,
@@ -221,12 +270,15 @@ export default function BusinessStatistics({ businessId }: BusinessStatisticsPro
     ],
   };
 
+  // Filter to only show locations with appointments
+  const activeLocationStats = locationStats.filter(stat => stat.totalAppointments > 0);
+
   const locationOccupancyData = {
-    labels: locationStats.map(stat => stat.locationName),
+    labels: activeLocationStats.map(stat => stat.locationName),
     datasets: [
       {
         label: 'Ocupación (%)',
-        data: locationStats.map(stat => stat.occupancyRate),
+        data: activeLocationStats.map(stat => stat.occupancyRate),
         backgroundColor: '#13a4ec',
         borderColor: '#0f8fcd',
         borderWidth: 1,
@@ -235,21 +287,29 @@ export default function BusinessStatistics({ businessId }: BusinessStatisticsPro
   };
 
   const revenueByLocationData = {
-    labels: locationStats.map(stat => stat.locationName),
+    labels: activeLocationStats.map(stat => stat.locationName),
     datasets: [
       {
         label: 'Ingresos (20% depósitos)',
-        data: locationStats.map(stat => {
+        data: activeLocationStats.map(stat => {
           const locationAppointments = appointments.filter(
             a => a.locationId === stat.locationId && a.status === 'confirmed'
           );
-          return locationAppointments.reduce((sum, a) => sum + (a.servicePrice * 0.20), 0);
+          const revenue = locationAppointments.reduce((sum, a) => sum + (a.servicePrice * 0.20), 0);
+          console.log(`💰 Revenue for ${stat.locationName}:`, {
+            locationId: stat.locationId,
+            appointments: locationAppointments.length,
+            prices: locationAppointments.map(a => a.servicePrice),
+            revenue
+          });
+          return revenue;
         }),
         backgroundColor: [
           'rgba(19, 164, 236, 0.8)',
           'rgba(16, 185, 129, 0.8)',
           'rgba(251, 146, 60, 0.8)',
           'rgba(139, 92, 246, 0.8)',
+          'rgba(236, 72, 153, 0.8)',
         ],
         borderWidth: 1,
       },
@@ -352,7 +412,9 @@ export default function BusinessStatistics({ businessId }: BusinessStatisticsPro
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Sedes Activas</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{locationStats.length}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {locationStats.filter(s => s.totalAppointments > 0).length}
+              </p>
               <p className="text-xs text-gray-400 mt-1">
                 Con citas registradas
               </p>
@@ -421,25 +483,27 @@ export default function BusinessStatistics({ businessId }: BusinessStatisticsPro
                 </tr>
               </thead>
               <tbody>
-                {locationStats.map((stat) => (
-                  <tr key={stat.locationId} className="border-b border-gray-100">
-                    <td className="py-3 text-sm text-gray-900">{stat.locationName}</td>
-                    <td className="py-3 text-sm text-gray-900 text-right">
-                      {stat.confirmedAppointments}/{stat.totalAppointments}
-                    </td>
-                    <td className="py-3 text-sm text-right">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        stat.occupancyRate >= 80
-                          ? 'bg-green-100 text-green-800'
-                          : stat.occupancyRate >= 50
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {stat.occupancyRate.toFixed(1)}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {locationStats
+                  .filter(stat => stat.totalAppointments > 0)
+                  .map((stat) => (
+                    <tr key={stat.locationId} className="border-b border-gray-100">
+                      <td className="py-3 text-sm text-gray-900">{stat.locationName}</td>
+                      <td className="py-3 text-sm text-gray-900 text-right">
+                        {stat.confirmedAppointments}/{stat.totalAppointments}
+                      </td>
+                      <td className="py-3 text-sm text-right">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          stat.occupancyRate >= 80
+                            ? 'bg-green-100 text-green-800'
+                            : stat.occupancyRate >= 50
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {stat.occupancyRate.toFixed(1)}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

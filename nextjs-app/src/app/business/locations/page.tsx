@@ -58,11 +58,27 @@ export default function BusinessLocationsPage() {
     try {
       setIsLoading(true);
       const businessId = user?.businessId || user?.userId;
+      
+      console.log('🔍 Loading locations for business:', {
+        businessId,
+        userId: user?.userId,
+        userBusinessId: user?.businessId,
+        userEmail: user?.email,
+        profileType: user?.profileType,
+        role: user?.role
+      });
+      
       const response = await locationService.getLocations(businessId);
+      
+      console.log('📍 Locations loaded:', {
+        count: response.locations.length,
+        locations: response.locations.map(l => ({ id: l.locationId, name: l.name, businessId: l.businessId }))
+      });
+      
       setLocations(response.locations);
     } catch (error: any) {
-      console.error('Error loading locations:', error);
-      setError(error.message || 'Failed to load locations');
+      console.error('❌ Error loading locations:', error);
+      setError(error.message || 'Error al cargar las sedes');
     } finally {
       setIsLoading(false);
     }
@@ -114,10 +130,10 @@ export default function BusinessLocationsPage() {
     try {
       if (editingLocation) {
         await locationService.updateLocation(editingLocation.locationId, formData);
-        setSuccessMessage('Location updated successfully');
+        setSuccessMessage('Sede actualizada exitosamente');
       } else {
         await locationService.createLocation(formData);
-        setSuccessMessage('Location created successfully');
+        setSuccessMessage('Sede creada exitosamente');
       }
       
       handleCloseModal();
@@ -125,22 +141,22 @@ export default function BusinessLocationsPage() {
       
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error: any) {
-      setError(error.message || 'Failed to save location');
+      setError(error.message || 'Error al guardar la sede');
     }
   };
 
   const handleDelete = async (locationId: string) => {
-    if (!confirm('Are you sure you want to delete this location?')) {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta sede?')) {
       return;
     }
 
     try {
       await locationService.deleteLocation(locationId);
-      setSuccessMessage('Location deleted successfully');
+      setSuccessMessage('Sede eliminada exitosamente');
       await loadLocations();
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error: any) {
-      setError(error.message || 'Failed to delete location');
+      setError(error.message || 'Error al eliminar la sede');
     }
   };
 
@@ -164,7 +180,7 @@ export default function BusinessLocationsPage() {
               {t('navigation.manageLocations', 'navigation')}
             </h1>
             <p className="mt-2 text-sm text-gray-600">
-              Add and manage your business locations
+              Agrega y administra las sedes de tu negocio
             </p>
           </div>
           <button
@@ -174,7 +190,7 @@ export default function BusinessLocationsPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
             </svg>
-            Add Location
+            Agregar Sede
           </button>
         </div>
 
@@ -202,19 +218,23 @@ export default function BusinessLocationsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">No locations yet</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">No hay sedes todavía</h2>
               <p className="text-gray-600 mb-4">
-                Get started by adding your first business location.
+                {!user?.businessId 
+                  ? 'Tu cuenta de usuario necesita estar vinculada a un negocio. Por favor contacta a soporte.'
+                  : 'Comienza agregando la primera sede de tu negocio.'}
               </p>
-              <button
-                onClick={() => handleOpenModal()}
-                className="inline-flex items-center gap-2 bg-[#13a4ec] hover:bg-[#0f8fcd] text-white px-6 py-3 rounded-xl font-medium transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add Your First Location
-              </button>
+              {user?.businessId && (
+                <button
+                  onClick={() => handleOpenModal()}
+                  className="inline-flex items-center gap-2 bg-[#13a4ec] hover:bg-[#0f8fcd] text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Agregar tu Primera Sede
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -230,7 +250,7 @@ export default function BusinessLocationsPage() {
                       {location.name}
                       {location.isPrimary && (
                         <span className="ml-2 text-xs bg-[#13a4ec] text-white px-2 py-1 rounded">
-                          Primary
+                          Principal
                         </span>
                       )}
                     </h3>
@@ -294,7 +314,7 @@ export default function BusinessLocationsPage() {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {editingLocation ? 'Edit Location' : 'Add New Location'}
+                    {editingLocation ? 'Editar Sede' : 'Agregar Nueva Sede'}
                   </h2>
                   <button
                     onClick={handleCloseModal}
@@ -309,22 +329,22 @@ export default function BusinessLocationsPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Location Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location Name *
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
+                      Nombre de la Sede *
                     </label>
                     <input
                       type="text"
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
-                      placeholder="Main Office"
+                      className="w-full px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                      placeholder="Oficina Principal"
                     />
                   </div>
 
                   {/* Address */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-gray-700">Address *</h3>
+                    <h3 className="text-sm font-medium text-gray-900">Dirección *</h3>
                     
                     <input
                       type="text"
@@ -334,8 +354,8 @@ export default function BusinessLocationsPage() {
                         ...formData,
                         address: { ...formData.address, street: e.target.value }
                       })}
-                      className="w-full px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
-                      placeholder="Street Address"
+                      className="w-full px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                      placeholder="Calle y número"
                     />
 
                     <div className="grid grid-cols-2 gap-4">
@@ -347,8 +367,8 @@ export default function BusinessLocationsPage() {
                           ...formData,
                           address: { ...formData.address, city: e.target.value }
                         })}
-                        className="px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
-                        placeholder="City"
+                        className="px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                        placeholder="Ciudad"
                       />
                       <input
                         type="text"
@@ -358,8 +378,8 @@ export default function BusinessLocationsPage() {
                           ...formData,
                           address: { ...formData.address, state: e.target.value }
                         })}
-                        className="px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
-                        placeholder="State"
+                        className="px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                        placeholder="Departamento"
                       />
                     </div>
 
@@ -372,8 +392,8 @@ export default function BusinessLocationsPage() {
                           ...formData,
                           address: { ...formData.address, zipCode: e.target.value }
                         })}
-                        className="px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
-                        placeholder="ZIP Code"
+                        className="px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                        placeholder="Código Postal"
                       />
                       <input
                         type="text"
@@ -383,8 +403,8 @@ export default function BusinessLocationsPage() {
                           ...formData,
                           address: { ...formData.address, country: e.target.value }
                         })}
-                        className="px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
-                        placeholder="Country"
+                        className="px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                        placeholder="País"
                       />
                     </div>
                   </div>
@@ -392,27 +412,27 @@ export default function BusinessLocationsPage() {
                   {/* Contact Information */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Número de Teléfono
                       </label>
                       <input
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
-                        placeholder="+1 (555) 123-4567"
+                        className="w-full px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                        placeholder="+57 300 123 4567"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Correo Electrónico
                       </label>
                       <input
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
-                        placeholder="location@business.com"
+                        className="w-full px-4 py-3 bg-[#f6f7f8] border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#13a4ec] focus:border-transparent"
+                        placeholder="sede@negocio.com"
                       />
                     </div>
                   </div>
@@ -426,8 +446,8 @@ export default function BusinessLocationsPage() {
                       onChange={(e) => setFormData({ ...formData, isPrimary: e.target.checked })}
                       className="w-4 h-4 text-[#13a4ec] border-gray-300 rounded focus:ring-[#13a4ec]"
                     />
-                    <label htmlFor="isPrimary" className="text-sm font-medium text-gray-700">
-                      Set as primary location
+                    <label htmlFor="isPrimary" className="text-sm font-medium text-gray-900">
+                      Establecer como sede principal
                     </label>
                   </div>
 
@@ -438,13 +458,13 @@ export default function BusinessLocationsPage() {
                       onClick={handleCloseModal}
                       className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
                     >
-                      Cancel
+                      Cancelar
                     </button>
                     <button
                       type="submit"
                       className="flex-1 px-6 py-3 bg-[#13a4ec] hover:bg-[#0f8fcd] text-white rounded-xl font-medium transition-colors"
                     >
-                      {editingLocation ? 'Update Location' : 'Add Location'}
+                      {editingLocation ? 'Actualizar Sede' : 'Agregar Sede'}
                     </button>
                   </div>
                 </form>
